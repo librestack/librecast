@@ -60,6 +60,7 @@ int main()
 	/* process arguments and options */
 
 	/* read config */
+	config_defaults();
 
 	/* obtain lockfile, but don't write pid until after we fork() */
 	lockfd = obtain_lockfile();

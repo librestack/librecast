@@ -10,6 +10,13 @@ typedef struct keyval_t {
 
 keyval_t *config;
 
+void config_defaults()
+{
+#define X(key, val, desc) config_set(key, val);
+CONFIG_DEFAULTS
+#undef X
+}
+
 void * config_get(char *key)
 {
 	keyval_t *c = config;
