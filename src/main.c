@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include "main.h"
 #include "config.h"
+#include "controller.h"
 #include "errors.h"
 #include "log.h"
 #include "signals.h"
@@ -50,7 +51,6 @@ int main()
 	int e, errsv;
 	int lockfd;
 	int signal = 0;
-	char buf[sizeof(char) + sizeof(long) + 1];
 
 	e = sighandlers();
 	if (e != 0) {
@@ -83,19 +83,8 @@ int main()
 
 	/* open syslogger */
 
-	/* daemonise */
-
-	/* write pid to lockfile */
-	snprintf(buf, sizeof(long), "#%ld\n", (long) getpid());
-	if (write(lockfd, buf, strlen(buf)) != strlen(buf)) {
-		errno = 0;
-		e = ERROR_PID_WRITEFAIL;
-		goto main_fail;
-	}
-
-	config_print(lockfd);
-
-	config_free();
+	/* start controller process */
+	controller_start(lockfd);
 
 	return 0;
 

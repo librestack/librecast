@@ -3,7 +3,7 @@
 
 #define CONFIG_DEFAULTS \
 	X("configfile", "/etc/librecast.conf", "path to config file") \
-	X("daemon", "0", "run as daemon") \
+	X("daemon", "1", "run as daemon") \
 	X("dropprivs", "1", "drop root privileges")
 #undef X
 
