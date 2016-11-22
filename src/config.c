@@ -1,6 +1,8 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "config.h"
+#include "log.h"
 
 typedef struct keyval_t {
 	char *key;
@@ -17,6 +19,19 @@ CONFIG_DEFAULTS
 #undef X
 }
 
+void config_free()
+{
+	keyval_t *c = config;
+	keyval_t *n;
+	while (c != '\0') {
+		n = c;
+		c = c->next;
+		free (n->key);
+		free (n->val);
+		free (n);
+	}
+}
+
 void * config_get(char *key)
 {
 	keyval_t *c = config;
@@ -26,6 +41,21 @@ void * config_get(char *key)
 		c = c->next;
 	}
 	return NULL;
+}
+
+void config_print()
+{
+	keyval_t *c = config;
+	while (c != '\0') {
+		fprintf(stderr, "%s = %s\n", c->key, c->val);
+		c = c->next;
+	}
+}
+
+void config_read()
+{
+	char *conffile = config_get("configfile");
+	logmsg(LOG_INFO, "reading config file '%s'", conffile);
 }
 
 void config_set(char *key, void *val)
@@ -44,17 +74,4 @@ void config_set(char *key, void *val)
 		config = n;
 	else
 		p->next = n;
-}
-
-void free_config()
-{
-	keyval_t *c = config;
-	keyval_t *n;
-	while (c != '\0') {
-		n = c;
-		c = c->next;
-		free (n->key);
-		free (n->val);
-		free (n);
-	}
 }

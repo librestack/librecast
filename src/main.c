@@ -57,10 +57,13 @@ int main()
 		goto main_fail;
 	}
 
+	/* set config defaults, before overriding them with any options */
+	config_defaults();
+
 	/* process arguments and options */
 
 	/* read config */
-	config_defaults();
+	config_read();
 
 	/* obtain lockfile, but don't write pid until after we fork() */
 	lockfd = obtain_lockfile();
@@ -90,13 +93,15 @@ int main()
 		goto main_fail;
 	}
 
-	free_config();
+	config_print();
+
+	config_free();
 
 	return 0;
 
 main_fail:
 	errsv = errno;
 	print_error(e, errsv, "main");
-	free_config();
+	config_free();
 	return e;
 }
