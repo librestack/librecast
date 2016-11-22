@@ -1,4 +1,5 @@
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include "errors.h"
@@ -26,4 +27,20 @@ void sigint_handler (int signo)
 void sigterm_handler (int signo)
 {
 	_exit(EXIT_SUCCESS);
+}
+
+int signal_daemon (int signal, int lockfd)
+{
+        char buf[sizeof(long)];
+        long pid;
+
+        if (pread(lockfd, &buf, sizeof(buf), 1) == -1) {
+                return ERROR_PID_READFAIL;
+        }
+        if (sscanf(buf, "%li", &pid) == 1) {
+                return kill(pid, signal);
+        }
+        else {
+                return ERROR_PID_INVALID;
+        }
 }
