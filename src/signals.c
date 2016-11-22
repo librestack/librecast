@@ -10,7 +10,7 @@ int sighandlers()
 	signal(SIGINT, sigint_handler);
 	signal(SIGTERM, sigterm_handler);
 
-	return ERROR_SUCCESS;
+	return 0;
 }
 
 void sighup_handler (int signo)

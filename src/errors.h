@@ -1,9 +1,9 @@
 #ifndef __LIBRECAST_ERRORS_H__
 #define __LIBRECAST_ERRORS_H__ 1
 
-#define ERROR_CODES(X)                                                         \
-	X(0, ERROR_SUCCESS,     "Success")                                     \
-	X(1, ERROR_FAIL,        "Failure")
+#define ERROR_CODES(X)                                                        \
+	X(0, ERROR_SUCCESS,     "Success")                                    \
+	X(1, ERROR_FAILURE,     "Failure")
 
 #define ERROR_MSG(code, name, msg) case code: return msg;
 #define ERROR_ENUM(code, name, msg) name = code,

@@ -1,8 +1,8 @@
 #include <errno.h>
 #include <stdio.h>
 #include "main.h"
-#include "debug.h"
 #include "errors.h"
+#include "log.h"
 #include "signals.h"
 
 int main()
