@@ -3,4 +3,4 @@
 
 int main();
 
-# endif /* __LIBRECAST_MAIN_H__ */
+#endif /* __LIBRECAST_MAIN_H__ */
