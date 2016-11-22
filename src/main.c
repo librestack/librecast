@@ -93,7 +93,7 @@ int main()
 		goto main_fail;
 	}
 
-	config_print();
+	config_print(lockfd);
 
 	config_free();
 

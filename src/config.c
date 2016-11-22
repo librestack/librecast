@@ -43,11 +43,11 @@ void * config_get(char *key)
 	return NULL;
 }
 
-void config_print()
+void config_print(int fd)
 {
 	keyval_t *c = config;
 	while (c != '\0') {
-		fprintf(stderr, "%s = %s\n", c->key, c->val);
+		dprintf(fd, "%s = %s\n", c->key, c->val);
 		c = c->next;
 	}
 }

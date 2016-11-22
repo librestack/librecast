@@ -17,8 +17,8 @@ void config_free();
 /* get a config value by name */
 void * config_get(char *key);
 
-/* output currently loaded configuration */
-void config_print();
+/* output currently loaded configuration to file descriptor */
+void config_print(int fd);
 
 /* read and process a configuration file */
 void config_read();
