@@ -8,7 +8,7 @@
 	X(3, ERROR_PID_READFAIL,        "Failed to read pidfile")             \
 	X(4, ERROR_PID_INVALID,         "Invalid pid")                        \
 	X(5, ERROR_ALREADY_RUNNING,     "Daemon already running")             \
-	X(6, ERROR_PID_WRITEFAIL,       "Failed to write to pidifile")
+	X(6, ERROR_PID_WRITEFAIL,       "Failed to write to pidfile")
 
 #define ERROR_MSG(code, name, msg) case code: return msg;
 #define ERROR_ENUM(code, name, msg) name = code,
