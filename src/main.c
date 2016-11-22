@@ -89,11 +89,6 @@ int main()
 		e = ERROR_PID_WRITEFAIL;
 		goto main_fail;
 	}
-	e = signal_daemon(SIGTERM, lockfd);
-	if (e != 0) {
-		errno = 0;
-		goto main_fail;
-	}
 
 	free_config();
 
