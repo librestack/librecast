@@ -1,13 +1,16 @@
 CC=gcc
 CCOPTS=-Wall -Werror -g
 PROGRAM=librecastd
-OBJECTS=main.o config.o controller.o errors.o log.o misc.o signals.o
+OBJECTS=main.o args.o config.o controller.o errors.o log.o misc.o signals.o
 
 ${PROGRAM}: ${OBJECTS}
 	${CC} ${CCOPTS} -o ${PROGRAM} ${OBJECTS}
 
 main.o: main.h main.c
 	${CC} ${CCOPTS} -c main.c
+
+args.o: args.h args.c
+	${CC} ${CCOPTS} -c args.c
 
 config.o: config.h config.c
 	${CC} ${CCOPTS} -c config.c

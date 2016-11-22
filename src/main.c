@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include "main.h"
+#include "args.h"
 #include "config.h"
 #include "controller.h"
 #include "errors.h"
@@ -46,7 +47,7 @@ int obtain_lockfile()
 	return fd;
 }
 
-int main()
+int main(int argc, char **argv)
 {
 	int e, errsv;
 	int lockfd;
@@ -61,6 +62,7 @@ int main()
 	config_defaults();
 
 	/* process arguments and options */
+	args_process(argc, argv);
 
 	/* read config */
 	config_read();
