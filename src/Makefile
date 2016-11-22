@@ -24,7 +24,10 @@ misc.o: misc.h misc.c
 signals.o: signals.h signals.c
 	${CC} ${CCOPTS} -c signals.c
 
-.PHONY: clean
+.PHONY: clean leakcheck
 
 clean:
 	rm -f *.o ${PROGRAM}
+
+leakcheck: ${PROGRAM}
+	make clean && make && valgrind -v ./${PROGRAM}

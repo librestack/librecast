@@ -30,7 +30,7 @@ void sigterm_handler (int signo)
 
 int signal_daemon (int signal, int lockfd)
 {
-        char buf[sizeof(long)];
+        char buf[sizeof(long)] = "";
         long pid;
 
         if (pread(lockfd, &buf, sizeof(buf), 1) == -1) {

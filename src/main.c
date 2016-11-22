@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include "main.h"
+#include "config.h"
 #include "errors.h"
 #include "log.h"
 #include "signals.h"
@@ -93,10 +94,13 @@ int main()
 		goto main_fail;
 	}
 
+	free_config();
+
 	return 0;
 
 main_fail:
 	errsv = errno;
 	print_error(e, errsv, "main");
+	free_config();
 	return e;
 }
