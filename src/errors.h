@@ -11,6 +11,9 @@ enum {
 	ERROR_CODES(ERROR_ENUM)
 };
 
+/* return human readable error message for e */
+char *error_msg(int e);
+
 /* print human readable error, using errsv (errno) or progam defined (e) code */
 void print_error(int e, int errsv, char *errstr);
 
