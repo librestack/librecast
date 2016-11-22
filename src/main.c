@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -48,6 +49,7 @@ int main()
 	int e, errsv;
 	int lockfd;
 	int signal = 0;
+	char buf[sizeof(char) + sizeof(long) + 1];
 
 	e = sighandlers();
 	if (e != 0) {
@@ -58,7 +60,7 @@ int main()
 
 	/* read config */
 
-	/* obtain lockfile */
+	/* obtain lockfile, but don't write pid until after we fork() */
 	lockfd = obtain_lockfile();
 	if (lockfd == -1) {
 		errno = 0;
@@ -77,6 +79,19 @@ int main()
 	/* open syslogger */
 
 	/* daemonise */
+
+	/* write pid to lockfile */
+	snprintf(buf, sizeof(long), "#%ld\n", (long) getpid());
+	if (write(lockfd, buf, strlen(buf)) != strlen(buf)) {
+		errno = 0;
+		e = ERROR_PID_WRITEFAIL;
+		goto main_fail;
+	}
+	e = signal_daemon(SIGTERM, lockfd);
+	if (e != 0) {
+		errno = 0;
+		goto main_fail;
+	}
 
 	return 0;
 
