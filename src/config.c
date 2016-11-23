@@ -84,7 +84,7 @@ void config_print(int fd)
 {
 	keyval_t *c = config;
 	while (c != '\0') {
-		dprintf(fd, "%s = %s\n", c->key, c->val);
+		dprintf(fd, "%s %s\n", c->key, c->val);
 		c = c->next;
 	}
 }

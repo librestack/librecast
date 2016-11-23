@@ -40,8 +40,8 @@ int obtain_lockfile()
 	int fd;
 
         lockfile = getlockfilename();
-        fd = open(lockfile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP
-		| S_IWGRP | S_IROTH );
+        fd = open(lockfile, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR |
+		        S_IRGRP | S_IWGRP | S_IROTH );
 	free(lockfile);
 
 	return fd;
