@@ -93,6 +93,8 @@ int config_set(char *key, void *val)
 		if (llval < min || llval > max)
 			return ERROR_CONFIG_BOUNDS;
 	}
+
+	/* set value */
 	while (c != '\0') {
 		p = c;
 		c = c->next;
