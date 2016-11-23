@@ -15,6 +15,6 @@ void print_error(int e, int errsv, char *errstr)
 {
 	if (errsv != 0)
 		perror(errstr);
-	else
+	else if (e != 0)
 		logmsg(LOG_SEVERE, "%s: %s", errstr, error_msg(e));
 }
