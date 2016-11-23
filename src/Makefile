@@ -1,13 +1,22 @@
 CC=gcc
 CCOPTS=-Wall -Werror -g
-PROGRAM=librecastd
-OBJECTS=main.o args.o config.o controller.o errors.o log.o misc.o signals.o
+PROGRAM=librecast
+DAEMON=${PROGRAM}d
+CLIENT=${PROGRAM}ctl
+DAEMON_OBJECTS=daemon.o args.o config.o controller.o errors.o log.o misc.o signals.o
+CLIENT_OBJECTS=client.o args.o config.o controller.o errors.o log.o misc.o signals.o
 
-${PROGRAM}: ${OBJECTS}
-	${CC} ${CCOPTS} -o ${PROGRAM} ${OBJECTS}
+${DAEMON}: ${DAEMON_OBJECTS}
+	${CC} ${CCOPTS} -o ${DAEMON} ${DAEMON_OBJECTS}
 
-main.o: main.h main.c
-	${CC} ${CCOPTS} -c main.c
+${CLIENT}: ${CLIENT_OBJECTS}
+	${CC} ${CCOPTS} -o ${CLIENT} ${CLIENT_OBJECTS}
+
+client.o: client.h client.c
+	${CC} ${CCOPTS} -c client.c
+
+daemon.o: daemon.h daemon.c
+	${CC} ${CCOPTS} -c daemon.c
 
 args.o: args.h args.c
 	${CC} ${CCOPTS} -c args.c
@@ -33,7 +42,7 @@ signals.o: signals.h signals.c
 .PHONY: clean leakcheck
 
 clean:
-	rm -f *.o ${PROGRAM}
+	rm -f *.o ${DAEMON} ${CLIENT}
 
-leakcheck: ${PROGRAM}
-	make clean && make && valgrind -v ./${PROGRAM}
+leakcheck: ${DAEMON}
+	make clean && make && valgrind -v ./${DAEMON}

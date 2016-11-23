@@ -9,9 +9,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include "main.h"
 #include "config.h"
 #include "controller.h"
+#include "daemon.h"
 #include "errors.h"
 #include "log.h"
 #include "signals.h"
