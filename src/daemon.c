@@ -14,37 +14,8 @@
 #include "daemon.h"
 #include "errors.h"
 #include "log.h"
+#include "pid.h"
 #include "signals.h"
-
-char *getlockfilename()
-{
-	char *lockfile;
-
-	if (geteuid() == 0) {
-		/* we are root, put lockfile in /var/run */
-		asprintf(&lockfile, "/var/run/%s.pid", PROGRAM_NAME);
-	}
-        else {
-		/* not root, put pidfile in user home */
-	        asprintf(&lockfile, "%s/.%s.pid", getenv("HOME"), PROGRAM_NAME);
-	}
-
-
-	return lockfile;
-}
-
-int obtain_lockfile()
-{
-        char *lockfile;
-	int fd;
-
-        lockfile = getlockfilename();
-        fd = open(lockfile, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR |
-		        S_IRGRP | S_IWGRP | S_IROTH );
-	free(lockfile);
-
-	return fd;
-}
 
 int main(int argc, char **argv)
 {
@@ -65,7 +36,7 @@ int main(int argc, char **argv)
 		goto main_fail;
 
 	/* obtain lockfile, but don't write pid until after we fork() */
-	lockfd = obtain_lockfile();
+	lockfd = obtain_lockfile(PROGRAM_NAME);
 	if (lockfd == -1) {
 		errno = 0;
 		e = ERROR_PID_OPEN;

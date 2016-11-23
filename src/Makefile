@@ -3,8 +3,10 @@ CCOPTS=-Wall -Werror -g
 PROGRAM=librecast
 DAEMON=${PROGRAM}d
 CLIENT=${PROGRAM}ctl
-DAEMON_OBJECTS=daemon.o args.o config.o controller.o errors.o log.o misc.o signals.o
-CLIENT_OBJECTS=client.o args.o config.o controller.o errors.o log.o misc.o signals.o
+DAEMON_OBJECTS=daemon.o args.o config.o controller.o errors.o log.o misc.o pid.o signals.o
+CLIENT_OBJECTS=client.o args.o config.o controller.o errors.o log.o misc.o pid.o signals.o
+
+all: ${DAEMON} ${CLIENT}
 
 ${DAEMON}: ${DAEMON_OBJECTS}
 	${CC} ${CCOPTS} -o ${DAEMON} ${DAEMON_OBJECTS}
@@ -35,6 +37,9 @@ log.o: log.h log.c
 
 misc.o: misc.h misc.c
 	${CC} ${CCOPTS} -c misc.c
+
+pid.o: pid.h pid.c
+	${CC} ${CCOPTS} -c pid.c
 
 signals.o: signals.h signals.c
 	${CC} ${CCOPTS} -c signals.c
