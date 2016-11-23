@@ -81,14 +81,12 @@ long long config_get_num(char * key)
 
 long long config_min(char *key)
 {
-
 	CONFIG_LIMITS(CONFIG_MIN)
 	return LLONG_MIN;
 }
 
 long long config_max(char *key)
 {
-
 	CONFIG_LIMITS(CONFIG_MAX)
 	return LLONG_MAX;
 }
