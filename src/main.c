@@ -62,7 +62,8 @@ int main(int argc, char **argv)
 	config_defaults();
 
 	/* process arguments and options */
-	args_process(argc, argv);
+	if ((e = args_process(argc, argv)) != 0)
+		goto main_fail;
 
 	/* read config */
 	if ((e = config_read(NULL)))
