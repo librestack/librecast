@@ -77,7 +77,6 @@ long long config_get_num(char * key)
 	llval = strtoll(val, NULL, 10);
 
 	return llval;
-
 }
 
 long long config_min(char *key)
