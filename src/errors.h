@@ -1,6 +1,8 @@
 #ifndef __LIBRECAST_ERRORS_H__
 #define __LIBRECAST_ERRORS_H__ 1
 
+#include <errno.h>
+
 #define ERROR_CODES(X)                                                        \
 	X(0, ERROR_SUCCESS,             "Success")                            \
 	X(1, ERROR_FAILURE,             "Failure")                            \
@@ -9,7 +11,9 @@
 	X(4, ERROR_PID_INVALID,         "Invalid pid")                        \
 	X(5, ERROR_ALREADY_RUNNING,     "Daemon already running")             \
 	X(6, ERROR_PID_WRITEFAIL,       "Failed to write to pidfile")         \
-	X(7, ERROR_DAEMON_FAILURE,      "Failed to daemonize")
+	X(7, ERROR_DAEMON_FAILURE,      "Failed to daemonize")                \
+	X(8, ERROR_CONFIG_NOTNUMERIC,   "Numeric config value not numeric")   \
+	X(9, ERROR_CONFIG_BOUNDS,       "Numeric config value out of bounds")
 
 #define ERROR_MSG(code, name, msg) case code: return msg;
 #define ERROR_ENUM(code, name, msg) name = code,

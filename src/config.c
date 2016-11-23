@@ -1,7 +1,9 @@
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "config.h"
+#include "errors.h"
 #include "log.h"
 
 typedef struct keyval_t {
@@ -43,6 +45,20 @@ void * config_get(char *key)
 	return NULL;
 }
 
+long long config_min(char *key)
+{
+
+	CONFIG_LIMITS(CONFIG_MIN)
+	return LLONG_MIN;
+}
+
+long long config_max(char *key)
+{
+
+	CONFIG_LIMITS(CONFIG_MAX)
+	return LLONG_MAX;
+}
+
 void config_print(int fd)
 {
 	keyval_t *c = config;
@@ -58,11 +74,25 @@ void config_read()
 	logmsg(LOG_INFO, "reading config file '%s'", conffile);
 }
 
-void config_set(char *key, void *val)
+int config_set(char *key, void *val)
 {
 	keyval_t *c = config;
 	keyval_t *p = c;
 	keyval_t *n;
+	config_type_t type = config_type(key);
+	long long min, max, llval;
+
+	/* check proposed value is within upper and lower bounds */
+	if (type == CONFIG_TYPE_INT) {
+		errno = 0;
+		llval = strtoll(val, NULL, 10);
+		if (errno != 0)
+			return ERROR_CONFIG_NOTNUMERIC;
+		min = config_min(key);
+		max = config_max(key);
+		if (llval < min || llval > max)
+			return ERROR_CONFIG_BOUNDS;
+	}
 	while (c != '\0') {
 		p = c;
 		c = c->next;
@@ -74,6 +104,8 @@ void config_set(char *key, void *val)
 		config = n;
 	else
 		p->next = n;
+
+	return 0;
 }
 
 config_type_t config_type(char *key)
