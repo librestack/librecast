@@ -65,7 +65,8 @@ int main(int argc, char **argv)
 	args_process(argc, argv);
 
 	/* read config */
-	config_read();
+	if ((e = config_read(NULL)))
+		goto main_fail;
 
 	/* obtain lockfile, but don't write pid until after we fork() */
 	lockfd = obtain_lockfile();

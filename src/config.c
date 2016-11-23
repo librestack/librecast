@@ -106,10 +106,48 @@ void config_print(int fd)
 	}
 }
 
-void config_read()
+int config_process_line(char *line)
 {
-	char *conffile = config_get("configfile");
-	logmsg(LOG_INFO, "reading config file '%s'", conffile);
+	return 0;
+	return ERROR_CONFIG_INVALID;
+}
+
+int config_read(char *configfile)
+{
+	FILE *fd;
+	char line[LINE_MAX];
+	int lc = 0;
+	int e = 0;
+
+	if (configfile == NULL)
+		configfile = config_get("configfile");
+
+	logmsg(LOG_INFO, "reading config file '%s'", configfile);
+
+	/* open config file */
+	fd = fopen(configfile, "r");
+	if (fd == NULL) {
+		int errsv = errno;
+		logmsg(LOG_ERROR, strerror(errsv));
+		errno = 0;
+		return ERROR_CONFIG_READFAIL;
+	}
+
+	/* read line by line */
+	while (fgets(line, LINE_MAX, fd) != NULL) {
+		lc++;
+		if ((e = config_process_line(line))) {
+			logmsg(LOG_ERROR, "error in line %i of config file",
+					lc);
+			goto config_read_done;
+		}
+	}
+
+config_read_done:
+	/* tidy up */
+	fclose(fd);
+
+	return e;
 }
 
 int config_set(char *key, void *val)

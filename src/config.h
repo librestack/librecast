@@ -47,8 +47,11 @@ int config_numeric(char * key);
 /* output currently loaded configuration to file descriptor */
 void config_print(int fd);
 
-/* read and process a configuration file */
-void config_read();
+/* process an individual config file line. Return 0 or error */
+int config_process_line(char *line);
+
+/* read and process a configuration file. Return 0 or error */
+int config_read();
 
 /* set a config key/value pair.  Returns 0 or error code */
 int config_set(char *key, void *val);

@@ -14,7 +14,9 @@
 	X(7, ERROR_DAEMON_FAILURE,      "Failed to daemonize")                \
 	X(8, ERROR_CONFIG_NOTNUMERIC,   "Numeric config value not numeric")   \
 	X(9, ERROR_CONFIG_BOUNDS,       "Numeric config value out of bounds") \
-	X(10, ERROR_CONFIG_BOOLEAN,     "Invalid boolean config value")
+	X(10, ERROR_CONFIG_BOOLEAN,     "Invalid boolean config value")       \
+	X(11, ERROR_CONFIG_READFAIL,    "Unable to read config file")         \
+	X(12, ERROR_CONFIG_INVALID,     "Error in config file")
 
 #define ERROR_MSG(code, name, msg) case code: return msg;
 #define ERROR_ENUM(code, name, msg) name = code,
