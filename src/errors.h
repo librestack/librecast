@@ -13,7 +13,8 @@
 	X(6, ERROR_PID_WRITEFAIL,       "Failed to write to pidfile")         \
 	X(7, ERROR_DAEMON_FAILURE,      "Failed to daemonize")                \
 	X(8, ERROR_CONFIG_NOTNUMERIC,   "Numeric config value not numeric")   \
-	X(9, ERROR_CONFIG_BOUNDS,       "Numeric config value out of bounds")
+	X(9, ERROR_CONFIG_BOUNDS,       "Numeric config value out of bounds") \
+	X(10, ERROR_CONFIG_BOOLEAN,     "Invalid boolean config value")
 
 #define ERROR_MSG(code, name, msg) case code: return msg;
 #define ERROR_ENUM(code, name, msg) name = code,

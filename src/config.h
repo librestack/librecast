@@ -23,6 +23,8 @@ typedef enum {
 #define CONFIG_MIN(k, min, max) if (strcmp(key, k) == 0) return min;
 #define CONFIG_MAX(k, min, max) if (strcmp(key, k) == 0) return max;
 
+int config_bool_convert(char *val, long long *llval);
+
 /* set configuration defaults, before overriding with any options or reading
  * a configuration file */
 void config_defaults();

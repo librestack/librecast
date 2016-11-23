@@ -15,6 +15,26 @@ typedef struct keyval_t {
 
 keyval_t *config;
 
+int config_bool_convert(char *val, long long *llval)
+{
+	int i;
+	char *truth[] = { "1", "true", "yes", "on" };
+	char *falsy[] = { "0", "false", "no", "off" };
+	for (i = 0; i < sizeof(truth) / sizeof(char *); i++) {
+		if (strcmp(val, truth[i]) == 0) {
+			*llval = 1;
+			return 0;
+		}
+	}
+	for (i = 0; i < sizeof(falsy) / sizeof(char *); i++) {
+		if (strcmp(val, falsy[i]) == 0) {
+			*llval = 0;
+			return 0;
+		}
+	}
+	return ERROR_CONFIG_BOOLEAN;
+}
+
 void config_defaults()
 {
 #define X(key, type, val, desc) assert(config_set(key, val) == 0);
@@ -83,8 +103,12 @@ int config_set(char *key, void *val)
 	config_type_t type = config_type(key);
 	long long min, max, llval;
 
-	/* check proposed value is within upper and lower bounds */
-	if (type == CONFIG_TYPE_INT) {
+	if (type == CONFIG_TYPE_BOOL) {
+		if (config_bool_convert(val, &llval) != 0)
+			return ERROR_CONFIG_BOOLEAN;
+	}
+	else if (type == CONFIG_TYPE_INT) {
+		/* check proposed value is within upper and lower bounds */
 		errno = 0;
 		llval = strtoll(val, NULL, 10);
 		if (errno != 0)
