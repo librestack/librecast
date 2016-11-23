@@ -2,6 +2,7 @@
 #define __LIBRECAST_CONFIG_H__ 1
 
 typedef enum {
+	CONFIG_TYPE_INVALID,
 	CONFIG_TYPE_BOOL,
 	CONFIG_TYPE_INT,
 	CONFIG_TYPE_STRING
@@ -55,6 +56,9 @@ int config_read();
 
 /* set a config key/value pair.  Returns 0 or error code */
 int config_set(char *key, void *val);
+
+/* set a numeric config key/value pair.  Returns 0 or error code */
+int config_set_num(char *key, long long llval);
 
 /* lookup type of config item */
 config_type_t config_type(char *k);

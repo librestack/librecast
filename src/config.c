@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <assert.h>
 #include <limits.h>
 #include <stdio.h>
@@ -116,6 +117,7 @@ int config_process_line(char *line)
 	}
 	else if (sscanf(line, "%s %lli", key, &llval) == 2) {
 		logmsg(LOG_DEBUG, "config_process_line: numeric config line");
+		return config_set_num(key, llval);
 	}
 	else if (sscanf(line, "%[a-zA-Z0-9]", value) == 0) {
 		logmsg(LOG_DEBUG, "config_process_line: skipping blank line");
@@ -172,7 +174,11 @@ int config_set(char *key, void *val)
 	config_type_t type = config_type(key);
 	long long min, max, llval;
 
-	if (type == CONFIG_TYPE_BOOL) {
+	if (type == CONFIG_TYPE_INVALID) {
+		logmsg(LOG_ERROR, "'%s' not a valid configuration option", key);
+		return ERROR_CONFIG_INVALID;
+	}
+	else if (type == CONFIG_TYPE_BOOL) {
 		if (config_bool_convert(val, &llval) != 0)
 			return ERROR_CONFIG_BOOLEAN;
 	}
@@ -204,9 +210,25 @@ int config_set(char *key, void *val)
 	return 0;
 }
 
+int config_set_num(char *key, long long llval)
+{
+	char *val;
+	int e;
+
+	if (asprintf(&val, "%lli", llval) == -1) {
+		int errsv = errno;
+		print_error(0, errsv, "config_set_num");
+		return ERROR_MALLOC;
+	}
+	e = config_set(key, val);
+	free(val);
+
+	return e;
+}
+
 config_type_t config_type(char *key)
 {
 
 	CONFIG_DEFAULTS(CONFIG_TYPE)
-	return 0;
+	return CONFIG_TYPE_INVALID;
 }

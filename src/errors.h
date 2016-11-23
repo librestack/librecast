@@ -16,7 +16,8 @@
 	X(9, ERROR_CONFIG_BOUNDS,       "Numeric config value out of bounds") \
 	X(10, ERROR_CONFIG_BOOLEAN,     "Invalid boolean config value")       \
 	X(11, ERROR_CONFIG_READFAIL,    "Unable to read config file")         \
-	X(12, ERROR_CONFIG_INVALID,     "Error in config file")
+	X(12, ERROR_CONFIG_INVALID,     "Error in config file")               \
+	X(13, ERROR_MALLOC,             "Memory allocation error")
 
 #define ERROR_MSG(code, name, msg) case code: return msg;
 #define ERROR_ENUM(code, name, msg) name = code,
