@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "config.h"
 #include "errors.h"
 #include "signals.h"
 
@@ -25,6 +26,7 @@ void sigint_handler (int signo)
 
 void sigterm_handler (int signo)
 {
+	config_free();
 	_exit(EXIT_SUCCESS);
 }
 
