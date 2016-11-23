@@ -1,7 +1,7 @@
-#ifndef __LIBRECAST_DAEMON_H__
-#define __LIBRECAST_DAEMON_H__ 1
+#ifndef __LIBRECAST_CLIENT_H__
+#define __LIBRECAST_CLIENT_H__ 1
 
-#define PROGRAM_NAME "librecast"
+#define PROGRAM_NAME "librecastctl"
 
 /* return full path of program lockfile. free() after use. */
 char *getlockfilename();
@@ -12,4 +12,4 @@ int obtain_lockfile();
 /* program entrypoint */
 int main();
 
-#endif /* __LIBRECAST_DAEMON_H__ */
+#endif /* __LIBRECAST_CLIENT_H__ */
