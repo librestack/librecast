@@ -38,6 +38,7 @@ int config_bool_convert(char *val, long long *llval)
 
 void config_defaults()
 {
+	logmsg(LOG_DEBUG, "setting config defaults...");
 #define X(key, type, val, desc) assert(config_set(key, val) == 0);
 CONFIG_DEFAULTS(X)
 #undef X
@@ -74,6 +75,11 @@ long long config_get_num(char * key)
 
 	assert(config_numeric(key));
 	val = config_get(key);
+
+	/* ensure we can logmsg() before config defaults are set */
+	if (strcmp(key, "loglevel") == 0 && val == NULL)
+		return 0;
+
 	assert(val != NULL);
 	llval = strtoll(val, NULL, 10);
 
@@ -173,6 +179,8 @@ int config_set(char *key, void *val)
 	keyval_t *n;
 	config_type_t type = config_type(key);
 	long long min, max, llval;
+
+	logmsg(LOG_DEBUG, "config_set: %s=%s", key, val);
 
 	if (type == CONFIG_TYPE_INVALID) {
 		logmsg(LOG_ERROR, "'%s' not a valid configuration option", key);
