@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -16,7 +17,8 @@ void logmsg(int level, char *msg, ...)
 		return;
 
 	va_start(argp, msg);
-	b = malloc(_vscprintf(msg, argp));
+	b = malloc(_vscprintf(msg, argp) + 1);
+	assert(b != NULL);
 	vsprintf(b, msg, argp);
 	va_end(argp);
 	fprintf(stderr, "%s\n", b);
