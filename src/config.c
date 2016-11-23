@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,7 +17,7 @@ keyval_t *config;
 
 void config_defaults()
 {
-#define X(key, type, val, desc) config_set(key, val);
+#define X(key, type, val, desc) assert(config_set(key, val) == 0);
 CONFIG_DEFAULTS(X)
 #undef X
 }
