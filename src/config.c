@@ -66,6 +66,20 @@ void * config_get(char *key)
 	return NULL;
 }
 
+long long config_get_num(char * key)
+{
+	char *val;
+	long long llval;
+
+	assert(config_numeric(key));
+	val = config_get(key);
+	assert(val != NULL);
+	llval = strtoll(val, NULL, 10);
+
+	return llval;
+
+}
+
 long long config_min(char *key)
 {
 
@@ -78,6 +92,12 @@ long long config_max(char *key)
 
 	CONFIG_LIMITS(CONFIG_MAX)
 	return LLONG_MAX;
+}
+
+int config_numeric(char * key)
+{
+	config_type_t type = config_type(key);
+	return (type == CONFIG_TYPE_BOOL || type == CONFIG_TYPE_INT) ? 1 : 0;
 }
 
 void config_print(int fd)
