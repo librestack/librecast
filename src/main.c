@@ -10,7 +10,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include "main.h"
-#include "args.h"
 #include "config.h"
 #include "controller.h"
 #include "errors.h"
@@ -60,10 +59,6 @@ int main(int argc, char **argv)
 
 	/* set config defaults, before overriding them with any options */
 	config_defaults();
-
-	/* process arguments and options */
-	if ((e = args_process(argc, argv)) != 0)
-		goto main_fail;
 
 	/* read config */
 	if ((e = config_read(NULL)))
