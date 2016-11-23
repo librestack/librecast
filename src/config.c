@@ -14,8 +14,8 @@ keyval_t *config;
 
 void config_defaults()
 {
-#define X(key, val, desc) config_set(key, val);
-CONFIG_DEFAULTS
+#define X(key, type, val, desc) config_set(key, val);
+CONFIG_DEFAULTS(X)
 #undef X
 }
 
@@ -67,11 +67,18 @@ void config_set(char *key, void *val)
 		p = c;
 		c = c->next;
 	}
-	n = calloc(sizeof(struct keyval_t), 1);
+	n = calloc(sizeof(keyval_t), 1);
 	n->key = strdup(key);
 	n->val = strdup(val);
 	if (config == '\0')
 		config = n;
 	else
 		p->next = n;
+}
+
+config_type_t config_type(char *key)
+{
+
+	CONFIG_DEFAULTS(CONFIG_TYPE)
+	return 0;
 }
