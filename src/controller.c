@@ -7,14 +7,18 @@
 #include "config.h"
 #include "controller.h"
 #include "errors.h"
+#include "log.h"
 
 void controller_start(int lockfd)
 {
 	int e, errsv;
 	char buf[sizeof(char) + sizeof(long) + 1];
 
+	logmsg(LOG_INFO, "starting controller");
+
 	/* daemonize */
 	if (config_get_num("daemon") == 1) {
+		logmsg(LOG_INFO, "forking controller process");
 		if (daemon(0, 0) != 0) {
 			e = ERROR_DAEMON_FAILURE;
 			goto controller_start_fail;
