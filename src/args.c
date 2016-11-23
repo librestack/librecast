@@ -7,7 +7,7 @@
 
 int args_process(int argc, char **argv)
 {
-	int i;
+	int i, e;
 
 	if (argc == 0)
 		return 0;
@@ -15,8 +15,8 @@ int args_process(int argc, char **argv)
 	logmsg(LOG_DEBUG, "program called as %s", argv[0]);
 
 	for (i=1; i < argc; i++) {
-		if (args_process_arg(argv[i]) != 0)
-			return ERROR_INVALID_ARGS;
+		if ((e = args_process_arg(argv[i])) != 0)
+			return e;
 	}
 
 	return 0;
@@ -30,6 +30,8 @@ int args_process_arg(char *arg)
 		logmsg(LOG_ERROR, "'%s' is not a valid argument", arg);
 		return ERROR_INVALID_ARGS;
 	}
+
+	ARGS_ARGS(ARGS_FUNC)
 
 	return 0;
 }
