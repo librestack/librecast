@@ -108,8 +108,23 @@ void config_print(int fd)
 
 int config_process_line(char *line)
 {
+	char key[LINE_MAX], value[LINE_MAX];
+	long long llval;
+
+	if (line[0] == '#') {
+		logmsg(LOG_DEBUG, "config_process_line: skipping comment");
+	}
+	else if (sscanf(line, "%s %lli", key, &llval) == 2) {
+		logmsg(LOG_DEBUG, "config_process_line: numeric config line");
+	}
+	else if (sscanf(line, "%[a-zA-Z0-9]", value) == 0) {
+		logmsg(LOG_DEBUG, "config_process_line: skipping blank line");
+	}
+	else {
+		return ERROR_CONFIG_INVALID;
+	}
+
 	return 0;
-	return ERROR_CONFIG_INVALID;
 }
 
 int config_read(char *configfile)
@@ -137,8 +152,7 @@ int config_read(char *configfile)
 	while (fgets(line, LINE_MAX, fd) != NULL) {
 		lc++;
 		if ((e = config_process_line(line))) {
-			logmsg(LOG_ERROR, "error in line %i of config file",
-					lc);
+			logmsg(LOG_ERROR, "error in line %i of config file",lc);
 			goto config_read_done;
 		}
 	}
