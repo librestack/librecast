@@ -14,10 +14,10 @@ ${DAEMON}: ${DAEMON_OBJECTS}
 ${CLIENT}: ${CLIENT_OBJECTS}
 	${CC} ${CCOPTS} -o ${CLIENT} ${CLIENT_OBJECTS}
 
-client.o: client.h client.c
+client.o: main.h client.c
 	${CC} ${CCOPTS} -c client.c
 
-daemon.o: daemon.h daemon.c
+daemon.o: main.h daemon.c
 	${CC} ${CCOPTS} -c daemon.c
 
 args.o: args.h args.c

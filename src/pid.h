@@ -5,6 +5,6 @@
 char *getlockfilename();
 
 /* get a lock and write pid */
-int obtain_lockfile();
+int obtain_lockfile(int flags);
 
 #endif /* __LIBRECAST_PID_H__ */

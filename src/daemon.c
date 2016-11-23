@@ -10,8 +10,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include "config.h"
+#include "main.h"
 #include "controller.h"
-#include "daemon.h"
 #include "errors.h"
 #include "log.h"
 #include "pid.h"
@@ -36,7 +36,7 @@ int main(int argc, char **argv)
 		goto main_fail;
 
 	/* obtain lockfile, but don't write pid until after we fork() */
-	lockfd = obtain_lockfile(PROGRAM_NAME);
+	lockfd = obtain_lockfile(O_RDWR | O_CREAT | O_TRUNC);
 	if (lockfd == -1) {
 		errno = 0;
 		e = ERROR_PID_OPEN;
