@@ -122,11 +122,15 @@ int config_process_line(char *line)
 		logmsg(LOG_DEBUG, "config_process_line: skipping comment");
 	}
 	else if (sscanf(line, "%s %lli", key, &llval) == 2) {
-		logmsg(LOG_DEBUG, "config_process_line: numeric config line");
+		logmsg(LOG_DEBUG, "config_process_line: numeric config option");
 		return config_set_num(key, llval);
 	}
 	else if (sscanf(line, "%[a-zA-Z0-9]", value) == 0) {
 		logmsg(LOG_DEBUG, "config_process_line: skipping blank line");
+	}
+	else if (sscanf(line, "%s %[^\n]", key, value) == 2) {
+		logmsg(LOG_DEBUG, "config_process_line: string config option");
+		return config_set(key, value);
 	}
 	else {
 		return ERROR_CONFIG_INVALID;
@@ -202,6 +206,9 @@ int config_set(char *key, void *val)
 			return ERROR_CONFIG_BOUNDS;
 	}
 
+	if (config_validate_option(key, val) != 0)
+		return ERROR_CONFIG_INVALID;
+
 	/* set value */
 	while (c != '\0') {
 		p = c;
@@ -239,4 +246,10 @@ config_type_t config_type(char *key)
 
 	CONFIG_DEFAULTS(CONFIG_TYPE)
 	return CONFIG_TYPE_INVALID;
+}
+
+int config_validate_option(char *key, char *val)
+{
+	/* TODO: perform necessary validation checks on config settings */
+	return 0;
 }

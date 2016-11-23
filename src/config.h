@@ -63,4 +63,7 @@ int config_set_num(char *key, long long llval);
 /* lookup type of config item */
 config_type_t config_type(char *k);
 
+/* perform necessary validation checks on config settings */
+int config_validate_option(char *key, char *val);
+
 #endif /* __LIBRECAST_CONFIG_H__ */
