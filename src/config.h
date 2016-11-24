@@ -13,6 +13,7 @@ typedef enum {
 	X("loglevel", CONFIG_TYPE_INT, "127", "logging level") \
 	X("daemon", CONFIG_TYPE_BOOL, "0", "run as daemon") \
 	X("dropprivs", CONFIG_TYPE_BOOL, "1", "drop root privileges") \
+	X("pingtext", CONFIG_TYPE_STRING, "ping", "text for test messages") \
 	X("castaddr", CONFIG_TYPE_STRING, "ff15::1", "multicast addr") \
 	X("castport", CONFIG_TYPE_INT, "4242", "multicast port")
 #undef X
@@ -66,6 +67,9 @@ int config_set_num(char *key, long long llval);
 
 /* lookup type of config item */
 config_type_t config_type(char *k);
+
+/* drop all matching config options from loaded config */
+int config_unset(char *key);
 
 /* perform necessary validation checks on config settings */
 int config_validate_option(char *key, char *val);

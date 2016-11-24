@@ -8,6 +8,7 @@
 #include "controller.h"
 #include "errors.h"
 #include "log.h"
+#include "net.h"
 #include "pid.h"
 #include "signals.h"
 
@@ -57,4 +58,10 @@ main_fail:
 	print_error(e, errsv, "main");
 	config_free();
 	return e;
+}
+
+void main_free()
+{
+	config_free();
+	net_free();
 }

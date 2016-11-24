@@ -58,3 +58,8 @@ main_fail:
 	config_free();
 	return 0;
 }
+
+void main_free()
+{
+	config_free();
+}

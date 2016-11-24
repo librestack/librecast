@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include "config.h"
 #include "errors.h"
+#include "main.h"
 #include "signals.h"
 
 int sighandlers()
@@ -26,7 +27,7 @@ void sigint_handler (int signo)
 
 void sigterm_handler (int signo)
 {
-	config_free();
+	main_free();
 	_exit(EXIT_SUCCESS);
 }
 

@@ -41,7 +41,8 @@ void controller_start(int lockfd)
 
 	for (;;) {
 		/* do stuff here */
-		net_multicast_send("ping");
+		char *msg = config_get("pingtext");
+		net_multicast_send(msg);
 		sleep(2);
 	}
 

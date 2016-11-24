@@ -6,4 +6,7 @@
 /* program entrypoint */
 int main();
 
+/* cleanup prior to exit */
+void main_free();
+
 #endif /* __LIBRECAST_MAIN_H__ */

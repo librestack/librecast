@@ -222,6 +222,7 @@ int config_set(char *key, void *val)
 		return ERROR_CONFIG_INVALID;
 
 	/* set value */
+	config_unset(key);
 	while (c != '\0') {
 		p = c;
 		c = c->next;
@@ -258,6 +259,29 @@ config_type_t config_type(char *key)
 
 	CONFIG_DEFAULTS(CONFIG_TYPE)
 	return CONFIG_TYPE_INVALID;
+}
+
+int config_unset(char *key)
+{
+	int i = 0;
+	keyval_t *c = config;
+	keyval_t *p = c;
+	while (c != '\0') {
+		if (strcmp(c->key, key) == 0) {
+			i++;
+			logmsg(LOG_DEBUG, "unsetting %s", key);
+			p->next = c->next;
+			free(c->key);
+			free(c->val);
+			free(c);
+			c = p->next;
+		}
+		p = c;
+		c = c->next;
+	}
+	logmsg(LOG_DEBUG, "unset %i instances of %s", i, key);
+
+	return i;
 }
 
 int config_validate_option(char *key, char *val)

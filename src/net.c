@@ -81,5 +81,12 @@ int net_multicast_send(char *msg)
 net_multicast_send_fail:
 	errsv = errno;
 	print_error(e, errsv, "net_multicast_init");
+	net_free();
 	return ERROR_NET_SEND;
+}
+
+int net_free()
+{
+	freeaddrinfo(castaddr);
+	return 0;
 }

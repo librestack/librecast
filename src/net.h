@@ -3,5 +3,6 @@
 
 int net_multicast_init();
 int net_multicast_send(char *msg);
+int net_free();
 
 #endif /* __LIBRECAST_NET_H__ */
