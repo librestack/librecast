@@ -18,7 +18,8 @@
 	X(11, ERROR_CONFIG_READFAIL,    "Unable to read config file")         \
 	X(12, ERROR_CONFIG_INVALID,     "Error in config file")               \
 	X(13, ERROR_MALLOC,             "Memory allocation error")            \
-	X(14, ERROR_INVALID_ARGS,       "Invalid command line options")
+	X(14, ERROR_INVALID_ARGS,       "Invalid command line options")       \
+	X(15, ERROR_DAEMON_STOPPED,     "Daemon not running")
 
 #define ERROR_MSG(code, name, msg) case code: return msg;
 #define ERROR_ENUM(code, name, msg) name = code,

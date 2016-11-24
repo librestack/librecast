@@ -13,8 +13,9 @@ int main(int argc, char **argv)
 {
 	int e, errsv;
 	int lockfd;
+	int signal;
 
-	config_set_num("loglevel", LOG_DEBUG);
+	config_set_num("loglevel", 15);
 
 	if ((e = args_process(argc, argv)) != 0) {
 		goto main_fail;
@@ -38,7 +39,18 @@ int main(int argc, char **argv)
 	}
 
 	if (strcmp(argv[1], "stop") == 0)
-		signal_daemon(SIGINT, lockfd);
+		signal = SIGINT;
+	else if (strcmp(argv[1], "reload") == 0)
+		signal = SIGHUP;
+	if (signal_daemon(signal, lockfd) != 0) {
+		errsv = errno;
+		if (errsv == ESRCH) {
+			e = ERROR_DAEMON_STOPPED;
+			logmsg(LOG_ERROR, error_msg(e));
+			return e;
+		}
+		goto main_fail;
+	}
 
 main_fail:
 	errsv = errno;

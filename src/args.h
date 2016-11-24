@@ -4,6 +4,7 @@
 #define ARGS_ARGS(X) \
 	X("start", "start the daemon", 0) \
 	X("stop", "stop the daemon", 0) \
+	X("reload", "reload daemon configuration", 0) \
 	X("status", "report status of daemon", 0)
 #undef X
 
