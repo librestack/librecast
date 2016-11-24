@@ -21,16 +21,11 @@ int net_multicast_init()
 	int e = 0, errsv;
         int loop = 1; /* 0 = off, 1 = on (default) */
         int ttl = 1;
-	struct addrinfo hints = { 0 };
 	char *addr = config_get("castaddr");
 	char *port = config_get("castport");
 
 	/* resolve destination address */
-        hints.ai_family = AF_UNSPEC;
-        hints.ai_socktype = SOCK_DGRAM;
-        hints.ai_flags = AI_NUMERICHOST;
-        logmsg(LOG_DEBUG, "resolving multicast address");
-        if (getaddrinfo(addr, port, &hints, &castaddr) != 0) {
+	if (net_multicast_getaddrinfo(addr, port) != 0) {
                 goto net_multicast_init_fail;
         }
 
@@ -63,6 +58,16 @@ net_multicast_init_fail:
 	print_error(e, errsv, "net_multicast_init");
 	config_free();
 	_exit(e);
+}
+
+int net_multicast_getaddrinfo(const char *node, const char *service)
+{
+	struct addrinfo hints = { 0 };
+        hints.ai_family = AF_UNSPEC;
+        hints.ai_socktype = SOCK_DGRAM;
+        hints.ai_flags = AI_NUMERICHOST;
+        logmsg(LOG_DEBUG, "resolving multicast address");
+        return getaddrinfo(node, service, &hints, &castaddr);
 }
 
 int net_multicast_send(char *msg)
