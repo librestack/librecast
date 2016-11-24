@@ -5,7 +5,8 @@
 int net_multicast_init();
 
 /* resolve multicast address. call net_free() when done */
-int net_multicast_getaddrinfo(const char *node, const char *service);
+int net_multicast_getaddrinfo(const char *node, const char *service,
+		struct addrinfo **res);
 
 /* send multicast message */
 int net_multicast_send(char *msg);
