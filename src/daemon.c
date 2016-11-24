@@ -56,6 +56,8 @@ int main(int argc, char **argv)
 	/* start controller process */
 	controller_start(lockfd);
 
+	main_free();
+
 	return 0;
 
 main_fail:
