@@ -38,6 +38,7 @@ void controller_start(int lockfd)
 	config_print(lockfd);
 
 	net_multicast_init();
+	net_multicast_listen();
 
 	for (;;) {
 		/* do stuff here */
