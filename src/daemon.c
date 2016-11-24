@@ -23,6 +23,11 @@ int main(int argc, char **argv)
 		goto main_fail;
 	}
 
+	/* initialize config mutex */
+	if (pthread_mutex_init(&config_mutex, NULL) != 0) {
+		goto main_fail;
+	}
+
 	/* set config defaults, before overriding them with any options */
 	config_defaults();
 
@@ -63,5 +68,6 @@ main_fail:
 void main_free()
 {
 	config_free();
+	pthread_mutex_destroy(&config_mutex);
 	net_free();
 }

@@ -1,6 +1,9 @@
 #ifndef __LIBRECAST_CONFIG_H__
 #define __LIBRECAST_CONFIG_H__ 1
 
+#include <pthread.h>
+pthread_mutex_t config_mutex;
+
 typedef enum {
 	CONFIG_TYPE_INVALID,
 	CONFIG_TYPE_BOOL,
@@ -41,6 +44,9 @@ void config_free();
 /* get a config value by name */
 void * config_get(char *key);
 
+/* lock config mutex */
+int config_lock();
+
 /* get a numeric config value by name */
 long long config_get_num(char * key);
 
@@ -67,6 +73,9 @@ int config_set_num(char *key, long long llval);
 
 /* lookup type of config item */
 config_type_t config_type(char *k);
+
+/* unlock config mutex */
+int config_unlock();
 
 /* drop all matching config options from loaded config */
 int config_unset(char *key);

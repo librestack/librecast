@@ -46,6 +46,7 @@ CONFIG_DEFAULTS(X)
 
 void config_free()
 {
+	config_lock();
 	keyval_t *c = config;
 	keyval_t *n;
 	while (c != '\0') {
@@ -56,17 +57,25 @@ void config_free()
 		free (n);
 	}
 	config = '\0';
+	config_unlock();
 }
 
 void * config_get(char *key)
 {
+	config_lock();
 	keyval_t *c = config;
 	while (c != '\0') {
 		if (strcmp(key, c->key) == 0)
 			return c->val;
 		c = c->next;
 	}
+	config_unlock();
 	return NULL;
+}
+
+int config_lock()
+{
+	return pthread_mutex_lock(&config_mutex);
 }
 
 long long config_get_num(char * key)
@@ -162,6 +171,7 @@ int config_read(char *configfile)
 	}
 
 	/* read line by line */
+	config_lock();
 	while (fgets(line, LINE_MAX, fd) != NULL) {
 		lc++;
 		if ((e = config_process_line(line))) {
@@ -169,6 +179,7 @@ int config_read(char *configfile)
 			goto config_read_done;
 		}
 	}
+	config_unlock();
 
 config_read_done:
 	/* tidy up */
@@ -180,11 +191,15 @@ config_read_done:
 int config_reload()
 {
 	char *configfile;
+
+	config_lock();
 	configfile = strdup(config_get("configfile"));
 	config_free();
 	config_defaults();
 	config_read(configfile);
 	free(configfile);
+	config_unlock();
+
 	return 0;
 }
 
@@ -222,6 +237,7 @@ int config_set(char *key, void *val)
 		return ERROR_CONFIG_INVALID;
 
 	/* set value */
+	config_lock();
 	config_unset(key);
 	while (c != '\0') {
 		p = c;
@@ -234,6 +250,8 @@ int config_set(char *key, void *val)
 		config = n;
 	else
 		p->next = n;
+
+	config_unlock();
 
 	return 0;
 }
@@ -261,11 +279,17 @@ config_type_t config_type(char *key)
 	return CONFIG_TYPE_INVALID;
 }
 
+int config_unlock()
+{
+	return pthread_mutex_unlock(&config_mutex);
+}
+
 int config_unset(char *key)
 {
 	int i = 0;
 	keyval_t *c = config;
 	keyval_t *p = c;
+	config_lock();
 	while (c != '\0') {
 		if (strcmp(c->key, key) == 0) {
 			i++;
@@ -279,6 +303,7 @@ int config_unset(char *key)
 		p = c;
 		c = c->next;
 	}
+	config_unlock();
 	logmsg(LOG_DEBUG, "unset %i instances of %s", i, key);
 
 	return i;
