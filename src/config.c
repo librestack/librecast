@@ -65,8 +65,10 @@ void * config_get(char *key)
 	config_lock();
 	keyval_t *c = config;
 	while (c != '\0') {
-		if (strcmp(key, c->key) == 0)
+		if (strcmp(key, c->key) == 0) {
+			config_unlock();
 			return c->val;
+		}
 		c = c->next;
 	}
 	config_unlock();
@@ -171,7 +173,6 @@ int config_read(char *configfile)
 	}
 
 	/* read line by line */
-	config_lock();
 	while (fgets(line, LINE_MAX, fd) != NULL) {
 		lc++;
 		if ((e = config_process_line(line))) {
@@ -179,7 +180,6 @@ int config_read(char *configfile)
 			goto config_read_done;
 		}
 	}
-	config_unlock();
 
 config_read_done:
 	/* tidy up */
@@ -237,8 +237,8 @@ int config_set(char *key, void *val)
 		return ERROR_CONFIG_INVALID;
 
 	/* set value */
-	config_lock();
 	config_unset(key);
+	config_lock();
 	while (c != '\0') {
 		p = c;
 		c = c->next;
@@ -293,7 +293,6 @@ int config_unset(char *key)
 	while (c != '\0') {
 		if (strcmp(c->key, key) == 0) {
 			i++;
-			logmsg(LOG_DEBUG, "unsetting %s", key);
 			p->next = c->next;
 			free(c->key);
 			free(c->val);
