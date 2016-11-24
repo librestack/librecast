@@ -54,6 +54,9 @@ int config_process_line(char *line);
 /* read and process a configuration file. Return 0 or error */
 int config_read();
 
+/* reload configuration file */
+int config_reload();
+
 /* set a config key/value pair.  Returns 0 or error code */
 int config_set(char *key, void *val);
 

@@ -55,6 +55,7 @@ void config_free()
 		free (n->val);
 		free (n);
 	}
+	config = '\0';
 }
 
 void * config_get(char *key)
@@ -174,6 +175,17 @@ config_read_done:
 	fclose(fd);
 
 	return e;
+}
+
+int config_reload()
+{
+	char *configfile;
+	configfile = strdup(config_get("configfile"));
+	config_free();
+	config_defaults();
+	config_read(configfile);
+	free(configfile);
+	return 0;
 }
 
 int config_set(char *key, void *val)

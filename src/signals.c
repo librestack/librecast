@@ -16,7 +16,7 @@ int sighandlers()
 
 void sighup_handler (int signo)
 {
-	// do nothing, yet
+	config_reload();
 }
 
 void sigint_handler (int signo)
