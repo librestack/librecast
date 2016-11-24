@@ -13,7 +13,7 @@ void logmsg(int level, char *msg, ...)
 	int loglevel;
 
 	loglevel = (int) config_get_num("loglevel");
-	if (loglevel < level)
+	if ((loglevel & level) != level)
 		return;
 
 	va_start(argp, msg);
