@@ -13,7 +13,7 @@ typedef enum {
 	X("loglevel", CONFIG_TYPE_INT, "127", "logging level") \
 	X("daemon", CONFIG_TYPE_BOOL, "0", "run as daemon") \
 	X("dropprivs", CONFIG_TYPE_BOOL, "1", "drop root privileges") \
-	X("castaddr", CONFIG_TYPE_INT, "ff15::1", "multicast addr") \
+	X("castaddr", CONFIG_TYPE_STRING, "ff15::1", "multicast addr") \
 	X("castport", CONFIG_TYPE_INT, "4242", "multicast port")
 #undef X
 
