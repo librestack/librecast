@@ -1,8 +1,6 @@
 #ifndef __LIBRECAST_NET_H__
 #define __LIBRECAST_NET_H__ 1
 
-//#include <sys/types.h>
-//#include <sys/socket.h>
 #include <netdb.h>
 
 /* prepare multicast socket for sending */
