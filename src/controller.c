@@ -8,6 +8,7 @@
 #include "controller.h"
 #include "errors.h"
 #include "log.h"
+#include "net.h"
 
 void controller_start(int lockfd)
 {
@@ -36,11 +37,15 @@ void controller_start(int lockfd)
 	/* dump config to pidfile */
 	config_print(lockfd);
 
+	net_multicast_init();
 
 	for (;;) {
 		/* do stuff here */
+		net_multicast_send("ping");
+		sleep(2);
 	}
 
+	/* never reached */
 	config_free();
 
 	return;
