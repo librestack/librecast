@@ -47,6 +47,7 @@ int main(int argc, char **argv)
 		if (errsv == ESRCH) {
 			e = ERROR_DAEMON_STOPPED;
 			logmsg(LOG_ERROR, error_msg(e));
+			config_free();
 			return e;
 		}
 		goto main_fail;
@@ -55,5 +56,6 @@ int main(int argc, char **argv)
 main_fail:
 	errsv = errno;
 	print_error(e, errsv, "main");
+	config_free();
 	return 0;
 }
