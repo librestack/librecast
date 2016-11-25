@@ -71,7 +71,7 @@ int net_multicast_getaddrinfo(const char *node, const char *service,
         return getaddrinfo(node, service, &hints, res);
 }
 
-int net_multicast_listen()
+void *net_multicast_listen()
 {
 	int e = 0, errsv;
 	struct addrinfo *res;
@@ -128,6 +128,7 @@ int net_multicast_listen()
 		int l;
 
 		if ((l = recvfrom(sock, recv, sizeof(recv)-1, 0, NULL, 0)) < 0){
+			e = ERROR_NET_RECV;
 			goto net_multicast_listen_fail;
 		}
 		recv[l] = '\0';
@@ -136,13 +137,13 @@ int net_multicast_listen()
 				ctime(&timer), recv);
 	}
 
-	return 0;
+	pthread_exit(&e);
 
 net_multicast_listen_fail:
 	errsv = errno;
 	print_error(e, errsv, "net_multicast_listen");
 	config_free();
-	_exit(e);
+	pthread_exit(&e);
 }
 
 int net_multicast_send(char *msg)
@@ -167,6 +168,8 @@ net_multicast_send_fail:
 
 int net_free()
 {
-	freeaddrinfo(castaddr);
+	if (castaddr != NULL)
+		freeaddrinfo(castaddr);
+	castaddr = NULL;
 	return 0;
 }

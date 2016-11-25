@@ -20,7 +20,8 @@
 	X(13, ERROR_MALLOC,             "Memory allocation error")            \
 	X(14, ERROR_INVALID_ARGS,       "Invalid command line options")       \
 	X(15, ERROR_DAEMON_STOPPED,     "Daemon not running")                 \
-	X(16, ERROR_NET_SEND,           "Error sending data")
+	X(16, ERROR_NET_SEND,           "Error sending data")                 \
+	X(17, ERROR_NET_RECV,           "Error receiving data")
 
 #define ERROR_MSG(code, name, msg) case code: return msg;
 #define ERROR_ENUM(code, name, msg) name = code,

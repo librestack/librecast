@@ -1,6 +1,6 @@
 #define _GNU_SOURCE
-
 #include <errno.h>
+#include <stdlib.h>
 #include <sys/file.h>
 #include <unistd.h>
 #include "config.h"
@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 	/* start controller process */
 	controller_start(lockfd);
 
-	/* not reached */
+	/* not reached unless all controller threads ever exit, uncancelled */
 	main_free();
 
 	return 0;
@@ -70,6 +70,7 @@ main_fail:
 
 void main_free()
 {
+	controller_shutdown();
 	config_free();
 	pthread_mutex_destroy(&config_mutex);
 	net_free();

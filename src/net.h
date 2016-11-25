@@ -11,7 +11,7 @@ int net_multicast_getaddrinfo(const char *node, const char *service,
 		struct addrinfo **res);
 
 /* bind and listen to multicast address */
-int net_multicast_listen();
+void *net_multicast_listen();
 
 /* send multicast message */
 int net_multicast_send(char *msg);

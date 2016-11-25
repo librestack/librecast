@@ -28,7 +28,6 @@ void sigint_handler (int signo)
 void sigterm_handler (int signo)
 {
 	main_free();
-	_exit(EXIT_SUCCESS);
 }
 
 int signal_daemon (int signal, int lockfd)
