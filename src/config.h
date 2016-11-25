@@ -18,7 +18,9 @@ typedef enum {
 	X("dropprivs", CONFIG_TYPE_BOOL, "1", "drop root privileges") \
 	X("pingtext", CONFIG_TYPE_STRING, "ping", "text for test messages") \
 	X("castaddr", CONFIG_TYPE_STRING, "ff15::1", "multicast addr") \
-	X("castport", CONFIG_TYPE_INT, "4242", "multicast port")
+	X("castport", CONFIG_TYPE_INT, "4242", "multicast port") \
+	X("loop", CONFIG_TYPE_INT, "1", "multicast loopback") \
+	X("ttl", CONFIG_TYPE_INT, "1", "multicast ttl")
 #undef X
 
 /* lower and upper bounds on numeric config types */

@@ -5,7 +5,7 @@ DAEMON=${PROGRAM}d
 CLIENT=${PROGRAM}ctl
 LIBS=-pthread
 DAEMON_OBJECTS=daemon.o args.o config.o controller.o errors.o log.o misc.o net.o pid.o signals.o
-CLIENT_OBJECTS=client.o args.o config.o errors.o log.o misc.o pid.o signals.o
+CLIENT_OBJECTS=client.o args.o config.o errors.o log.o misc.o pid.o
 
 all: ${DAEMON} ${CLIENT}
 

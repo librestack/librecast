@@ -16,7 +16,6 @@ int main(int argc, char **argv)
 {
 	int e, errsv;
 	int lockfd;
-	int signal = 0;
 
 	e = sighandlers();
 	if (e != 0) {
@@ -43,10 +42,6 @@ int main(int argc, char **argv)
 		goto main_fail;
 	}
 	else if (flock(lockfd, LOCK_EX|LOCK_NB) != 0) {
-		if (signal != 0) {
-			e = signal_daemon(signal, lockfd);
-			_exit(e);
-		}
 		e = ERROR_ALREADY_RUNNING;
 		goto main_fail;
 	}

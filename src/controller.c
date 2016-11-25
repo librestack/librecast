@@ -13,6 +13,11 @@
 
 pthread_t tid[2];
 
+void controller_join_all()
+{
+	CONTROLLER_THREADS(CONTROLLER_THREADS_JOIN)
+}
+
 void * controller_ping()
 {
 	for (;;) {
@@ -20,6 +25,11 @@ void * controller_ping()
 		net_multicast_send(msg);
 		sleep(2);
 	}
+}
+
+void controller_reload()
+{
+	net_multicast_setoptions();
 }
 
 void controller_thread_join(int id, char *desc)
@@ -83,9 +93,4 @@ void * controller_f(int thread)
 		default:
 			return NULL;
 	}
-}
-
-void controller_join_all()
-{
-	CONTROLLER_THREADS(CONTROLLER_THREADS_JOIN)
 }

@@ -17,9 +17,11 @@ enum {
 	CONTROLLER_THREADS(CONTROLLER_THREADS_ENUM)
 };
 
+void controller_join_all();
+void *controller_ping();
+void controller_reload();
 void controller_shutdown();
 void controller_start(int lockfd);
-void controller_join_all();
 void controller_thread_join(int id, char *desc);
 
 #endif /* __LIBRECAST_CONTROLLER_H__ */

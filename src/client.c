@@ -1,12 +1,31 @@
 #include <fcntl.h>
+#include <unistd.h>
+#include <signal.h>
+#include <stdio.h>
 #include <string.h>
 #include "main.h"
+#include "client.h"
 #include "config.h"
 #include "errors.h"
 #include "args.h"
 #include "log.h"
 #include "pid.h"
-#include "signals.h"
+
+int signal_daemon (int signal, int lockfd)
+{
+        char buf[sizeof(long)] = "";
+        long pid;
+
+        if (pread(lockfd, &buf, sizeof(buf), 1) == -1) {
+                return ERROR_PID_READFAIL;
+        }
+        if (sscanf(buf, "%li", &pid) == 1) {
+                return kill(pid, signal);
+        }
+        else {
+                return ERROR_PID_INVALID;
+        }
+}
 
 int main(int argc, char **argv)
 {

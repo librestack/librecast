@@ -16,6 +16,9 @@ void *net_multicast_listen();
 /* send multicast message */
 int net_multicast_send(char *msg);
 
+/* set multicast socket options */
+int net_multicast_setoptions();
+
 /* free memory */
 int net_free();
 
