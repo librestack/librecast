@@ -2,14 +2,13 @@
 #include <errno.h>
 #include <net/if.h>
 #include <netinet/in.h>
-#include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <time.h>
 #include <unistd.h>
 #include "config.h"
 #include "errors.h"
+#include "handler.h"
 #include "log.h"
 #include "net.h"
 
@@ -109,7 +108,6 @@ void *net_multicast_listen()
 	freeaddrinfo(res);
 
 	for (;;) {
-		time_t timer;
 		char recv[1024];
 		int l;
 
@@ -118,9 +116,7 @@ void *net_multicast_listen()
 			goto net_multicast_listen_fail;
 		}
 		recv[l] = '\0';
-		time(&timer);
-		printf("%.*s : %s\n", (int)strlen(ctime(&timer)) - 1,
-				ctime(&timer), recv);
+		handler_handle_request(recv);
 	}
 
 	pthread_exit(&e);

@@ -5,7 +5,7 @@ DAEMON=${PROGRAM}d
 CLIENT=${PROGRAM}ctl
 LIBS=-pthread
 COMMON_OBJECTS=args.o config.o errors.o log.o misc.o pid.o
-DAEMON_OBJECTS=${COMMON_OBJECTS} daemon.o commands.o controller.o net.o signals.o
+DAEMON_OBJECTS=${COMMON_OBJECTS} daemon.o commands.o controller.o handler.o net.o signals.o
 CLIENT_OBJECTS=${COMMON_OBJECTS} client.o
 
 all: ${DAEMON} ${CLIENT}
@@ -36,6 +36,9 @@ controller.o: controller.h controller.c
 
 errors.o: errors.h errors.c
 	${CC} ${CCOPTS} -c errors.c ${LIBS}
+
+handler.o: handler.h handler.c
+	${CC} ${CCOPTS} -c handler.c ${LIBS}
 
 log.o: log.h log.c
 	${CC} ${CCOPTS} -c log.c ${LIBS}
