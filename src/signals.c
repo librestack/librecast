@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "config.h"
+#include "commands.h"
 #include "controller.h"
 #include "errors.h"
 #include "main.h"
@@ -18,16 +19,15 @@ int sighandlers()
 
 void sighup_handler (int signo)
 {
-	config_reload();
-	controller_reload();
+	command_reload();
 }
 
 void sigint_handler (int signo)
 {
-	sigterm_handler(signo);
+	command_stop();
 }
 
 void sigterm_handler (int signo)
 {
-	main_free();
+	command_stop();
 }

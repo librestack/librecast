@@ -4,8 +4,9 @@ PROGRAM=librecast
 DAEMON=${PROGRAM}d
 CLIENT=${PROGRAM}ctl
 LIBS=-pthread
-DAEMON_OBJECTS=daemon.o args.o config.o controller.o errors.o log.o misc.o net.o pid.o signals.o
-CLIENT_OBJECTS=client.o args.o config.o errors.o log.o misc.o pid.o
+COMMON_OBJECTS=args.o config.o errors.o log.o misc.o pid.o
+DAEMON_OBJECTS=${COMMON_OBJECTS} daemon.o commands.o controller.o net.o signals.o
+CLIENT_OBJECTS=${COMMON_OBJECTS} client.o
 
 all: ${DAEMON} ${CLIENT}
 
@@ -23,6 +24,9 @@ daemon.o: main.h daemon.c
 
 args.o: args.h args.c
 	${CC} ${CCOPTS} -c args.c ${LIBS}
+
+commands.o: commands.h commands.c
+	${CC} ${CCOPTS} -c commands.c ${LIBS}
 
 config.o: config.h config.c
 	${CC} ${CCOPTS} -c config.c ${LIBS}
