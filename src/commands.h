@@ -17,6 +17,7 @@ enum {
 	        COMMAND_CODES(COMMAND_CODES_ENUM)
 };
 
+char *command_cmd(int code);
 int command_noop();
 int command_reload();
 int command_stop();

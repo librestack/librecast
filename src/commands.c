@@ -3,6 +3,14 @@
 #include "controller.h"
 #include "main.h"
 
+char *command_cmd(int code)
+{
+	switch (code) {
+		COMMAND_CODES(COMMAND_CMD)
+	}
+	return '\0';
+}
+
 int command_noop()
 {
 	return 0;

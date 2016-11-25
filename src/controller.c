@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
@@ -5,6 +6,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include "commands.h"
 #include "config.h"
 #include "controller.h"
 #include "errors.h"
@@ -21,9 +23,12 @@ void controller_join_all()
 void * controller_ping()
 {
 	for (;;) {
-		char *msg = config_get("pingtext");
+		char *msg;
+		int cmd = CMD_PING;
+		asprintf(&msg, "%i", cmd);
 		net_multicast_send(msg);
-		sleep(2);
+		free(msg);
+		sleep(1);
 	}
 }
 

@@ -1,14 +1,27 @@
 #include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <time.h>
+#include "commands.h"
+#include "errors.h"
+#include "log.h"
 
 int handler_handle_request(char *req)
 {
-	time_t timer;
+	int e;
+	long code;
+	char *nptr;
+	char *cmd;
 
-	time(&timer);
-	printf("%.*s : %s\n", (int)strlen(ctime(&timer)) - 1, ctime(&timer), req);
+	code = strtol(req, &nptr, 10);
+	if (nptr != '\0') {
+		e = ERROR_CMD_INVALID;
+		print_error(e, 0, req);
+	}
+	else {
+		cmd = command_cmd(code);
+		logmsg(LOG_DEBUG, "%s", cmd);
+	}
 
-	return 0;
+	return e;
 }

@@ -22,7 +22,8 @@
 	X(15, ERROR_DAEMON_STOPPED,     "Daemon not running")                 \
 	X(16, ERROR_NET_SEND,           "Error sending data")                 \
 	X(17, ERROR_NET_RECV,           "Error receiving data")               \
-	X(18, ERROR_NET_SOCKOPT,        "Error setting socket options")
+	X(18, ERROR_NET_SOCKOPT,        "Error setting socket options")       \
+	X(19, ERROR_CMD_INVALID,        "Invalid Command received")
 
 #define ERROR_MSG(code, name, msg) case code: return msg;
 #define ERROR_ENUM(code, name, msg) name = code,
