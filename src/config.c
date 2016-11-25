@@ -192,13 +192,11 @@ int config_reload()
 {
 	char *configfile;
 
-	config_lock();
 	configfile = strdup(config_get("configfile"));
 	config_free();
 	config_defaults();
 	config_read(configfile);
 	free(configfile);
-	config_unlock();
 
 	return 0;
 }
