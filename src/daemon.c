@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 
 	/* read config */
 	if ((e = config_read(NULL)))
-		goto main_fail;
+		logmsg(LOG_WARNING, "Unable to read config file.  Skipping");
 
 	/* obtain lockfile, but don't write pid until after we fork() */
 	lockfd = obtain_lockfile(O_RDWR | O_CREAT | O_TRUNC);
