@@ -1,7 +1,9 @@
 #include "commands.h"
 #include "config.h"
 #include "controller.h"
+#include "errors.h"
 #include "main.h"
+#include "log.h"
 
 char *command_cmd(int code)
 {
@@ -10,6 +12,9 @@ char *command_cmd(int code)
 	}
 	return '\0';
 }
+
+/*****************************************************************************/
+/* remote commands                                                           */
 
 int command_noop()
 {
@@ -31,6 +36,7 @@ int command_stop()
 
 int command_ping()
 {
+	logmsg(LOG_DEBUG, "PING");
 	return 0;
 }
 
@@ -38,3 +44,5 @@ int command_time()
 {
 	return 0;
 }
+
+/*****************************************************************************/

@@ -9,7 +9,7 @@
 	X(8,    CMD_TIME,       "TIME",         "Request time", command_time)
 #undef X
 
-#define COMMAND_FUNC(code, name, cmd, desc, f) case code: return f;
+#define COMMAND_FUNC(code, name, cmd, desc, f) case code: f(); break;
 #define COMMAND_CMD(code, name, cmd, desc, f) case code: return cmd;
 #define COMMAND_DESC(code, name, cmd, desc, f) case code: return desc;
 #define COMMAND_CODES_ENUM(code, name, cmd, desc, f) name = code,
@@ -18,10 +18,16 @@ enum {
 };
 
 char *command_cmd(int code);
+
+/*****************************************************************************/
+/* remote commands                                                           */
+
 int command_noop();
 int command_reload();
 int command_stop();
 int command_ping();
 int command_time();
+
+/*****************************************************************************/
 
 #endif /* __LIBRECAST_COMMANDS_H__ */

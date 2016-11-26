@@ -15,6 +15,25 @@
 int sock;
 struct addrinfo *castaddr;
 
+int net_free()
+{
+	if (castaddr != NULL)
+		freeaddrinfo(castaddr);
+	castaddr = NULL;
+	return 0;
+}
+
+int net_multicast_getaddrinfo(const char *node, const char *service,
+		struct addrinfo **res)
+{
+	struct addrinfo hints = { 0 };
+        hints.ai_family = AF_UNSPEC;
+        hints.ai_socktype = SOCK_DGRAM;
+        hints.ai_flags = AI_NUMERICHOST;
+        logmsg(LOG_DEBUG, "resolving multicast address");
+        return getaddrinfo(node, service, &hints, res);
+}
+
 int net_multicast_init()
 {
 	int e = 0, errsv;
@@ -43,17 +62,6 @@ net_multicast_init_fail:
 	print_error(e, errsv, "net_multicast_init");
 	config_free();
 	_exit(e);
-}
-
-int net_multicast_getaddrinfo(const char *node, const char *service,
-		struct addrinfo **res)
-{
-	struct addrinfo hints = { 0 };
-        hints.ai_family = AF_UNSPEC;
-        hints.ai_socktype = SOCK_DGRAM;
-        hints.ai_flags = AI_NUMERICHOST;
-        logmsg(LOG_DEBUG, "resolving multicast address");
-        return getaddrinfo(node, service, &hints, res);
 }
 
 void *net_multicast_listen()
@@ -151,13 +159,13 @@ int net_multicast_setoptions()
 	return e;
 }
 
-int net_multicast_send(char *msg)
+int net_multicast_send(char *msg, size_t len)
 {
 	int e = 0, errsv;
 
 	logmsg(LOG_DEBUG, "Sending datagram");
-	if (sendto(sock, msg, sizeof(char) * strlen(msg) + 1, 0,
-				castaddr->ai_addr, castaddr->ai_addrlen) < 0)
+	if (sendto(sock, msg, len, 0, castaddr->ai_addr, castaddr->ai_addrlen) <
+			0)
 	{
 		goto net_multicast_send_fail;
 	}
@@ -171,10 +179,31 @@ net_multicast_send_fail:
 	return ERROR_NET_SEND;
 }
 
-int net_free()
+
+void net_pack(net_header_t h, char buf[16])
 {
-	if (castaddr != NULL)
-		freeaddrinfo(castaddr);
-	castaddr = NULL;
-	return 0;
+	uint32_t i32;
+	uint64_t i64;
+	static uint32_t seq = 0;
+
+	h.seq = seq++;
+	i32 = htonl(h.seq);
+	memcpy(buf+0, &i32, 4);
+	i64 = htonll(h.timestamp);
+	memcpy(buf+4, &i64, 8);
+	i32 = htonl(h.cmd);
+	memcpy(buf+12, &i32, 4);
+}
+
+void net_unpack(net_header_t *h, char buf[16])
+{
+	uint32_t i32;
+	uint64_t i64;
+
+	memcpy(&i32, buf+0, 4);
+	h->seq = ntohl(i32);
+	memcpy(&i64, buf+4, 8);
+	h->timestamp = ntohll(i64);
+	memcpy(&i32, buf+12, 4);
+	h->cmd = ntohl(i32);
 }
