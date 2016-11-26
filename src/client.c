@@ -56,19 +56,18 @@ int main(int argc, char **argv)
 		goto main_fail;
 	}
 
-	if (strcmp(argv[1], "stop") == 0)
-		signal = SIGINT;
-	else if (strcmp(argv[1], "reload") == 0)
-		signal = SIGHUP;
-	if (signal_daemon(signal, lockfd) != 0) {
-		errsv = errno;
-		if (errsv == ESRCH) {
-			e = ERROR_DAEMON_STOPPED;
-			logmsg(LOG_ERROR, error_msg(e));
-			config_free();
-			return e;
+	signal = args_signal(argv[1]);
+	if (signal) {
+		if (signal_daemon(signal, lockfd) != 0) {
+			errsv = errno;
+			if (errsv == ESRCH) {
+				e = ERROR_DAEMON_STOPPED;
+				logmsg(LOG_ERROR, error_msg(e));
+				config_free();
+				return e;
+			}
+			goto main_fail;
 		}
-		goto main_fail;
 	}
 
 main_fail:

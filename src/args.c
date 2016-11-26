@@ -31,8 +31,12 @@ int args_process_arg(char *arg)
 		return ERROR_INVALID_ARGS;
 	}
 
-	ARGS_ARGS(ARGS_FUNC)
+	return 0;
+}
 
+int args_signal(char *arg)
+{
+	ARGS_ARGS(ARGS_SIGNAL)
 	return 0;
 }
 
