@@ -23,13 +23,12 @@ void controller_join_all()
 void * controller_ping()
 {
 	char msg[16];
-	net_header_t h, hh;
+	net_header_t h;
 
 	h.cmd = CMD_PING;
 	for (;;) {
 		net_pack(h, msg);
-		net_unpack(&hh, msg);
-		printf("sending %i: %li %i\n", hh.seq, hh.timestamp, hh.cmd);
+		logmsg(LOG_DEBUG, "sending %i: %li %i\n", h.seq, h.timestamp, h.cmd);
 		net_multicast_send(msg, 16);
 		sleep(1);
 	}
