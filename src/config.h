@@ -12,7 +12,7 @@ typedef enum {
 } config_type_t;
 
 #define CONFIG_DEFAULTS(X) \
-	X("configfile", CONFIG_TYPE_STRING, "/etc/librecast.conf", "path to config file") \
+	X("configfile", CONFIG_TYPE_STRING, config_filename(), "path to config file") \
 	X("loglevel", CONFIG_TYPE_INT, "127", "logging level") \
 	X("daemon", CONFIG_TYPE_BOOL, "0", "run as daemon") \
 	X("dropprivs", CONFIG_TYPE_BOOL, "1", "drop root privileges") \
@@ -40,6 +40,9 @@ int config_bool_convert(char *val, long long *llval);
 /* set configuration defaults, before overriding with any options or reading
  * a configuration file */
 void config_defaults();
+
+/* get config filename */
+char * config_filename();
 
 /* free config memory */
 void config_free();

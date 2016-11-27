@@ -4,9 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "config.h"
 #include "errors.h"
 #include "log.h"
+#include "main.h"
 
 typedef struct keyval_t {
 	char *key;
@@ -44,6 +46,22 @@ CONFIG_DEFAULTS(X)
 #undef X
 }
 
+char * config_filename()
+{
+	char *filename;
+
+	if (geteuid() == 0) {
+		/* we are root */
+		asprintf(&filename, "/etc/%s.conf", PROGRAM_NAME);
+	}
+        else {
+		/* not root, use config in user home */
+	        asprintf(&filename, "%s/.%s.conf", getenv("HOME"), PROGRAM_NAME);
+	}
+
+        return filename;
+}
+
 void config_free()
 {
 	config_lock();
@@ -75,11 +93,6 @@ void * config_get(char *key)
 	return NULL;
 }
 
-int config_lock()
-{
-	return pthread_mutex_lock(&config_mutex);
-}
-
 long long config_get_num(char * key)
 {
 	char *val;
@@ -96,6 +109,11 @@ long long config_get_num(char * key)
 	llval = strtoll(val, NULL, 10);
 
 	return llval;
+}
+
+int config_lock()
+{
+	return pthread_mutex_lock(&config_mutex);
 }
 
 long long config_min(char *key)
