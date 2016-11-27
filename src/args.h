@@ -6,7 +6,8 @@
 #define ARGS_ARGS(X) \
 	X("stop", "stop the daemon", SIGINT) \
 	X("reload", "reload daemon configuration", SIGHUP) \
-	X("status", "report status of daemon", 0)
+	X("status", "report status of daemon", 0) \
+	X("cmd", "send command to daemon", 0)
 #undef X
 
 #define ARGS_ARG(name, desc, signal) if (strcmp(arg, name) == 0) return 1;

@@ -187,6 +187,7 @@ void net_pack(net_header_t h, char buf[16])
 	static uint32_t seq = 0;
 
 	h.seq = seq++;
+	h.timestamp = 0;
 	i32 = htonl(h.seq);
 	memcpy(buf+0, &i32, 4);
 	i64 = htonll(h.timestamp);

@@ -4,7 +4,7 @@ PROGRAM=librecast
 DAEMON=${PROGRAM}d
 CLIENT=lctl
 LIBS=-pthread
-COMMON_OBJECTS=args.o config.o errors.o log.o misc.o pid.o
+COMMON_OBJECTS=args.o config.o errors.o log.o misc.o pid.o socket.o
 DAEMON_OBJECTS=${COMMON_OBJECTS} daemon.o commands.o controller.o handler.o net.o signals.o
 CLIENT_OBJECTS=${COMMON_OBJECTS} client.o
 
@@ -54,6 +54,9 @@ pid.o: pid.h pid.c
 
 signals.o: signals.h signals.c
 	${CC} ${CCOPTS} -c signals.c ${LIBS}
+
+socket.o: socket.h socket.c
+	${CC} ${CCOPTS} -c socket.c ${LIBS}
 
 .PHONY: clean leakcheck
 

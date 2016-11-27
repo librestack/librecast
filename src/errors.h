@@ -23,7 +23,9 @@
 	X(16, ERROR_NET_SEND,           "Error sending data")                 \
 	X(17, ERROR_NET_RECV,           "Error receiving data")               \
 	X(18, ERROR_NET_SOCKOPT,        "Error setting socket options")       \
-	X(19, ERROR_CMD_INVALID,        "Invalid Command received")
+	X(19, ERROR_CMD_INVALID,        "Invalid Command received")           \
+	X(20, ERROR_SOCKET_CREATE,      "Unable to create unix socket")       \
+	X(21, ERROR_SOCKET_CONNECT,     "Unable to connect to unix socket")
 
 #define ERROR_MSG(code, name, msg) case code: return msg;
 #define ERROR_ENUM(code, name, msg) name = code,

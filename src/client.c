@@ -10,6 +10,7 @@
 #include "args.h"
 #include "log.h"
 #include "pid.h"
+#include "socket.h"
 
 int signal_daemon (int signal, int lockfd)
 {
@@ -33,14 +34,13 @@ int main(int argc, char **argv)
 	int lockfd;
 	int signal;
 
-	config_set_num("loglevel", 15);
+	config_set_num("loglevel", 127);
 
 	if ((e = args_process(argc, argv)) != 0) {
 		goto main_fail;
 	}
 
-	lockfd = obtain_lockfile(O_RDONLY);
-	if (lockfd == -1) {
+	if ((lockfd = obtain_lockfile(O_RDONLY)) == -1) {
 		errno = 0;
 		e = ERROR_PID_OPEN;
 		goto main_fail;
@@ -58,6 +58,7 @@ int main(int argc, char **argv)
 
 	signal = args_signal(argv[1]);
 	if (signal) {
+		/* signal daemon */
 		if (signal_daemon(signal, lockfd) != 0) {
 			errsv = errno;
 			if (errsv == ESRCH) {
@@ -68,6 +69,17 @@ int main(int argc, char **argv)
 			}
 			goto main_fail;
 		}
+	}
+	else {
+		/* connect to local socket for more complex communication */
+		if ((e = socket_connect()) != 0) {
+			errno = 0;
+			goto main_fail;
+		}
+
+		/* TODO - send command & check response */
+
+		socket_close();
 	}
 
 main_fail:

@@ -11,6 +11,7 @@
 #include "net.h"
 #include "pid.h"
 #include "signals.h"
+#include "socket.h"
 
 int main(int argc, char **argv)
 {
@@ -47,6 +48,14 @@ int main(int argc, char **argv)
 	}
 
 	/* open syslogger */
+
+	/* create local client socket */
+	if ((e = socket_bind()) != 0) {
+		errno = 0;
+		goto main_fail;
+	}
+
+	/* TODO: listen to client socket */
 
 	/* start controller process */
 	controller_start(lockfd);

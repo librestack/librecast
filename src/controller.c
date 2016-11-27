@@ -28,7 +28,6 @@ void * controller_ping()
 	h.cmd = CMD_PING;
 	for (;;) {
 		net_pack(h, msg);
-		logmsg(LOG_DEBUG, "sending %i: %li %i\n", h.seq, h.timestamp, h.cmd);
 		net_multicast_send(msg, 16);
 		sleep(1);
 	}

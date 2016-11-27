@@ -23,7 +23,6 @@ char *getlockfilename()
 	        asprintf(&lockfile, "%s/.%s.pid", getenv("HOME"), PROGRAM_NAME);
 	}
 
-
 	return lockfile;
 }
 
