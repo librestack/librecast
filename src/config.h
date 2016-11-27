@@ -16,6 +16,7 @@ typedef enum {
 	X("loglevel", CONFIG_TYPE_INT, "127", "logging level") \
 	X("daemon", CONFIG_TYPE_BOOL, "0", "run as daemon") \
 	X("dropprivs", CONFIG_TYPE_BOOL, "1", "drop root privileges") \
+	X("ping", CONFIG_TYPE_INT, "0", "send a ping every n seconds (default: 0 = never) ") \
 	X("pingtext", CONFIG_TYPE_STRING, "ping", "text for test messages") \
 	X("castaddr", CONFIG_TYPE_STRING, "ff15::1", "multicast addr") \
 	X("castport", CONFIG_TYPE_INT, "4242", "multicast port") \

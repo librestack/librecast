@@ -24,12 +24,15 @@ void * controller_ping()
 {
 	char msg[16];
 	net_header_t h;
+	int delay;
 
+	if ((delay = config_get_num("ping")) == 0)
+		pthread_exit(0);
 	h.cmd = CMD_PING;
 	for (;;) {
 		net_pack(h, msg);
 		net_multicast_send(msg, 16);
-		sleep(1);
+		sleep(delay);
 	}
 }
 
