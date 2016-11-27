@@ -216,8 +216,10 @@ int config_set(char *key, void *val)
 		return ERROR_CONFIG_INVALID;
 	}
 	else if (type == CONFIG_TYPE_BOOL) {
-		if (config_bool_convert(val, &llval) != 0)
+		if (config_bool_convert(val, &llval) != 0) {
+			logmsg(LOG_ERROR, "'%s' not a boolean value", val);
 			return ERROR_CONFIG_BOOLEAN;
+		}
 	}
 	else if (type == CONFIG_TYPE_INT) {
 		/* check proposed value is within upper and lower bounds */

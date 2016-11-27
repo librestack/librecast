@@ -40,6 +40,8 @@ int net_multicast_init()
 	char *addr = config_get("castaddr");
 	char *port = config_get("castport");
 
+        logmsg(LOG_DEBUG, "initializing multicast on %s", addr);
+
 	/* resolve destination address */
 	if (net_multicast_getaddrinfo(addr, port, &castaddr) != 0) {
                 goto net_multicast_init_fail;
@@ -142,14 +144,14 @@ int net_multicast_setoptions()
         int loop = (int)config_get_num("loop");
         int ttl = (int)config_get_num("ttl");
 
-        logmsg(LOG_DEBUG, "setting multicast TTL");
+        logmsg(LOG_DEBUG, "setting multicast TTL=%i", ttl);
         if (setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &ttl,
                                 sizeof(ttl)) != 0)
         {
                 e = ERROR_NET_SOCKOPT;
         }
 
-        logmsg(LOG_DEBUG, "setting multicast loopback");
+        logmsg(LOG_DEBUG, "setting multicast loopback=%i", loop);
         if (setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &loop,
                                 sizeof(loop)) != 0)
         {
