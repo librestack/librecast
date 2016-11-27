@@ -95,6 +95,8 @@ void *net_multicast_listen()
                 goto net_multicast_listen_fail;
 	}
 
+	net_multicast_setoptions();
+
 	/* bind to multicast port */
 	if (bind(sock, localaddr->ai_addr, localaddr->ai_addrlen) != 0) {
                 goto net_multicast_listen_fail;
