@@ -14,7 +14,7 @@ int handler_handle_request(char *req)
 	net_header_t h;
 
 	net_unpack(&h, req);
-	printf("received: %i: %li %i\n", h.seq, h.timestamp, h.cmd);
+	printf("received: %i: %li %i\n", h.seq, (long)h.timestamp, h.cmd);
 	logmsg(LOG_DEBUG, "%s", command_cmd(h.cmd));
 
 	switch(h.cmd) {
