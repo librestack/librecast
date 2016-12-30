@@ -17,6 +17,7 @@ typedef struct keyval_t {
 } keyval_t;
 
 keyval_t *config;
+char filename[LINE_MAX];
 
 int config_bool_convert(char *val, long long *llval)
 {
@@ -48,15 +49,14 @@ CONFIG_DEFAULTS(X)
 
 char * config_filename()
 {
-	char *filename;
 
 	if (geteuid() == 0) {
 		/* we are root */
-		asprintf(&filename, "/etc/%s.conf", PROGRAM_NAME);
+		snprintf(filename, sizeof(filename), "/etc/%s.conf", PROGRAM_NAME);
 	}
         else {
 		/* not root, use config in user home */
-	        asprintf(&filename, "%s/.%s.conf", getenv("HOME"), PROGRAM_NAME);
+	        snprintf(filename, sizeof(filename), "%s/.%s.conf", getenv("HOME"), PROGRAM_NAME);
 	}
 
         return filename;
