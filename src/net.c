@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 #include "config.h"
 #include "errors.h"
@@ -13,7 +14,7 @@
 #include "net.h"
 
 int sock;
-struct addrinfo *castaddr;
+struct addrinfo *castaddr = NULL;
 
 int net_free()
 {
@@ -64,6 +65,16 @@ net_multicast_init_fail:
 	print_error(e, errsv, "net_multicast_init");
 	config_free();
 	_exit(e);
+}
+
+/* Thanks Beej */
+void *get_in_addr(struct sockaddr *sa)
+{
+	if (sa->sa_family == AF_INET) {
+		return &(((struct sockaddr_in*)sa)->sin_addr);
+	}
+
+	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
 void *net_multicast_listen()
@@ -122,21 +133,32 @@ void *net_multicast_listen()
 	for (;;) {
 		char recv[1024];
 		int l;
+		struct sockaddr_storage src_addr;
+		socklen_t addrlen;
+		char s[INET6_ADDRSTRLEN];
 
-		if ((l = recvfrom(sock, recv, sizeof(recv)-1, 0, NULL, 0)) < 0){
+		if ((l = recvfrom(sock, recv, sizeof(recv)-1, 0,
+			(struct sockaddr *)&src_addr, &addrlen)) < 0)
+		{
 			e = ERROR_NET_RECV;
 			goto net_multicast_listen_fail;
 		}
 		recv[l] = '\0';
-		handler_handle_request(recv);
+		inet_ntop(src_addr.ss_family,
+			get_in_addr((struct sockaddr *)&src_addr),
+			s, sizeof s);
+
+		handler_handle_request(recv, s);
 	}
 
+	logmsg(LOG_DEBUG, "Barney");
 	pthread_exit(&e);
 
 net_multicast_listen_fail:
 	errsv = errno;
 	print_error(e, errsv, "net_multicast_listen");
 	config_free();
+	logmsg(LOG_DEBUG, "Fred");
 	pthread_exit(&e);
 }
 
@@ -191,7 +213,7 @@ void net_pack(net_header_t h, char buf[16])
 	static uint32_t seq = 0;
 
 	h.seq = seq++;
-	h.timestamp = 0;
+	h.timestamp = time(NULL);
 	i32 = htonl(h.seq);
 	memcpy(buf+0, &i32, 4);
 	i64 = htonll(h.timestamp);

@@ -1,5 +1,7 @@
 #include <errno.h>
+#include <limits.h>
 #include <stdio.h>
+#include <string.h>
 #include "log.h"
 #include "errors.h"
 
@@ -13,8 +15,12 @@ char *error_msg(int e)
 
 void print_error(int e, int errsv, char *errstr)
 {
-	if (errsv != 0)
-		perror(errstr);
-	else if (e != 0)
+	char buf[LINE_MAX];
+	if (errsv != 0) {
+		strerror_r(errsv, buf, sizeof(buf));
+		logmsg(LOG_SEVERE, "%s: %s", errstr, buf);
+	}
+	else if (e != 0) {
 		logmsg(LOG_SEVERE, "%s: %s", errstr, error_msg(e));
+	}
 }

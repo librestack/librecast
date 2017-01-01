@@ -6,13 +6,18 @@
 #include "errors.h"
 #include "log.h"
 #include "net.h"
+#include "socket.h"
 
-int handler_handle_request(char *req)
+int handler_handle_request(char *req, char *src)
 {
 	int e = 0;
-
 	net_header_t h;
 
+	if (socket_connect() == 0) {
+		logmsg(LOG_DEBUG, "got src: '%s'", src);
+		socket_send(src, strlen(src));
+		socket_close();
+	}
 	net_unpack(&h, req);
 	printf("received: %i: %li %i\n", h.seq, (long)h.timestamp, h.cmd);
 	logmsg(LOG_DEBUG, "%s", command_cmd(h.cmd));

@@ -12,7 +12,9 @@
 #include "main.h"
 #include "socket.h"
 
-int sock;
+#define MAX_UNIX_CLIENTS 8
+
+int s_local;
 char *sockname;
 
 /* initialize local socket */
@@ -20,7 +22,7 @@ static int socket_init();
 
 void socket_close()
 {
-	close(sock);
+	close(s_local);
 }
 
 int socket_bind()
@@ -34,7 +36,7 @@ int socket_bind()
 
 	logmsg(LOG_DEBUG, "binding to unix socket '%s'", sockname);
 	unlink(sockname);
-	if (bind(sock, (struct sockaddr *)&addr, len) != 0) {
+	if (bind(s_local, (struct sockaddr *)&addr, len) != 0) {
 		errsv = errno;
 		print_error(e, errsv, "socket_bind");
 		e = ERROR_SOCKET_CONNECT;
@@ -54,7 +56,7 @@ int socket_connect()
 		return e;
 
 	logmsg(LOG_DEBUG, "connecting to unix socket '%s'", sockname);
-	if (connect(sock, (struct sockaddr *)&addr, len) != 0) {
+	if (connect(s_local, (struct sockaddr *)&addr, len) != 0) {
 		errsv = errno;
 		print_error(e, errsv, "socket_connect");
 		e = ERROR_SOCKET_CONNECT;
@@ -71,16 +73,42 @@ static int socket_init(struct sockaddr_un *addr, size_t *len)
 	errno = 0;
 
 	logmsg(LOG_DEBUG, "creating unix socket");
-	if ((sock = socket(AF_UNIX, SOCK_DGRAM, 0)) == -1) {
+	if ((s_local = socket(AF_UNIX, SOCK_DGRAM, 0)) == -1) {
 		errsv = errno;
 		print_error(e, errsv, "socket_init");
 		return ERROR_SOCKET_CREATE;
 	}
 
-	addr->sun_family = AF_LOCAL;
+	addr->sun_family = AF_UNIX;
 	sockname = getsockfilename();
 	strcpy(addr->sun_path, sockname);
 	*len = sizeof(addr->sun_path) + sizeof(addr->sun_family);
+
+	return 0;
+}
+
+int socket_read(char *buf)
+{
+	int bytes, errsv;
+
+	bytes = recv(s_local, buf, 1024, MSG_DONTWAIT);
+	if (bytes == -1) {
+		errsv = errno;
+		print_error(0, errsv, "socket_read");
+	}
+
+	return bytes;
+}
+
+int socket_send(char *buf, size_t len)
+{
+	int bytes, errsv;
+
+	bytes = send(s_local, buf, len, 0);
+	if (bytes == -1) {
+		errsv = errno;
+		print_error(0, errsv, "socket_send");
+	}
 
 	return 0;
 }

@@ -10,6 +10,12 @@ void socket_close();
 /* connect to unix socket */
 int socket_connect();
 
+/* non-blocking read from socket */
+int socket_read(char *buf);
+
+/* write to all connected local unix sockets */
+int socket_send(char *buf, size_t len);
+
 /* get name of local socket for client <-> daemon comms */
 char *getsockfilename();
 

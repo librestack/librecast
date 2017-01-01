@@ -3,18 +3,23 @@ CCOPTS=-Wall -Werror -g
 PROGRAM=librecast
 DAEMON=${PROGRAM}d
 CLIENT=lctl
-LIBS=-pthread
+NODEWATCH=nodewatch
+LIBS=-pthread -lncurses
 COMMON_OBJECTS=args.o config.o errors.o log.o misc.o pid.o socket.o
 DAEMON_OBJECTS=${COMMON_OBJECTS} daemon.o commands.o controller.o handler.o net.o signals.o
 CLIENT_OBJECTS=${COMMON_OBJECTS} client.o
+NODEWATCH_OBJECTS=${COMMON_OBJECTS} nodewatch.o commands.o controller.o handler.o net.o
 
-all: ${DAEMON} ${CLIENT}
+all: ${DAEMON} ${CLIENT} ${NODEWATCH}
 
 ${DAEMON}: ${DAEMON_OBJECTS}
 	${CC} ${CCOPTS} -o ${DAEMON} ${DAEMON_OBJECTS} ${LIBS}
 
 ${CLIENT}: ${CLIENT_OBJECTS}
 	${CC} ${CCOPTS} -o ${CLIENT} ${CLIENT_OBJECTS} ${LIBS}
+
+${NODEWATCH}: ${NODEWATCH_OBJECTS}
+	${CC} ${CCOPTS} -o ${NODEWATCH} ${NODEWATCH_OBJECTS} ${LIBS}
 
 client.o: main.h client.c
 	${CC} ${CCOPTS} -c client.c ${LIBS}
@@ -49,6 +54,9 @@ misc.o: misc.h misc.c
 net.o: net.h net.c
 	${CC} ${CCOPTS} -c net.c ${LIBS}
 
+nodewatch.o: nodewatch.h nodewatch.c
+	${CC} ${CCOPTS} -c nodewatch.c ${LIBS}
+
 pid.o: pid.h pid.c
 	${CC} ${CCOPTS} -c pid.c ${LIBS}
 
@@ -61,7 +69,7 @@ socket.o: socket.h socket.c
 .PHONY: clean leakcheck
 
 clean:
-	rm -f *.o ${DAEMON} ${CLIENT}
+	rm -f *.o ${DAEMON} ${CLIENT} ${NODEWATCH}
 
 leakcheck: ${DAEMON}
 	make clean && make && valgrind -v ./${DAEMON}
