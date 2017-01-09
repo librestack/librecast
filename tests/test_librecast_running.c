@@ -4,5 +4,5 @@
 int main()
 {
 	printf("Testing 1 2 3 ...\n");
-	return 0;
+	return librecast_running();
 }
