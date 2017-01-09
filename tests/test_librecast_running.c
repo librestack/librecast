@@ -1,4 +1,4 @@
-//#include "../librecast.h"
+#include "../src/librecast.h"
 #include <stdio.h>
 
 int main()

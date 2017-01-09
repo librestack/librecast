@@ -1,5 +1,7 @@
 *.o
+*.so
 *.swp
 librecastd
 lctl
 nodewatch
+tests/test_librecast_running

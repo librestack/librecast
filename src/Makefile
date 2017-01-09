@@ -1,6 +1,7 @@
 CC=gcc
 CCOPTS=-Wall -Werror -g
 PROGRAM=librecast
+LIBRARY=liblibrecast.so
 DAEMON=${PROGRAM}d
 CLIENT=lctl
 NODEWATCH=nodewatch
@@ -10,7 +11,10 @@ DAEMON_OBJECTS=${COMMON_OBJECTS} daemon.o commands.o controller.o handler.o net.
 CLIENT_OBJECTS=${COMMON_OBJECTS} client.o
 NODEWATCH_OBJECTS=${COMMON_OBJECTS} nodewatch.o commands.o controller.o handler.o net.o
 
-all: ${DAEMON} ${CLIENT} ${NODEWATCH}
+all: ${DAEMON} ${CLIENT} ${NODEWATCH} ${LIBRARY}
+
+${LIBRARY}: librecast.o
+	${CC} ${CCOPTS} -shared -o ${LIBRARY} librecast.o
 
 ${DAEMON}: ${DAEMON_OBJECTS}
 	${CC} ${CCOPTS} -o ${DAEMON} ${DAEMON_OBJECTS} ${LIBS}
@@ -20,6 +24,9 @@ ${CLIENT}: ${CLIENT_OBJECTS}
 
 ${NODEWATCH}: ${NODEWATCH_OBJECTS}
 	${CC} ${CCOPTS} -o ${NODEWATCH} ${NODEWATCH_OBJECTS} ${LIBS}
+
+librecast.o: librecast.h librecast.c
+	${CC} ${CCOPTS} -fpic -c librecast.c ${LIBS}
 
 client.o: main.h client.c
 	${CC} ${CCOPTS} -c client.c ${LIBS}
