@@ -76,7 +76,7 @@ socket.o: socket.h socket.c
 .PHONY: clean leakcheck
 
 clean:
-	rm -f *.o ${DAEMON} ${CLIENT} ${NODEWATCH}
+	rm -f *.o ${DAEMON} ${CLIENT} ${NODEWATCH} ${LIBRARY}
 
 leakcheck: ${DAEMON}
 	make clean && make && valgrind -v ./${DAEMON}
