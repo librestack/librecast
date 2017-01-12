@@ -41,6 +41,7 @@ int net_multicast_init()
 	int e = 0, errsv;
 	char *addr = config_get("castaddr");
 	char *port = config_get("castport");
+	int publicsrc = config_get_num("publicsrc");
 	int value;
 
         logmsg(LOG_DEBUG, "initializing multicast on %s", addr);
@@ -57,10 +58,12 @@ int net_multicast_init()
                 goto net_multicast_init_fail;
         }
 
-	/* request public source address, not temp privacy extensions */
-        value = IPV6_PREFER_SRC_PUBLIC;
-        setsockopt(sock, IPPROTO_IPV6, IPV6_ADDR_PREFERENCES, &value,
-			sizeof(value));
+        if (publicsrc == 1) {
+		/* request public source address, avoiding privacy extensions */
+		value = IPV6_PREFER_SRC_PUBLIC;
+		setsockopt(sock, IPPROTO_IPV6, IPV6_ADDR_PREFERENCES, &value,
+				sizeof(value));
+	}
 
 	if ((e = net_multicast_setoptions()) != 0)
 		goto net_multicast_init_fail;

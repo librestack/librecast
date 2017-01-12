@@ -21,7 +21,8 @@ typedef enum {
 	X("castaddr", CONFIG_TYPE_STRING, "ff15::1", "multicast addr") \
 	X("castport", CONFIG_TYPE_INT, "4242", "multicast port") \
 	X("loop", CONFIG_TYPE_INT, "1", "multicast loopback") \
-	X("ttl", CONFIG_TYPE_INT, "1", "multicast ttl")
+	X("ttl", CONFIG_TYPE_INT, "1", "multicast ttl") \
+	X("publicsrc", CONFIG_TYPE_BOOL, "0", "use public source address")
 #undef X
 
 /* lower and upper bounds on numeric config types */
