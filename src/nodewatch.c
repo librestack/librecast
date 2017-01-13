@@ -1,4 +1,5 @@
 #include <ncurses.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -17,6 +18,13 @@
 #define COL_BRIDGE 80
 
 node_t *nodes = NULL;
+
+void handle_winch(int sig)
+{
+	endwin();
+	refresh();
+	clear();
+}
 
 void update_node(char *name, char *ip, int stratum, char *bridge)
 {
@@ -50,6 +58,7 @@ int initialize()
 {
 	int e = 0;
 
+	signal(SIGWINCH, handle_winch);
 	initscr();
 	noecho();
 	curs_set(0);
