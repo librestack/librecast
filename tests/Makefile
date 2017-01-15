@@ -22,4 +22,3 @@ test_fail: docker/librecastd/Dockerfile
 
 clean:
 	rm -f *.o
-	rm ${ALL_TESTS}
