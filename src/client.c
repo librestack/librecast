@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 	int lockfd;
 	int signal;
 
-	config_set_num("loglevel", 127);
+	config_set_num("loglevel", 15);
 
 	if ((e = args_process(argc, argv)) != 0) {
 		goto main_fail;

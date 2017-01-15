@@ -13,7 +13,7 @@ typedef enum {
 
 #define CONFIG_DEFAULTS(X) \
 	X("configfile", CONFIG_TYPE_STRING, config_filename(), "path to config file") \
-	X("loglevel", CONFIG_TYPE_INT, "127", "logging level") \
+	X("loglevel", CONFIG_TYPE_INT, "15", "logging level") \
 	X("daemon", CONFIG_TYPE_BOOL, "0", "run as daemon") \
 	X("dropprivs", CONFIG_TYPE_BOOL, "1", "drop root privileges") \
 	X("ping", CONFIG_TYPE_INT, "0", "send a ping every n seconds (default: 0 = never) ") \
