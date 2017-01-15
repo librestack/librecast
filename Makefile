@@ -4,7 +4,7 @@ LIBDIR=/usr/local/lib
 LIBFILE=lib${LIBNAME}.so
 INCLUDEDIR=/usr/local/include
 
-all: src tests
+all: src docker tests
 
 install: all
 	cp src/librecastd ${INSTALLDIR}
@@ -14,6 +14,9 @@ install: all
 	cp src/${LIBNAME}.h ${INCLUDEDIR}
 	cp src/lctl ${INSTALLDIR}
 	cp src/nodewatch ${INSTALLDIR}
+
+docker: tests/docker/librecastd/Dockerfile
+	docker build -t librecastd -f tests/docker/librecastd/Dockerfile .
 
 .PHONY: clean src tests
 
