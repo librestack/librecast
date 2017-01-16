@@ -4,7 +4,7 @@ LIBDIR=/usr/local/lib
 LIBFILE=lib${LIBNAME}.so
 INCLUDEDIR=/usr/local/include
 
-all: src docker tests
+all: src tests docker run_tests
 
 install: all
 	cp src/librecastd ${INSTALLDIR}
@@ -24,6 +24,9 @@ src:
 	cd src && make
 tests:
 	cd tests && make
+
+run_tests:
+	cd tests && make run_all
 
 clean:
 	cd src && make clean

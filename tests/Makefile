@@ -1,24 +1,32 @@
 CC=gcc
 CCOPTS=-Wall -Werror -g
-ALL_TESTS= \
+BUILD_TESTS= \
+	build_test_succeed
+DOCKER_TESTS= \
 	test_pass \
-	test_fail
-LIBPATH=../src
+	test_succeed
+LIBPATH=/usr/local/lib
+DOCKERBIN=docker/librecastd/bin
 LIBS=-llibrecast -L${LIBPATH} -Wl,-rpath=${LIBPATH}
 
-all: ${ALL_TESTS}
-	./test_librecast_running
+build_all: ${BUILD_TESTS}
 
-#test_librecast_running: test_librecast_running.c
-#	${CC} ${CCOPTS} test_librecast_running.c -o test_librecast_running ${LIBS}
+build_test_succeed: test_succeed.c
+	${CC} ${CCOPTS} test_succeed.c -o ${DOCKERBIN}/test_succeed ${LIBS}
 
-test_pass: docker/librecastd/Dockerfile
-	docker run librecastd /bin/true
-
-test_fail: docker/librecastd/Dockerfile
-	docker run librecastd /bin/false
-
-.PHONY: clean
+.PHONY: clean run_tests ${DOCKER_TESTS}
 
 clean:
-	rm -f *.o
+	rm -f *.o ${BUILD_TESTS}
+
+run_all: ${DOCKER_TESTS}
+
+test_succeed:
+	docker run librecastd test_succeed
+
+test_pass:
+	docker run librecastd /bin/true
+
+test_fail:
+	docker run librecastd /bin/false
+
