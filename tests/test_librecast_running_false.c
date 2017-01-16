@@ -1,7 +1,7 @@
 #include <stdio.h>
-#include <librecast.h>
+#include "../src/librecast.h"
 
 int main()
 {
-	return (librecast_running() == 0) ? 0 : 1;
+	return (librecast_running() == LIBRECASTD_NOT_RUNNING) ? 0 : 1;
 }

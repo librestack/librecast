@@ -7,21 +7,15 @@ DOCKERFILES= \
 	tests/docker/librecastd/Dockerfile.stopped \
 	tests/docker/librecastd/Dockerfile.running
 
-all: src tests docker run_tests
+all: src docker run_tests
 
 install: all
-	cp src/librecastd ${INSTALLDIR}
-	cp src/${LIBFILE} ${LIBDIR}/${LIBFILE}.1.0
-	ln -sf ${LIBDIR}/${LIBFILE}.1.0 ${LIBDIR}/${LIBFILE}.1
-	ln -sf ${LIBDIR}/${LIBFILE}.1 ${LIBDIR}/${LIBFILE}
-	cp src/${LIBNAME}.h ${INCLUDEDIR}
-	cp src/lctl ${INSTALLDIR}
-	cp src/nodewatch ${INSTALLDIR}
+	cd src && make install
 
 docker0: tests/docker/librecastd/Dockerfile
 	docker build -t librecastd -f tests/docker/librecastd/Dockerfile .
 
-docker: docker0 ${DOCKERFILES}
+docker: ${DOCKERFILES}
 	docker build -t librecastd:stopped -f tests/docker/librecastd/Dockerfile.stopped .
 	docker build -t librecastd:running -f tests/docker/librecastd/Dockerfile.running .
 

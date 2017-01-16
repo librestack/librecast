@@ -5,6 +5,11 @@ LIBRARY=liblibrecast.so
 DAEMON=${PROGRAM}d
 CLIENT=lctl
 NODEWATCH=nodewatch
+INSTALLDIR=/usr/local/bin
+LIBNAME=librecast
+LIBDIR=/usr/local/lib
+LIBFILE=lib${LIBNAME}.so
+INCLUDEDIR=/usr/local/include
 LIBS=-pthread -lncurses
 COMMON_OBJECTS=args.o config.o errors.o log.o misc.o pid.o socket.o
 DAEMON_OBJECTS=${COMMON_OBJECTS} daemon.o commands.o controller.o handler.o net.o signals.o
@@ -13,8 +18,8 @@ NODEWATCH_OBJECTS=${COMMON_OBJECTS} nodewatch.o commands.o controller.o handler.
 
 all: ${DAEMON} ${CLIENT} ${NODEWATCH} ${LIBRARY}
 
-${LIBRARY}: librecast.o
-	${CC} ${CCOPTS} -shared -o ${LIBRARY} librecast.o
+${LIBRARY}: librecast.o pid.o
+	${CC} ${CCOPTS} -shared -o ${LIBRARY} librecast.o pid.o
 
 ${DAEMON}: ${DAEMON_OBJECTS}
 	${CC} ${CCOPTS} -o ${DAEMON} ${DAEMON_OBJECTS} ${LIBS}
@@ -26,7 +31,7 @@ ${NODEWATCH}: ${NODEWATCH_OBJECTS}
 	${CC} ${CCOPTS} -o ${NODEWATCH} ${NODEWATCH_OBJECTS} ${LIBS}
 
 librecast.o: librecast.h librecast.c
-	${CC} ${CCOPTS} -fpic -c librecast.c ${LIBS}
+	${CC} ${CCOPTS} -fpic -c librecast.c
 
 client.o: main.h client.c
 	${CC} ${CCOPTS} -c client.c ${LIBS}
@@ -65,13 +70,22 @@ nodewatch.o: nodewatch.h nodewatch.c
 	${CC} ${CCOPTS} -c nodewatch.c ${LIBS}
 
 pid.o: pid.h pid.c
-	${CC} ${CCOPTS} -c pid.c ${LIBS}
+	${CC} ${CCOPTS} -fpic -c pid.c ${LIBS}
 
 signals.o: signals.h signals.c
 	${CC} ${CCOPTS} -c signals.c ${LIBS}
 
 socket.o: socket.h socket.c
 	${CC} ${CCOPTS} -c socket.c ${LIBS}
+
+install: ${DAEMON} ${CLIENT} ${NODEWATCH} ${LIBRARY} librecast.h
+	cp librecastd ${INSTALLDIR}
+	cp ${LIBFILE} ${LIBDIR}/${LIBFILE}.1.0
+	ln -sf ${LIBDIR}/${LIBFILE}.1.0 ${LIBDIR}/${LIBFILE}.1
+	ln -sf ${LIBDIR}/${LIBFILE}.1 ${LIBDIR}/${LIBFILE}
+	cp ${LIBNAME}.h ${INCLUDEDIR}
+	cp lctl ${INSTALLDIR}
+	cp nodewatch ${INSTALLDIR}
 
 .PHONY: clean leakcheck
 

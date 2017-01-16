@@ -1,11 +1,8 @@
 FROM ubuntu:16.04
 MAINTAINER Brett Sheffield <brett@gladserv.com>
-ADD src/liblibrecast.so /usr/local/lib/liblibrecast.so.1.0
-RUN ln -s /usr/local/lib/liblibrecast.so.1.0 /usr/local/lib/liblibrecast.so.1
-RUN ln -s /usr/local/lib/liblibrecast.so.1 /usr/local/lib/liblibrecast.so
 RUN apt-get update && apt-get install -y \
+	build-essential \
 	libncurses5
-ADD src/librecastd /usr/local/bin/
-ADD src/lctl /usr/local/bin/
-ADD src/nodewatch /usr/local/bin/
-ADD tests/docker/librecastd/bin/ /usr/local/bin/
+ADD . /usr/local/src/librecast/
+RUN cd /usr/local/src/librecast/src && make install
+RUN cd /usr/local/src/librecast/tests && make

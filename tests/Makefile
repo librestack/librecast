@@ -6,7 +6,7 @@ BUILD_TESTS= \
 DOCKER_TESTS= \
 	test_librecast_running
 LIBPATH=/usr/local/lib
-DOCKERBIN=docker/librecastd/bin
+DOCKERBIN=/usr/local/bin
 LIBS=-llibrecast -L${LIBPATH} -Wl,-rpath=${LIBPATH}
 
 build_all: ${BUILD_TESTS}
