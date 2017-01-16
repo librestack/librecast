@@ -22,7 +22,7 @@ clean:
 run_all: ${DOCKER_TESTS}
 
 test_succeed:
-	docker run librecastd test_succeed
+	docker run librecastd:stopped test_succeed
 
 test_pass:
 	docker run librecastd /bin/true

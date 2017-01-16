@@ -3,6 +3,9 @@ LIBNAME=librecast
 LIBDIR=/usr/local/lib
 LIBFILE=lib${LIBNAME}.so
 INCLUDEDIR=/usr/local/include
+DOCKERFILES= \
+	tests/docker/librecastd/Dockerfile.stopped \
+	tests/docker/librecastd/Dockerfile.running
 
 all: src tests docker run_tests
 
@@ -15,8 +18,9 @@ install: all
 	cp src/lctl ${INSTALLDIR}
 	cp src/nodewatch ${INSTALLDIR}
 
-docker: tests/docker/librecastd/Dockerfile
-	docker build -t librecastd -f tests/docker/librecastd/Dockerfile .
+docker: ${DOCKERFILES}
+	docker build -t librecastd:stopped -f tests/docker/librecastd/Dockerfile.stopped .
+	docker build -t librecastd:running -f tests/docker/librecastd/Dockerfile.running .
 
 .PHONY: clean src tests
 
