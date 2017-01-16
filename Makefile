@@ -18,7 +18,10 @@ install: all
 	cp src/lctl ${INSTALLDIR}
 	cp src/nodewatch ${INSTALLDIR}
 
-docker: ${DOCKERFILES}
+docker0: tests/docker/librecastd/Dockerfile
+	docker build -t librecastd -f tests/docker/librecastd/Dockerfile .
+
+docker: docker0 ${DOCKERFILES}
 	docker build -t librecastd:stopped -f tests/docker/librecastd/Dockerfile.stopped .
 	docker build -t librecastd:running -f tests/docker/librecastd/Dockerfile.running .
 
