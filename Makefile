@@ -3,11 +3,11 @@ LIBNAME=librecast
 LIBDIR=/usr/local/lib
 LIBFILE=lib${LIBNAME}.so
 INCLUDEDIR=/usr/local/include
-DOCKERFILES= \
-	tests/docker/librecastd/Dockerfile.stopped \
-	tests/docker/librecastd/Dockerfile.running
+#DOCKERFILES= \
+#	tests/docker/librecastd/Dockerfile.stopped \
+#	tests/docker/librecastd/Dockerfile.running
 
-all: src docker run_tests
+all: src run_tests
 
 install: all
 	cd src && make install
