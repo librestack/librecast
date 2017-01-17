@@ -15,9 +15,9 @@ install: all
 docker0: tests/docker/librecastd/Dockerfile
 	docker build -t librecastd -f tests/docker/librecastd/Dockerfile .
 
-docker: ${DOCKERFILES}
-	docker build -t librecastd:stopped -f tests/docker/librecastd/Dockerfile.stopped .
-	docker build -t librecastd:running -f tests/docker/librecastd/Dockerfile.running .
+#docker: ${DOCKERFILES}
+#	docker build -t librecastd:stopped -f tests/docker/librecastd/Dockerfile.stopped .
+#	docker build -t librecastd:running -f tests/docker/librecastd/Dockerfile.running .
 
 .PHONY: clean src tests
 
