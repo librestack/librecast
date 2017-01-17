@@ -23,5 +23,5 @@ clean:
 	rm -f *.o ${BUILD_TESTS}
 
 run_all:
-	docker run librecastd:stopped test_librecast_running_false
-	docker run librecastd:running test_librecast_running_true
+	docker run librecastd test_librecast_running_false
+	docker run librecastd test_librecast_running_true.sh

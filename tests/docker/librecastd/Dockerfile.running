@@ -1,3 +1,4 @@
 FROM librecastd:stopped
 MAINTAINER Brett Sheffield <brett@gladserv.com>
-CMD librecastd
+ENTRYPOINT librecastd
+CMD /bin/bash

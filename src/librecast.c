@@ -15,15 +15,12 @@ int librecast_running()
 	char buf[sizeof(long)] = "";
 
 	if ((lockfd = obtain_lockfile(O_RDONLY)) == -1) {
-		printf("unable to obtain lockfile\n");
 		return LIBRECASTD_NOT_RUNNING;
 	}
 	if (pread(lockfd, &buf, sizeof(buf), 1) == -1) {
-		printf("unable to read lockfile\n");
 		return LIBRECASTD_NOT_RUNNING;
 	}
 	if (sscanf(buf, "%li", &pid) != 1) {
-		printf("pidfile invalid\n");
 		return LIBRECASTD_NOT_RUNNING;
 	}
 	ret = kill(pid, 0);
