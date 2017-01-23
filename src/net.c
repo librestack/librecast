@@ -77,16 +77,6 @@ net_multicast_init_fail:
 	_exit(e);
 }
 
-/* Thanks Beej */
-void *get_in_addr(struct sockaddr *sa)
-{
-	if (sa->sa_family == AF_INET) {
-		return &(((struct sockaddr_in*)sa)->sin_addr);
-	}
-
-	return &(((struct sockaddr_in6*)sa)->sin6_addr);
-}
-
 void *net_multicast_listen()
 {
 	int e = 0, errsv;
@@ -155,7 +145,7 @@ void *net_multicast_listen()
 		}
 		recv[l] = '\0';
 		inet_ntop(src_addr.ss_family,
-			get_in_addr((struct sockaddr *)&src_addr),
+			&(((struct sockaddr_in6*)(struct sockaddr *)&src_addr)->sin6_addr),
 			s, sizeof s);
 
 		handler_handle_request(recv, s);
