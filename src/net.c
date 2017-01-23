@@ -145,7 +145,7 @@ void *net_multicast_listen()
 		}
 		recv[l] = '\0';
 		inet_ntop(src_addr.ss_family,
-			&(((struct sockaddr_in6*)(struct sockaddr *)&src_addr)->sin6_addr),
+			&(((struct sockaddr_in6*)&src_addr)->sin6_addr),
 			s, sizeof s);
 
 		handler_handle_request(recv, s);
