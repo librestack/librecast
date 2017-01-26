@@ -18,20 +18,25 @@ one or more network nodes and acting on the results programmatically.  This
 makes writing, say, monitoring or configuration management logic simple in any
 supported language.
 
-There are plenty of other tools available for monitoring, configuration
-management etc and several network programming frameworks.  They all seem to
-be lacking something that I consider essential.  IPv6 is often an afterthought,
-if it is supported at all.  Multicast is rarely used, even when communicating
-one to many.  Often heavyweight unicast TCP connections are established to
-communicate the same information to many servers simultaenously.  Security is
-sometimes considered an optional extra.  Some are built in higher level
-languages I'm not fond of, and which I feel have little place in low-level
-systems programming.  Perhaps I'm just getting grumpier as I get older.
+Essentially this enables us to utilise the actor model of distributed
+programming, backed by the advantages of IPv6 multicast by default, and
+degrading gracefully through a series of fallback options to improve
+reachability in cases where the default mode is unavailable.
 
-Anyway, I thought it would be interesting to build something myself from 
-scratch and see whether my own approach has any merit.  I'll put this out there
-in case anyone else finds it useful.  Comments, questions, suggestions, bug
-reports, and patches all welcome.
+There are plenty of other tools available for monitoring, configuration
+management etc and several network programming frameworks.  However, IPv6 is
+often an afterthought, if it is supported at all.  Multicast is rarely used,
+even when communicating one to many.  Often heavyweight unicast TCP connections
+are established to communicate the same information to many servers
+simultaenously.  Security is sometimes considered an optional extra.  Some are
+built in higher level languages I'm not fond of, and which I feel have little
+place in low-level systems programming.  Perhaps I'm just getting grumpier as I
+get older.
+
+Anyway, I thought it would be interesting to build something from scratch and
+see whether this approach has any merit.  I'll put this out there in case
+anyone else finds it useful.  Comments, questions, suggestions, bug reports,
+and patches all welcome.
 
 Brett Sheffield <brett@gladserv.com>
 2016-11-21
