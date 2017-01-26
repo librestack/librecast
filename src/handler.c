@@ -19,7 +19,7 @@ int handler_handle_request(char *req, char *src)
 		socket_close();
 	}
 	net_unpack(&h, req);
-	printf("received: %i: %li %i\n", h.seq, (long)h.timestamp, h.cmd);
+	logmsg(LOG_DEBUG, "received: %i: %li %i", h.seq, (long)h.timestamp, h.cmd);
 	logmsg(LOG_DEBUG, "%s", command_cmd(h.cmd));
 
 	switch(h.cmd) {
