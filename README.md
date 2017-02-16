@@ -43,6 +43,6 @@ see whether this approach has any merit.  I'll put this out there in case
 anyone else finds it useful.  Comments, questions, suggestions, bug reports,
 and patches all welcome.
 
-Brett Sheffield <brett@gladserv.com>
+Brett Sheffield `<brett@gladserv.com>`
 
 2016-11-21
