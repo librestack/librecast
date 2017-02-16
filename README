@@ -4,6 +4,8 @@ Librecast is an *experimental* communication daemon intending to to provide
 fast, efficient and scalable communication between servers by leveraging IPv6
 multicast.
 
+NB: this is a WORK IN PROGRESS and is INCOMPLETE.
+
 Features:
  * IPv6 and multicast supported from the outset
  * light, fast and simple design
