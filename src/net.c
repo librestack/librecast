@@ -151,14 +151,12 @@ void *net_multicast_listen()
 		handler_handle_request(recv, s);
 	}
 
-	logmsg(LOG_DEBUG, "Barney");
 	pthread_exit(&e);
 
 net_multicast_listen_fail:
 	errsv = errno;
 	print_error(e, errsv, "net_multicast_listen");
 	config_free();
-	logmsg(LOG_DEBUG, "Fred");
 	pthread_exit(&e);
 }
 
