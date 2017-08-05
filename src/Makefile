@@ -30,7 +30,7 @@ ${CLIENT}: ${CLIENT_OBJECTS}
 ${NODEWATCH}: ${NODEWATCH_OBJECTS}
 	${CC} ${CCOPTS} -o ${NODEWATCH} ${NODEWATCH_OBJECTS} ${LIBS}
 
-librecast.o: librecast.h librecast.c
+librecast.o: ../include/librecast.h librecast.c
 	${CC} ${CCOPTS} -fpic -c librecast.c
 
 client.o: main.h client.c
@@ -78,12 +78,12 @@ signals.o: signals.h signals.c
 socket.o: socket.h socket.c
 	${CC} ${CCOPTS} -c socket.c ${LIBS}
 
-install: ${DAEMON} ${CLIENT} ${NODEWATCH} ${LIBRARY} librecast.h
+install: ${DAEMON} ${CLIENT} ${NODEWATCH} ${LIBRARY}
 	cp librecastd ${INSTALLDIR}
 	cp ${LIBFILE} ${LIBDIR}/${LIBFILE}.1.0
 	ln -sf ${LIBDIR}/${LIBFILE}.1.0 ${LIBDIR}/${LIBFILE}.1
 	ln -sf ${LIBDIR}/${LIBFILE}.1 ${LIBDIR}/${LIBFILE}
-	cp ${LIBNAME}.h ${INCLUDEDIR}
+	cp ../include/* ${INCLUDEDIR}
 	cp lctl ${INSTALLDIR}
 	cp nodewatch ${INSTALLDIR}
 
