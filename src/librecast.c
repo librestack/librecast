@@ -1,6 +1,8 @@
 #define _GNU_SOURCE
 #include "../include/librecast.h"
 #include "pid.h"
+#include "errors.h"
+#include "log.h"
 #include <assert.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -89,6 +91,8 @@ int lc_channel_bind(lc_socket_t *sock, lc_channel_t * channel)
 
 	channel->socket = sock;
 	if (bind(sock->socket, addr->ai_addr, addr->ai_addrlen) != 0) {
+		logmsg(LOG_ERROR, "Unable to bind to socket");
+		return ERROR_SOCKET_BIND;
 	}
 
 	return 0;
@@ -113,8 +117,8 @@ int lc_channel_join(lc_channel_t * channel)
 	if (setsockopt(sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP,
 		&req, sizeof(req)) != 0)
 	{
-		fprintf(stderr, "Multicast join failed\n");
-		return -1;
+		logmsg(LOG_ERROR, "Multicast join failed");
+		return ERROR_MCAST_JOIN;
 	}
 
 	return 0;
@@ -160,9 +164,8 @@ ssize_t lc_msg_recv(lc_socket_t *sock, char **msg)
         msgh.msg_iovlen = 1;
         msgh.msg_flags = 0;
 
-	fprintf(stderr, "recv on %i\n", sock->socket);
-
 	i = recvmsg(sock->socket, &msgh, 0);
+	logmsg(LOG_DEBUG, "recv on %i", sock->socket);
 
         if (i > 0) {
                 dstaddr[0] = '\0';

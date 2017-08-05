@@ -25,7 +25,9 @@
 	X(18, ERROR_NET_SOCKOPT,        "Error setting socket options")       \
 	X(19, ERROR_CMD_INVALID,        "Invalid Command received")           \
 	X(20, ERROR_SOCKET_CREATE,      "Unable to create unix socket")       \
-	X(21, ERROR_SOCKET_CONNECT,     "Unable to connect to unix socket")
+	X(21, ERROR_SOCKET_CONNECT,     "Unable to connect to unix socket")   \
+	X(22, ERROR_SOCKET_BIND,        "Unable to bind to unix socket")      \
+	X(23, ERROR_MCAST_JOIN,         "Multicast join failed")
 
 #define ERROR_MSG(code, name, msg) case code: return msg;
 #define ERROR_ENUM(code, name, msg) name = code,
