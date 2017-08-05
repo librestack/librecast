@@ -126,6 +126,21 @@ int lc_channel_join(lc_channel_t * channel)
 
 int lc_channel_leave(lc_channel_t * channel)
 {
+	struct ipv6_mreq req;
+	int sock = channel->socket->socket;
+	struct addrinfo *addr = channel->address;
+
+	memcpy(&req.ipv6mr_multiaddr,
+		&((struct sockaddr_in6*)(addr->ai_addr))->sin6_addr,
+		sizeof(req.ipv6mr_multiaddr));
+	req.ipv6mr_interface = 0; /* default interface */
+	if (setsockopt(sock, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP,
+		&req, sizeof(req)) != 0)
+	{
+		logmsg(LOG_ERROR, "Multicast leave failed");
+		return ERROR_MCAST_LEAVE;
+	}
+
 	return 0;
 }
 

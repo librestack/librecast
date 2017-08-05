@@ -14,12 +14,13 @@ LIBS=-pthread -lncurses
 COMMON_OBJECTS=args.o config.o errors.o log.o misc.o pid.o socket.o
 DAEMON_OBJECTS=${COMMON_OBJECTS} daemon.o commands.o controller.o handler.o net.o signals.o
 CLIENT_OBJECTS=${COMMON_OBJECTS} client.o
+LIBRARY_OBJECTS=librecast.o config.o errors.o log.o misc.o pid.o
 NODEWATCH_OBJECTS=${COMMON_OBJECTS} nodewatch.o commands.o controller.o handler.o net.o
 
 all: ${DAEMON} ${CLIENT} ${NODEWATCH} ${LIBRARY}
 
-${LIBRARY}: librecast.o pid.o
-	${CC} ${CCOPTS} -shared -o ${LIBRARY} librecast.o pid.o
+${LIBRARY}: ${LIBRARY_OBJECTS}
+	${CC} ${CCOPTS} -shared -o ${LIBRARY} ${LIBRARY_OBJECTS}
 
 ${DAEMON}: ${DAEMON_OBJECTS}
 	${CC} ${CCOPTS} -o ${DAEMON} ${DAEMON_OBJECTS} ${LIBS}
@@ -46,22 +47,22 @@ commands.o: commands.h commands.c
 	${CC} ${CCOPTS} -c commands.c ${LIBS}
 
 config.o: config.h config.c
-	${CC} ${CCOPTS} -c config.c ${LIBS}
+	${CC} ${CCOPTS} -fpic -c config.c ${LIBS}
 
 controller.o: controller.h controller.c
 	${CC} ${CCOPTS} -c controller.c ${LIBS}
 
 errors.o: errors.h errors.c
-	${CC} ${CCOPTS} -c errors.c ${LIBS}
+	${CC} ${CCOPTS} -fpic -c errors.c ${LIBS}
 
 handler.o: handler.h handler.c
 	${CC} ${CCOPTS} -c handler.c ${LIBS}
 
 log.o: log.h log.c
-	${CC} ${CCOPTS} -c log.c ${LIBS}
+	${CC} ${CCOPTS} -fpic -c log.c ${LIBS}
 
 misc.o: misc.h misc.c
-	${CC} ${CCOPTS} -c misc.c ${LIBS}
+	${CC} ${CCOPTS} -fpic -c misc.c ${LIBS}
 
 net.o: net.h net.c
 	${CC} ${CCOPTS} -c net.c ${LIBS}
