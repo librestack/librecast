@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include <ifaddrs.h>
 #include <net/if.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -107,21 +108,42 @@ int lc_channel_unbind(lc_channel_t * channel)
 int lc_channel_join(lc_channel_t * channel)
 {
 	struct ipv6_mreq req;
+	struct ifaddrs *ifaddr, *ifa;
 	int sock = channel->socket->socket;
 	struct addrinfo *addr = channel->address;
+	int joins = 0;
 
 	memcpy(&req.ipv6mr_multiaddr,
 		&((struct sockaddr_in6*)(addr->ai_addr))->sin6_addr,
 		sizeof(req.ipv6mr_multiaddr));
-	req.ipv6mr_interface = 0; /* default interface */
-	if (setsockopt(sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP,
-		&req, sizeof(req)) != 0)
-	{
-		logmsg(LOG_ERROR, "Multicast join failed");
-		return ERROR_MCAST_JOIN;
+
+	if (getifaddrs(&ifaddr) == -1) {
+		logmsg(LOG_DEBUG, "Failed to get interface list; using default");
+		req.ipv6mr_interface = 0; /* default interface */
+		if (setsockopt(sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &req, sizeof(req)) != 0)
+			goto join_fail;
+		logmsg(LOG_DEBUG, "Multicast join succeeded on default interface");
+		return 0;
 	}
 
-	return 0;
+	for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
+		req.ipv6mr_interface = if_nametoindex(ifa->ifa_name);
+		if (setsockopt(sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &req,
+					sizeof(req)) != 0)
+		{
+			logmsg(LOG_ERROR, "Multicast join failed on %s", ifa->ifa_name);
+		}
+		else {
+			logmsg(LOG_DEBUG, "Multicast join succeeded on %s", ifa->ifa_name);
+			joins++;
+		}
+	}
+	if (joins > 0)
+		return 0;
+
+join_fail:
+	logmsg(LOG_ERROR, "Multicast join failed");
+	return ERROR_MCAST_JOIN;
 }
 
 int lc_channel_leave(lc_channel_t * channel)
