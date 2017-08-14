@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <ifaddrs.h>
+#include <pthread.h>
 #include <net/if.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -25,6 +26,7 @@ typedef struct lc_ctx_t {
 
 typedef struct lc_socket_t {
 	int socket;
+	pthread_t thread;
 } lc_socket_t;
 
 typedef struct lc_channel_t {
@@ -32,9 +34,19 @@ typedef struct lc_channel_t {
 	struct addrinfo *address;
 } lc_channel_t;
 
+/* structure to pass to socket listening thread */
+typedef struct lc_socket_call_t {
+	lc_socket_t *sock;
+	void (*callback_msg)(char *, ssize_t);
+	void (*callback_err)(int);
+} lc_socket_call_t;
+
 #define BUFSIZE 1024
 #define DEFAULT_ADDR "ff3e::"
 #define DEFAULT_PORT "4242"
+
+/* socket listener thread */
+void *lc_socket_listen_thread(void *sc);
 
 lc_ctx_t * lc_ctx_new()
 {
@@ -51,11 +63,73 @@ void lc_ctx_free(lc_ctx_t *ctx)
 lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 {
 	lc_socket_t *sock;
+	int s;
 
 	sock = calloc(1, sizeof(lc_socket_t));
-	sock->socket = socket(AF_INET6, SOCK_DGRAM, 0);
+	assert(sock);
+	s = socket(AF_INET6, SOCK_DGRAM, 0);
+	int err = errno;
+	if (s == -1)
+		logmsg(LOG_DEBUG, "socket ERROR: %s", strerror(err));
+	else
+		sock->socket = s;
 
 	return sock;
+}
+
+int lc_socket_listen(lc_socket_t *sock, void (*callback_msg)(char *, ssize_t),
+		void (*callback_err)(int))
+{
+	pthread_attr_t attr = {};
+	lc_socket_call_t *sc;
+
+	sc = calloc(1, sizeof(lc_socket_call_t));
+	sc->sock = sock;
+	sc->callback_msg = callback_msg;
+	sc->callback_err = callback_err;
+
+	/* existing listener on socket */
+	if (sock->thread != 0)
+		return ERROR_SOCKET_LISTENING;
+
+	pthread_attr_init(&attr);
+	pthread_create(&(sock->thread), &attr, lc_socket_listen_thread, sc);
+	pthread_attr_destroy(&attr);
+
+	return 0;
+}
+
+int lc_socket_listen_cancel(lc_socket_t *sock)
+{
+	if (sock->thread != 0) {
+		pthread_cancel(sock->thread);
+		pthread_join(sock->thread, NULL);
+		sock->thread = 0;
+	}
+
+	return 0;
+}
+
+void *lc_socket_listen_thread(void *arg)
+{
+	ssize_t len;
+	char *msg = NULL;
+	lc_socket_call_t *sc = arg;
+
+	while(1) {
+		len = lc_msg_recv(sc->sock, &msg);
+		logmsg(LOG_DEBUG, "got data %i bytes", (int)len);
+		if (len > 0) {
+			if (sc->callback_msg)
+				sc->callback_msg(msg, len);
+			free(msg);
+		}
+		if (len < 0)
+			if (sc->callback_err)
+				sc->callback_err(len);
+	}
+	/* not reached */
+	return NULL;
 }
 
 void lc_socket_close(lc_socket_t *sock)
@@ -92,7 +166,7 @@ int lc_channel_bind(lc_socket_t *sock, lc_channel_t * channel)
 
 	channel->socket = sock;
 	if (bind(sock->socket, addr->ai_addr, addr->ai_addrlen) != 0) {
-		logmsg(LOG_ERROR, "Unable to bind to socket");
+		logmsg(LOG_ERROR, "Unable to bind to socket %i", sock->socket);
 		return ERROR_SOCKET_BIND;
 	}
 
@@ -166,6 +240,21 @@ int lc_channel_leave(lc_channel_t * channel)
 	return 0;
 }
 
+lc_socket_t *lc_channel_socket(lc_channel_t *channel)
+{
+	return channel->socket;
+}
+
+int lc_channel_socket_raw(lc_channel_t *channel)
+{
+	return channel->socket->socket;
+}
+
+int lc_socket_raw(lc_socket_t *sock)
+{
+	return sock->socket;
+}
+
 int lc_channel_free(lc_channel_t * channel)
 {
 	freeaddrinfo(channel->address);
@@ -201,9 +290,12 @@ ssize_t lc_msg_recv(lc_socket_t *sock, char **msg)
         msgh.msg_iovlen = 1;
         msgh.msg_flags = 0;
 
+	logmsg(LOG_DEBUG, "recvmsg on sock = %i", sock->socket);
 	i = recvmsg(sock->socket, &msgh, 0);
-	logmsg(LOG_DEBUG, "recv on %i", sock->socket);
-
+	int err = errno;
+	if (i == -1) {
+		logmsg(LOG_DEBUG, "recvmsg ERROR: %s", strerror(err));
+	}
         if (i > 0) {
                 dstaddr[0] = '\0';
                 for (cmsg = CMSG_FIRSTHDR(&msgh);
@@ -228,8 +320,31 @@ ssize_t lc_msg_recv(lc_socket_t *sock, char **msg)
 int lc_msg_send(lc_channel_t *channel, char *msg, size_t len)
 {
 	struct addrinfo *addr = channel->address;
+	struct ifaddrs *ifaddr, *ifa;
+	int sock = channel->socket->socket;
+	int opt = 1;
 
-	sendto(channel->socket->socket, msg, len, 0, addr->ai_addr, addr->ai_addrlen);
+	if (getifaddrs(&ifaddr) == -1) {
+		logmsg(LOG_DEBUG, "Failed to get interface list; using default");
+		sendto(sock, msg, len, 0, addr->ai_addr, addr->ai_addrlen);
+	}
+	else {
+		/* set loopback for first packet only */
+		setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &opt,sizeof(opt));
+		/* send to all interfaces */
+		for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
+			opt = if_nametoindex(ifa->ifa_name);
+
+			if (setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &opt,
+					sizeof(opt) == 0))
+			{
+				logmsg(LOG_DEBUG, "Sending on interface %s", ifa->ifa_name);
+				sendto(sock, msg, len, 0, addr->ai_addr, addr->ai_addrlen);
+			}
+			opt = 0; /* disable loopback after first interface */
+			setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &opt,sizeof(opt));
+		}
+	}
 
 	return 0;
 }

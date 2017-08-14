@@ -21,6 +21,13 @@ void lc_ctx_free(lc_ctx_t *ctx);
 /* create librecast socket */
 lc_socket_t *lc_socket_new(lc_ctx_t *ctx);
 
+/* non-blocking socket listener, with callbacks */
+int lc_socket_listen(lc_socket_t *sock, void (*callback_msg)(char *, ssize_t),
+			                void (*callback_err)(int));
+
+/* stop listening on socket */
+int lc_socket_listen_cancel(lc_socket_t *sock);
+
 /* close socket */
 void lc_socket_close(lc_socket_t *sock);
 
@@ -41,6 +48,15 @@ int lc_channel_leave(lc_channel_t * channel);
 
 /* free channel */
 int lc_channel_free(lc_channel_t * channel);
+
+/* return socket bound to this channel */
+lc_socket_t *lc_channel_socket(lc_channel_t * channel);
+
+/* return raw socket bound to this channel */
+int lc_channel_socket_raw(lc_channel_t * channel);
+
+/* return raw socket fd for this socket */
+int lc_socket_raw(lc_socket_t *sock);
 
 /* blocking message receive */
 ssize_t lc_msg_recv(lc_socket_t *sock, char **msg);
