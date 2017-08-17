@@ -36,7 +36,7 @@ int config_bool_convert(char *val, long long *llval)
 			return 0;
 		}
 	}
-	return ERROR_CONFIG_BOOLEAN;
+	return LC_ERROR_CONFIG_BOOLEAN;
 }
 
 void config_defaults()
@@ -163,7 +163,7 @@ int config_process_line(char *line)
 		return config_set(key, value);
 	}
 	else {
-		return ERROR_CONFIG_INVALID;
+		return LC_ERROR_CONFIG_INVALID;
 	}
 
 	return 0;
@@ -187,7 +187,7 @@ int config_read(char *configfile)
 		int errsv = errno;
 		logmsg(LOG_ERROR, strerror(errsv));
 		errno = 0;
-		return ERROR_CONFIG_READFAIL;
+		return LC_ERROR_CONFIG_READFAIL;
 	}
 
 	/* read line by line */
@@ -231,12 +231,12 @@ int config_set(char *key, void *val)
 
 	if (type == CONFIG_TYPE_INVALID) {
 		logmsg(LOG_ERROR, "'%s' not a valid configuration option", key);
-		return ERROR_CONFIG_INVALID;
+		return LC_ERROR_CONFIG_INVALID;
 	}
 	else if (type == CONFIG_TYPE_BOOL) {
 		if (config_bool_convert(val, &llval) != 0) {
 			logmsg(LOG_ERROR, "'%s' not a boolean value", val);
-			return ERROR_CONFIG_BOOLEAN;
+			return LC_ERROR_CONFIG_BOOLEAN;
 		}
 	}
 	else if (type == CONFIG_TYPE_INT) {
@@ -244,15 +244,15 @@ int config_set(char *key, void *val)
 		errno = 0;
 		llval = strtoll(val, NULL, 10);
 		if (errno != 0)
-			return ERROR_CONFIG_NOTNUMERIC;
+			return LC_ERROR_CONFIG_NOTNUMERIC;
 		min = config_min(key);
 		max = config_max(key);
 		if (llval < min || llval > max)
-			return ERROR_CONFIG_BOUNDS;
+			return LC_ERROR_CONFIG_BOUNDS;
 	}
 
 	if (config_validate_option(key, val) != 0)
-		return ERROR_CONFIG_INVALID;
+		return LC_ERROR_CONFIG_INVALID;
 
 	/* set value */
 	config_unset(key);
@@ -281,8 +281,8 @@ int config_set_num(char *key, long long llval)
 
 	if (asprintf(&val, "%lli", llval) == -1) {
 		int errsv = errno;
-		print_error(0, errsv, "config_set_num");
-		return ERROR_MALLOC;
+		lc_print_error(0, errsv, "config_set_num");
+		return LC_ERROR_MALLOC;
 	}
 	e = config_set(key, val);
 	free(val);

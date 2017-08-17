@@ -33,7 +33,7 @@ int main(int argc, char **argv)
 	/* read config */
 	if ((e = config_read(NULL))) {
 		switch (e) {
-		case ERROR_CONFIG_READFAIL:
+		case LC_ERROR_CONFIG_READFAIL:
 			logmsg(LOG_WARNING, "Unable to read config file.  Skipping");
 			break;
 		default:
@@ -45,11 +45,11 @@ int main(int argc, char **argv)
 	lockfd = obtain_lockfile(O_RDWR | O_CREAT | O_TRUNC);
 	if (lockfd == -1) {
 		errno = 0;
-		e = ERROR_PID_OPEN;
+		e = LC_ERROR_PID_OPEN;
 		goto main_fail;
 	}
 	else if (flock(lockfd, LOCK_EX|LOCK_NB) != 0) {
-		e = ERROR_ALREADY_RUNNING;
+		e = LC_ERROR_ALREADY_RUNNING;
 		goto main_fail;
 	}
 
@@ -65,7 +65,7 @@ int main(int argc, char **argv)
 
 main_fail:
 	errsv = errno;
-	print_error(e, errsv, "main");
+	lc_print_error(e, errsv, "main");
 	config_free();
 	return e;
 }

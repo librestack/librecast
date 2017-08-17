@@ -28,7 +28,7 @@ int args_process_arg(char *arg)
 
 	if (!args_valid_arg(arg)) {
 		logmsg(LOG_ERROR, "'%s' is not a valid argument", arg);
-		return ERROR_INVALID_ARGS;
+		return LC_ERROR_INVALID_ARGS;
 	}
 
 	return 0;

@@ -18,13 +18,13 @@ int signal_daemon (int signal, int lockfd)
         long pid;
 
         if (pread(lockfd, &buf, sizeof(buf), 1) == -1) {
-                return ERROR_PID_READFAIL;
+                return LC_ERROR_PID_READFAIL;
         }
         if (sscanf(buf, "%li", &pid) == 1) {
                 return kill(pid, signal);
         }
         else {
-                return ERROR_PID_INVALID;
+                return LC_ERROR_PID_INVALID;
         }
 }
 
@@ -42,17 +42,17 @@ int main(int argc, char **argv)
 
 	if ((lockfd = obtain_lockfile(O_RDONLY)) == -1) {
 		errno = 0;
-		e = ERROR_PID_OPEN;
+		e = LC_ERROR_PID_OPEN;
 		goto main_fail;
 	}
 
 	if (argc != 2) {
-		e = ERROR_INVALID_ARGS;
+		e = LC_ERROR_INVALID_ARGS;
 		goto main_fail;
 	}
 
 	if (!args_valid_arg(argv[1])) {
-		e = ERROR_INVALID_ARGS;
+		e = LC_ERROR_INVALID_ARGS;
 		goto main_fail;
 	}
 
@@ -62,8 +62,8 @@ int main(int argc, char **argv)
 		if (signal_daemon(signal, lockfd) != 0) {
 			errsv = errno;
 			if (errsv == ESRCH) {
-				e = ERROR_DAEMON_STOPPED;
-				logmsg(LOG_ERROR, error_msg(e));
+				e = LC_ERROR_DAEMON_STOPPED;
+				logmsg(LOG_ERROR, lc_error_msg(e));
 				config_free();
 				return e;
 			}
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 
 main_fail:
 	errsv = errno;
-	print_error(e, errsv, "main");
+	lc_print_error(e, errsv, "main");
 	config_free();
 	return 0;
 }

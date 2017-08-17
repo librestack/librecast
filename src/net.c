@@ -72,7 +72,7 @@ int net_multicast_init()
 
 net_multicast_init_fail:
 	errsv = errno;
-	print_error(e, errsv, "net_multicast_init");
+	lc_print_error(e, errsv, "net_multicast_init");
 	config_free();
 	_exit(e);
 }
@@ -140,7 +140,7 @@ void *net_multicast_listen()
 		if ((l = recvfrom(sock, recv, sizeof(recv)-1, 0,
 			(struct sockaddr *)&src_addr, &addrlen)) < 0)
 		{
-			e = ERROR_NET_RECV;
+			e = LC_ERROR_NET_RECV;
 			goto net_multicast_listen_fail;
 		}
 		recv[l] = '\0';
@@ -155,7 +155,7 @@ void *net_multicast_listen()
 
 net_multicast_listen_fail:
 	errsv = errno;
-	print_error(e, errsv, "net_multicast_listen");
+	lc_print_error(e, errsv, "net_multicast_listen");
 	config_free();
 	pthread_exit(&e);
 }
@@ -170,14 +170,14 @@ int net_multicast_setoptions()
         if (setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &ttl,
                                 sizeof(ttl)) != 0)
         {
-                e = ERROR_NET_SOCKOPT;
+                e = LC_ERROR_NET_SOCKOPT;
         }
 
         logmsg(LOG_DEBUG, "setting multicast loopback=%i", loop);
         if (setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &loop,
                                 sizeof(loop)) != 0)
         {
-                e = ERROR_NET_SOCKOPT;
+                e = LC_ERROR_NET_SOCKOPT;
         }
 
 	return e;
@@ -198,9 +198,9 @@ int net_multicast_send(char *msg, size_t len)
 
 net_multicast_send_fail:
 	errsv = errno;
-	print_error(e, errsv, "net_multicast_init");
+	lc_print_error(e, errsv, "net_multicast_init");
 	net_free();
-	return ERROR_NET_SEND;
+	return LC_ERROR_NET_SEND;
 }
 
 

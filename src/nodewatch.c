@@ -66,10 +66,10 @@ int initialize()
 	config_defaults();
 	config_set_num("loglevel", 0);
 	while ((e = socket_bind()) != 0) {
-		if (e != ERROR_SOCKET_CONNECT)
+		if (e != LC_ERROR_SOCKET_CONNECT)
 			return e;
 		clear();
-		printw("%s", error_msg(e));
+		printw("%s", lc_error_msg(e));
 		refresh();
 		halfdelay(10);
 		getch();

@@ -63,7 +63,7 @@ void controller_start(int lockfd)
 	if (config_get_num("daemon") == 1) {
 		logmsg(LOG_INFO, "forking controller process");
 		if (daemon(0, 0) != 0) {
-			e = ERROR_DAEMON_FAILURE;
+			e = LC_ERROR_DAEMON_FAILURE;
 			goto controller_start_fail;
 		}
 	}
@@ -71,7 +71,7 @@ void controller_start(int lockfd)
 	/* write pid to lockfile */
 	if (!dprintf(lockfd, "#%ld\n", (long) getpid())) {
 		errno = 0;
-		e = ERROR_PID_WRITEFAIL;
+		e = LC_ERROR_PID_WRITEFAIL;
 		goto controller_start_fail;
 	}
 
@@ -90,7 +90,7 @@ void controller_start(int lockfd)
 
 controller_start_fail:
 	errsv = errno;
-	print_error(e, errsv, "controller_start");
+	lc_print_error(e, errsv, "controller_start");
 	config_free();
 	_exit(e);
 }

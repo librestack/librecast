@@ -5,15 +5,21 @@
 #include "log.h"
 #include "errors.h"
 
-char *error_msg(int e)
+int lc_error_log(int level, int e)
+{
+        logmsg(level, "%s", lc_error_msg(e));
+        return e;
+}
+
+char *lc_error_msg(int e)
 {
 	switch (e) {
-		ERROR_CODES(ERROR_MSG)
+		LC_ERROR_CODES(LC_ERROR_MSG)
 	}
 	return "Unknown error";
 }
 
-void print_error(int e, int errsv, char *errstr)
+void lc_print_error(int e, int errsv, char *errstr)
 {
 	char buf[LINE_MAX];
 	if (errsv != 0) {
@@ -21,6 +27,6 @@ void print_error(int e, int errsv, char *errstr)
 		logmsg(LOG_SEVERE, "%s: %s", errstr, buf);
 	}
 	else if (e != 0) {
-		logmsg(LOG_SEVERE, "%s: %s", errstr, error_msg(e));
+		logmsg(LOG_SEVERE, "%s: %s", errstr, lc_error_msg(e));
 	}
 }

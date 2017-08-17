@@ -38,8 +38,8 @@ int socket_bind()
 	unlink(sockname);
 	if (bind(s_local, (struct sockaddr *)&addr, len) != 0) {
 		errsv = errno;
-		print_error(e, errsv, "socket_bind");
-		e = ERROR_SOCKET_CONNECT;
+		lc_print_error(e, errsv, "socket_bind");
+		e = LC_ERROR_SOCKET_CONNECT;
 	}
 	free(sockname);
 
@@ -58,8 +58,8 @@ int socket_connect()
 	logmsg(LOG_DEBUG, "connecting to unix socket '%s'", sockname);
 	if (connect(s_local, (struct sockaddr *)&addr, len) != 0) {
 		errsv = errno;
-		print_error(e, errsv, "socket_connect");
-		e = ERROR_SOCKET_CONNECT;
+		lc_print_error(e, errsv, "socket_connect");
+		e = LC_ERROR_SOCKET_CONNECT;
 	}
 	free(sockname);
 
@@ -75,8 +75,8 @@ static int socket_init(struct sockaddr_un *addr, size_t *len)
 	logmsg(LOG_DEBUG, "creating unix socket");
 	if ((s_local = socket(AF_UNIX, SOCK_DGRAM, 0)) == -1) {
 		errsv = errno;
-		print_error(e, errsv, "socket_init");
-		return ERROR_SOCKET_CREATE;
+		lc_print_error(e, errsv, "socket_init");
+		return LC_ERROR_SOCKET_CREATE;
 	}
 
 	addr->sun_family = AF_UNIX;
@@ -94,7 +94,7 @@ int socket_read(char *buf)
 	bytes = recv(s_local, buf, 1024, MSG_DONTWAIT);
 	if (bytes == -1) {
 		errsv = errno;
-		print_error(0, errsv, "socket_read");
+		lc_print_error(0, errsv, "socket_read");
 	}
 
 	return bytes;
@@ -107,7 +107,7 @@ int socket_send(char *buf, size_t len)
 	bytes = send(s_local, buf, len, 0);
 	if (bytes == -1) {
 		errsv = errno;
-		print_error(0, errsv, "socket_send");
+		lc_print_error(0, errsv, "socket_send");
 	}
 
 	return 0;

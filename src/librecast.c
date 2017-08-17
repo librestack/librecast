@@ -21,25 +21,38 @@
 #include <unistd.h>
 
 typedef struct lc_ctx_t {
-	int id;
+	uint32_t id;
+	lc_ctx_t *next;
 } lc_ctx_t;
 
 typedef struct lc_socket_t {
+	uint32_t id;
 	int socket;
 	pthread_t thread;
+	lc_socket_t *next;
 } lc_socket_t;
 
 typedef struct lc_channel_t {
+	uint32_t id;
 	struct lc_socket_t *socket;
 	struct addrinfo *address;
+	lc_channel_t *next;
 } lc_channel_t;
 
 /* structure to pass to socket listening thread */
 typedef struct lc_socket_call_t {
 	lc_socket_t *sock;
-	void (*callback_msg)(char *, ssize_t);
+	void (*callback_msg)(lc_message_t*);
 	void (*callback_err)(int);
 } lc_socket_call_t;
+
+uint32_t ctx_id = 0;
+uint32_t sock_id = 0;
+uint32_t chan_id = 0;
+
+lc_ctx_t *ctx_list = NULL;
+lc_socket_t *sock_list = NULL;
+lc_channel_t *chan_list = NULL;
 
 #define BUFSIZE 1024
 #define DEFAULT_ADDR "ff3e::"
@@ -50,23 +63,56 @@ void *lc_socket_listen_thread(void *sc);
 
 lc_ctx_t * lc_ctx_new()
 {
-	lc_ctx_t *ctx;
+	logmsg(LOG_TRACE, "%s", __func__);
+	lc_ctx_t *ctx, *p;
+
 	ctx = calloc(1, sizeof(lc_ctx_t));
+	ctx->id = ++ctx_id;
+	for (p = ctx_list; p != NULL; p = p->next) {
+		if (p->next == NULL)
+			p->next = ctx;
+	}
+
 	return ctx;
+}
+
+uint32_t lc_ctx_get_id(lc_ctx_t *ctx)
+{
+	logmsg(LOG_TRACE, "%s", __func__);
+	return ctx->id;
+}
+
+uint32_t lc_socket_get_id(lc_socket_t *sock)
+{
+	logmsg(LOG_TRACE, "%s", __func__);
+	return sock->id;
+}
+
+uint32_t lc_channel_get_id(lc_channel_t *chan)
+{
+	logmsg(LOG_TRACE, "%s", __func__);
+	return chan->id;
 }
 
 void lc_ctx_free(lc_ctx_t *ctx)
 {
+	logmsg(LOG_TRACE, "%s", __func__);
 	free(ctx);
 }
 
 lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 {
-	lc_socket_t *sock;
+	logmsg(LOG_TRACE, "%s", __func__);
+	lc_socket_t *sock, *p;
 	int s;
 
 	sock = calloc(1, sizeof(lc_socket_t));
-	assert(sock);
+	sock->id = ++sock_id;
+	ctx = calloc(1, sizeof(lc_ctx_t));
+	for (p = sock_list; p != NULL; p = p->next) {
+		if (p->next == NULL)
+			p->next = sock;
+	}
 	s = socket(AF_INET6, SOCK_DGRAM, 0);
 	int err = errno;
 	if (s == -1)
@@ -77,9 +123,10 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 	return sock;
 }
 
-int lc_socket_listen(lc_socket_t *sock, void (*callback_msg)(char *, ssize_t),
-		void (*callback_err)(int))
+int lc_socket_listen(lc_socket_t *sock, void (*callback_msg)(lc_message_t*),
+                                        void (*callback_err)(int))
 {
+	logmsg(LOG_TRACE, "%s", __func__);
 	pthread_attr_t attr = {};
 	lc_socket_call_t *sc;
 
@@ -90,7 +137,7 @@ int lc_socket_listen(lc_socket_t *sock, void (*callback_msg)(char *, ssize_t),
 
 	/* existing listener on socket */
 	if (sock->thread != 0)
-		return ERROR_SOCKET_LISTENING;
+		return lc_error_log(LOG_DEBUG, LC_ERROR_SOCKET_LISTENING);
 
 	pthread_attr_init(&attr);
 	pthread_create(&(sock->thread), &attr, lc_socket_listen_thread, sc);
@@ -101,6 +148,7 @@ int lc_socket_listen(lc_socket_t *sock, void (*callback_msg)(char *, ssize_t),
 
 int lc_socket_listen_cancel(lc_socket_t *sock)
 {
+	logmsg(LOG_TRACE, "%s", __func__);
 	if (sock->thread != 0) {
 		pthread_cancel(sock->thread);
 		pthread_join(sock->thread, NULL);
@@ -112,19 +160,26 @@ int lc_socket_listen_cancel(lc_socket_t *sock)
 
 void *lc_socket_listen_thread(void *arg)
 {
+	logmsg(LOG_TRACE, "%s", __func__);
 	ssize_t len;
-	char *msg = NULL;
+	lc_message_t *msg = calloc(1, sizeof(lc_message_t));
 	lc_socket_call_t *sc = arg;
 
 	while(1) {
-		len = lc_msg_recv(sc->sock, &msg);
+		len = lc_msg_recv(sc->sock, &msg->msg);
 		logmsg(LOG_DEBUG, "got data %i bytes", (int)len);
 		if (len > 0) {
+			msg->sockid = sc->sock->id;
+			logmsg(LOG_DEBUG, "msg->sockid set to %u", sc->sock->id);
+			msg->len = len;
+			/* TODO: include dest address etc. */
 			if (sc->callback_msg)
-				sc->callback_msg(msg, len);
+				sc->callback_msg(msg);
+			free(msg->msg);
 			free(msg);
 		}
 		if (len < 0)
+			free(msg);
 			if (sc->callback_err)
 				sc->callback_err(len);
 	}
@@ -134,6 +189,7 @@ void *lc_socket_listen_thread(void *arg)
 
 void lc_socket_close(lc_socket_t *sock)
 {
+	logmsg(LOG_TRACE, "%s", __func__);
 	if (sock)
 		if (sock->socket)
 			close(sock->socket);
@@ -142,7 +198,8 @@ void lc_socket_close(lc_socket_t *sock)
 
 lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * url)
 {
-	lc_channel_t *channel;
+	logmsg(LOG_TRACE, "%s", __func__);
+	lc_channel_t *channel, *p;
 	struct addrinfo *addr = NULL;
 	struct addrinfo hints = {0};
 
@@ -155,19 +212,25 @@ lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * url)
 	}
 
 	channel = calloc(1, sizeof(lc_channel_t));
+	channel->id = ++chan_id;
 	channel->address = addr;
+	for (p = chan_list; p != NULL; p = p->next) {
+		if (p->next == NULL)
+			p->next = channel;
+	}
 
 	return channel;
 }
 
 int lc_channel_bind(lc_socket_t *sock, lc_channel_t * channel)
 {
+	logmsg(LOG_TRACE, "%s", __func__);
 	struct addrinfo *addr = channel->address;
 
 	channel->socket = sock;
 	if (bind(sock->socket, addr->ai_addr, addr->ai_addrlen) != 0) {
 		logmsg(LOG_ERROR, "Unable to bind to socket %i", sock->socket);
-		return ERROR_SOCKET_BIND;
+		return LC_ERROR_SOCKET_BIND;
 	}
 
 	return 0;
@@ -175,12 +238,14 @@ int lc_channel_bind(lc_socket_t *sock, lc_channel_t * channel)
 
 int lc_channel_unbind(lc_channel_t * channel)
 {
+	logmsg(LOG_TRACE, "%s", __func__);
 	channel->socket = NULL;
 	return 0;
 }
 
 int lc_channel_join(lc_channel_t * channel)
 {
+	logmsg(LOG_TRACE, "%s", __func__);
 	struct ipv6_mreq req;
 	struct ifaddrs *ifaddr, *ifa;
 	int sock = channel->socket->socket;
@@ -217,11 +282,12 @@ int lc_channel_join(lc_channel_t * channel)
 
 join_fail:
 	logmsg(LOG_ERROR, "Multicast join failed");
-	return ERROR_MCAST_JOIN;
+	return LC_ERROR_MCAST_JOIN;
 }
 
-int lc_channel_leave(lc_channel_t * channel)
+int lc_channel_part(lc_channel_t * channel)
 {
+	logmsg(LOG_TRACE, "%s", __func__);
 	struct ipv6_mreq req;
 	int sock = channel->socket->socket;
 	struct addrinfo *addr = channel->address;
@@ -234,7 +300,7 @@ int lc_channel_leave(lc_channel_t * channel)
 		&req, sizeof(req)) != 0)
 	{
 		logmsg(LOG_ERROR, "Multicast leave failed");
-		return ERROR_MCAST_LEAVE;
+		return LC_ERROR_MCAST_LEAVE;
 	}
 
 	return 0;
@@ -242,21 +308,25 @@ int lc_channel_leave(lc_channel_t * channel)
 
 lc_socket_t *lc_channel_socket(lc_channel_t *channel)
 {
+	logmsg(LOG_TRACE, "%s", __func__);
 	return channel->socket;
 }
 
 int lc_channel_socket_raw(lc_channel_t *channel)
 {
+	logmsg(LOG_TRACE, "%s", __func__);
 	return channel->socket->socket;
 }
 
 int lc_socket_raw(lc_socket_t *sock)
 {
+	logmsg(LOG_TRACE, "%s", __func__);
 	return sock->socket;
 }
 
 int lc_channel_free(lc_channel_t * channel)
 {
+	logmsg(LOG_TRACE, "%s", __func__);
 	freeaddrinfo(channel->address);
 	free(channel);
 	return 0;
@@ -264,6 +334,7 @@ int lc_channel_free(lc_channel_t * channel)
 
 ssize_t lc_msg_recv(lc_socket_t *sock, char **msg)
 {
+	logmsg(LOG_TRACE, "%s", __func__);
 	int i;
 	char dstaddr[INET6_ADDRSTRLEN];
 	struct iovec iov;
@@ -314,11 +385,13 @@ ssize_t lc_msg_recv(lc_socket_t *sock, char **msg)
 		(*msg)[i + 1] = '\0';
         }
 
+	logmsg(LOG_FULLTRACE, "recvmsg exiting");
 	return i;
 }
 
 int lc_msg_send(lc_channel_t *channel, char *msg, size_t len)
 {
+	logmsg(LOG_TRACE, "%s", __func__);
 	struct addrinfo *addr = channel->address;
 	struct ifaddrs *ifaddr, *ifa;
 	int sock = channel->socket->socket;
@@ -351,6 +424,7 @@ int lc_msg_send(lc_channel_t *channel, char *msg, size_t len)
 
 int lc_librecast_running()
 {
+	logmsg(LOG_TRACE, "%s", __func__);
 	int lockfd = 0;
 	int ret = 0;
 	long pid = 0;

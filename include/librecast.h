@@ -4,6 +4,7 @@
  */
 
 #include <sys/types.h>
+#include <stdint.h>
 
 #define LIBRECASTD_NOT_RUNNING 0
 #define LIBRECASTD_RUNNING 1
@@ -12,8 +13,19 @@ typedef struct lc_ctx_t lc_ctx_t;
 typedef struct lc_socket_t lc_socket_t;
 typedef struct lc_channel_t lc_channel_t;
 
+typedef struct lc_message_t {
+	uint32_t sockid;
+	char *msg;
+	size_t len;
+} lc_message_t;
+
 /* create new librecast context and set up environment */
 lc_ctx_t * lc_ctx_new();
+
+/* return structure ids */
+uint32_t lc_ctx_get_id(lc_ctx_t *ctx);
+uint32_t lc_socket_get_id(lc_socket_t *sock);
+uint32_t lc_channel_get_id(lc_channel_t *chan);
 
 /* destroy librecast context and clean up */
 void lc_ctx_free(lc_ctx_t *ctx);
@@ -22,7 +34,7 @@ void lc_ctx_free(lc_ctx_t *ctx);
 lc_socket_t *lc_socket_new(lc_ctx_t *ctx);
 
 /* non-blocking socket listener, with callbacks */
-int lc_socket_listen(lc_socket_t *sock, void (*callback_msg)(char *, ssize_t),
+int lc_socket_listen(lc_socket_t *sock, void (*callback_msg)(lc_message_t*),
 			                void (*callback_err)(int));
 
 /* stop listening on socket */
@@ -44,7 +56,7 @@ int lc_channel_unbind(lc_channel_t * channel);
 int lc_channel_join(lc_channel_t * channel);
 
 /* leave a librecast channel */
-int lc_channel_leave(lc_channel_t * channel);
+int lc_channel_part(lc_channel_t * channel);
 
 /* free channel */
 int lc_channel_free(lc_channel_t * channel);
