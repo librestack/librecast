@@ -32,7 +32,7 @@ int main()
 	print_msg(msg, len);
 	free(msg);
 
-	lc_channel_leave(channel);
+	lc_channel_part(channel);
 	lc_channel_free(channel);
 	lc_socket_close(sock);
 	lc_ctx_free(ctx);
