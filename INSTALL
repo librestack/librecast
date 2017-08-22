@@ -8,3 +8,16 @@ If you want to skip running the tests, which require docker, do the above direct
  cd src
  make
  make install
+
+Prerequisites:
+ libbridge from bridge-utils
+
+ I've turned this into a shared library.  Install as follows:
+ git clone https://github.com/brettsheffield/bridge-utils
+ cd bridge-utils
+ autoconf
+ /configure --prefix=/ --libdir=/usr/lib64 --includedir=/usr/include --with-linux-headers=/usr/include
+ cd libbridge
+ make
+ make install
+

@@ -29,7 +29,20 @@
 	X(22, LC_ERROR_SOCKET_BIND,        "Unable to bind to unix socket")      \
 	X(23, LC_ERROR_MCAST_JOIN,         "Multicast join failed")              \
 	X(24, LC_ERROR_MCAST_LEAVE,        "Multicast leave failed")             \
-	X(25, LC_ERROR_SOCKET_LISTENING,   "Socket already listening")
+	X(25, LC_ERROR_SOCKET_LISTENING,   "Socket already listening")           \
+	X(26, LC_ERROR_BRIDGE_INIT,        "Unable to setup bridge control")     \
+	X(27, LC_ERROR_BRIDGE_EXISTS,      "Bridge already exists")              \
+	X(28, LC_ERROR_BRIDGE_ADD_FAIL,    "Bridge creation failed")             \
+	X(29, LC_ERROR_TAP_ADD_FAIL,       "TAP creation failed")                \
+	X(30, LC_ERROR_BRIDGE_NODEV,       "Bridge does not exist")              \
+	X(31, LC_ERROR_IF_NODEV,           "Interface does not exist")           \
+	X(32, LC_ERROR_IF_BUSY,            "Interface already bridged")          \
+	X(33, LC_ERROR_IF_LOOP,            "Interface is a bridge")              \
+	X(34, LC_ERROR_IF_OPNOTSUPP,       "Interface does not support bridging") \
+	X(35, LC_ERROR_IF_BRIDGE_FAIL,     "Unable to bridge interface")         \
+	X(36, LC_ERROR_SOCK_IOCTL,         "Unable to create ioctl socket")      \
+	X(37, LC_ERROR_IF_UP_FAIL,         "Unable to bring up interface")       \
+	X(38, LC_ERROR_CTX_REQUIRED,       "Librecast context required for this operation")
 #undef X
 
 #define LC_ERROR_MSG(code, name, msg) case code: return msg;

@@ -8,6 +8,7 @@
 
 #define LIBRECASTD_NOT_RUNNING 0
 #define LIBRECASTD_RUNNING 1
+#define LC_BRIDGE_NAME "lc0"
 
 typedef struct lc_ctx_t lc_ctx_t;
 typedef struct lc_socket_t lc_socket_t;
@@ -26,6 +27,13 @@ lc_ctx_t * lc_ctx_new();
 uint32_t lc_ctx_get_id(lc_ctx_t *ctx);
 uint32_t lc_socket_get_id(lc_socket_t *sock);
 uint32_t lc_channel_get_id(lc_channel_t *chan);
+
+/* bridge and interface functions */
+int lc_bridge_init();
+int lc_bridge_new(char *brname);
+int lc_bridge_add_interface(const char *brname, const char *ifname);
+int lc_link_set(char *ifname, int flags);
+int lc_tap_create(char **ifname);
 
 /* destroy librecast context and clean up */
 void lc_ctx_free(lc_ctx_t *ctx);

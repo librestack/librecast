@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 #include "../include/librecast.h"
+#include <libbridge.h>
 #include "pid.h"
 #include "errors.h"
 #include "log.h"
@@ -8,35 +9,46 @@
 #include <fcntl.h>
 #include <ifaddrs.h>
 #include <pthread.h>
-#include <net/if.h>
+#include <linux/if.h>
+#include <linux/if_tun.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
+#ifndef _LIBBRIDGE_H
+#include <net/if.h>
+#endif
+
 typedef struct lc_ctx_t {
-	uint32_t id;
 	lc_ctx_t *next;
+	uint32_t id;
+	int fdtap;
+	char *tapname;
 } lc_ctx_t;
 
 typedef struct lc_socket_t {
+	lc_socket_t *next;
+	lc_ctx_t *ctx;
+	pthread_t thread;
 	uint32_t id;
 	int socket;
-	pthread_t thread;
-	lc_socket_t *next;
 } lc_socket_t;
 
 typedef struct lc_channel_t {
-	uint32_t id;
+	lc_channel_t *next;
+	lc_ctx_t *ctx;
 	struct lc_socket_t *socket;
 	struct addrinfo *address;
-	lc_channel_t *next;
+	uint32_t id;
 } lc_channel_t;
 
 /* structure to pass to socket listening thread */
@@ -61,10 +73,146 @@ lc_channel_t *chan_list = NULL;
 /* socket listener thread */
 void *lc_socket_listen_thread(void *sc);
 
+int lc_bridge_init()
+{
+	if (br_init()) {
+		lc_error_log(LOG_ERROR, LC_ERROR_BRIDGE_INIT);
+		return -1;
+	}
+	return 0;
+}
+
+int lc_bridge_new(char *brname)
+{
+        int err;
+
+        switch (err = br_add_bridge(brname)) {
+        case 0:
+                break;
+        case EEXIST:
+		return lc_error_log(LOG_DEBUG, LC_ERROR_BRIDGE_EXISTS);
+        default:
+		logmsg(LOG_ERROR, "%s", strerror(err));
+		return lc_error_log(LOG_ERROR, LC_ERROR_BRIDGE_ADD_FAIL);
+        }
+        logmsg(LOG_DEBUG, "(librecast) bridge %s created", brname);
+
+	/* bring up bridge */
+        logmsg(LOG_DEBUG, "(librecast) bringing up bridge %s", brname);
+	if ((err = lc_link_set(brname, IFF_UP)) != 0) {
+		return lc_error_log(LOG_ERROR, err);
+	}
+
+        return 0;
+}
+
+int lc_bridge_add_interface(const char *brname, const char *ifname) {
+        int err;
+
+	logmsg(LOG_DEBUG, "bridging %s to %s", ifname, brname);
+        err = br_add_interface(brname, ifname);
+        switch(err) {
+        case 0:
+                return 0;
+        case ENODEV:
+                if (if_nametoindex(ifname) == 0)
+			lc_error_log(LOG_ERROR, LC_ERROR_IF_NODEV);
+                else
+			lc_error_log(LOG_ERROR, LC_ERROR_BRIDGE_NODEV);
+                break;
+        case EBUSY:
+		lc_error_log(LOG_ERROR, LC_ERROR_IF_BUSY);
+                break;
+        case ELOOP:
+		lc_error_log(LOG_ERROR, LC_ERROR_IF_LOOP);
+                break;
+        case EOPNOTSUPP:
+		lc_error_log(LOG_ERROR, LC_ERROR_IF_OPNOTSUPP);
+                break;
+        default:
+		lc_error_log(LOG_ERROR, LC_ERROR_IF_BRIDGE_FAIL);
+        }
+
+        return -1;
+}
+
+int lc_link_set(char *ifname, int flags)
+{
+        struct ifreq ifr;
+	int fd, err = 0;
+
+	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+		err = errno;
+		logmsg(LOG_ERROR, "failed to create ioctl socket: %s", strerror(err));
+		return LC_ERROR_SOCK_IOCTL;
+	}
+        memset(&ifr, 0, sizeof(ifr));
+        memcpy(ifr.ifr_name, ifname, strlen(ifname));
+        logmsg(LOG_DEBUG, "fetching flags for interface %s", ifr.ifr_name);
+	if ((err = ioctl(fd, SIOCGIFFLAGS, &ifr)) == -1) {
+	}
+        logmsg(LOG_DEBUG, "setting flags for interface %s", ifr.ifr_name);
+        ifr.ifr_flags |= flags;
+	if ((err = ioctl(fd, SIOCSIFFLAGS, &ifr)) == -1) {
+		err = errno;
+		logmsg(LOG_ERROR, "ioctl failed: %s", strerror(err));
+		err = LC_ERROR_IF_UP_FAIL;
+	}
+	close(fd);
+
+	return err;
+}
+
+int lc_tap_create(char **ifname)
+{
+        struct ifreq ifr;
+        int fd, err;
+
+	/* create tap interface */
+        if ((fd = open("/dev/net/tun", O_RDWR)) == -1) {
+		err = errno;
+		logmsg(LOG_ERROR, "open tun failed: %s", strerror(err));
+                return -1;
+        }
+        memset(&ifr, 0, sizeof(ifr));
+        ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
+        if (ioctl(fd, TUNSETIFF, (void *) &ifr) == -1) {
+		err = errno;
+		logmsg(LOG_ERROR, "ioctl (TUNSETIFF) failed: %s", strerror(err));
+                close(fd);
+                return -1;
+        }
+        logmsg(LOG_DEBUG, "created tap interface %s", ifr.ifr_name);
+        *ifname = strdup(ifr.ifr_name);
+
+	/* bring interface up */
+        logmsg(LOG_DEBUG, "(librecast) bringing up interface %s", ifr.ifr_name);
+	if ((err = lc_link_set(ifr.ifr_name, IFF_UP)) != 0) {
+		close(fd);
+		free(*ifname);
+		lc_error_log(LOG_ERROR, err);
+		return -1;
+	}
+
+        return fd;
+}
+
 lc_ctx_t * lc_ctx_new()
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	lc_ctx_t *ctx, *p;
+
+	/* FIXME: randomize ids  - replace with proper hashing */
+	time_t t;
+	srand((unsigned)time(&t));
+	ctx_id = rand() % UINT32_MAX;
+	sock_id = rand() % UINT32_MAX;
+	chan_id = rand() % UINT32_MAX;
+
+	/* create bridge */
+	if ((lc_bridge_init()) != 0)
+		return NULL;
+	lc_bridge_new(LC_BRIDGE_NAME);
 
 	ctx = calloc(1, sizeof(lc_ctx_t));
 	ctx->id = ++ctx_id;
@@ -73,12 +221,36 @@ lc_ctx_t * lc_ctx_new()
 			p->next = ctx;
 	}
 
+	/* create TAP interface */
+	char *tap = NULL;
+	int fdtap;
+	if ((fdtap = lc_tap_create(&tap)) == -1) {
+		lc_error_log(LOG_ERROR, LC_ERROR_TAP_ADD_FAIL);
+		free(ctx);
+		return NULL;
+	}
+        logmsg(LOG_DEBUG, "bridging interface %s to bridge %s", tap, LC_BRIDGE_NAME);
+	/* plug TAP into bridge */
+	if ((lc_bridge_add_interface(LC_BRIDGE_NAME, tap)) == -1) {
+		lc_error_log(LOG_ERROR, LC_ERROR_IF_BRIDGE_FAIL);
+		lc_ctx_free(ctx);
+		return NULL;
+	}
+
+	ctx->tapname = tap;
+	ctx->fdtap = fdtap;
+
 	return ctx;
 }
 
 uint32_t lc_ctx_get_id(lc_ctx_t *ctx)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
+
+	if (ctx == NULL)
+		lc_error_log(LOG_ERROR, LC_ERROR_CTX_REQUIRED);
+		return 0;
+
 	return ctx->id;
 }
 
@@ -97,7 +269,12 @@ uint32_t lc_channel_get_id(lc_channel_t *chan)
 void lc_ctx_free(lc_ctx_t *ctx)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
-	free(ctx);
+	if (ctx) {
+		if (ctx->tapname)
+			free(ctx->tapname);
+		close(ctx->fdtap);
+		free(ctx);
+	}
 }
 
 lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
@@ -107,8 +284,8 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 	int s;
 
 	sock = calloc(1, sizeof(lc_socket_t));
+	sock->ctx = ctx;
 	sock->id = ++sock_id;
-	ctx = calloc(1, sizeof(lc_ctx_t));
 	for (p = sock_list; p != NULL; p = p->next) {
 		if (p->next == NULL)
 			p->next = sock;
@@ -119,6 +296,7 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 		logmsg(LOG_DEBUG, "socket ERROR: %s", strerror(err));
 	else
 		sock->socket = s;
+	logmsg(LOG_DEBUG, "socket %i created with id %u", sock->socket, sock->id);
 
 	return sock;
 }
@@ -166,6 +344,7 @@ void *lc_socket_listen_thread(void *arg)
 	lc_socket_call_t *sc = arg;
 
 	while(1) {
+		msg = calloc(1, sizeof(lc_message_t));
 		len = lc_msg_recv(sc->sock, &msg->msg);
 		logmsg(LOG_DEBUG, "got data %i bytes", (int)len);
 		if (len > 0) {
@@ -175,13 +354,13 @@ void *lc_socket_listen_thread(void *arg)
 			/* TODO: include dest address etc. */
 			if (sc->callback_msg)
 				sc->callback_msg(msg);
-			free(msg->msg);
-			free(msg);
 		}
 		if (len < 0)
 			free(msg);
 			if (sc->callback_err)
 				sc->callback_err(len);
+		free(msg->msg);
+		free(msg);
 	}
 	/* not reached */
 	return NULL;
@@ -212,6 +391,7 @@ lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * url)
 	}
 
 	channel = calloc(1, sizeof(lc_channel_t));
+	channel->ctx = ctx;
 	channel->id = ++chan_id;
 	channel->address = addr;
 	for (p = chan_list; p != NULL; p = p->next) {
@@ -226,12 +406,23 @@ int lc_channel_bind(lc_socket_t *sock, lc_channel_t * channel)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	struct addrinfo *addr = channel->address;
+	int err, opt;
 
 	channel->socket = sock;
+
+	opt = 1;
+	if ((setsockopt(sock->socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) == -1) {
+		err = errno;
+		logmsg(LOG_ERROR, "failed to set SO_REUSEADDR: %s", strerror(err));
+	}
+
+	logmsg(LOG_DEBUG, "binding socket id %u to channel id %u", sock->id, channel->id);
 	if (bind(sock->socket, addr->ai_addr, addr->ai_addrlen) != 0) {
-		logmsg(LOG_ERROR, "Unable to bind to socket %i", sock->socket);
+		err = errno;
+		logmsg(LOG_ERROR, "failed to bind socket: %s", strerror(err));
 		return LC_ERROR_SOCKET_BIND;
 	}
+	logmsg(LOG_DEBUG, "Bound to socket %i", sock->socket);
 
 	return 0;
 }
@@ -393,30 +584,17 @@ int lc_msg_send(lc_channel_t *channel, char *msg, size_t len)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	struct addrinfo *addr = channel->address;
-	struct ifaddrs *ifaddr, *ifa;
 	int sock = channel->socket->socket;
 	int opt = 1;
 
-	if (getifaddrs(&ifaddr) == -1) {
-		logmsg(LOG_DEBUG, "Failed to get interface list; using default");
-		sendto(sock, msg, len, 0, addr->ai_addr, addr->ai_addrlen);
-	}
-	else {
-		/* set loopback for first packet only */
-		setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &opt,sizeof(opt));
-		/* send to all interfaces */
-		for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
-			opt = if_nametoindex(ifa->ifa_name);
-
-			if (setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &opt,
-					sizeof(opt) == 0))
-			{
-				logmsg(LOG_DEBUG, "Sending on interface %s", ifa->ifa_name);
-				sendto(sock, msg, len, 0, addr->ai_addr, addr->ai_addrlen);
-			}
-			opt = 0; /* disable loopback after first interface */
-			setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &opt,sizeof(opt));
-		}
+	/* set loopback */
+	setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &opt,sizeof(opt));
+	opt = if_nametoindex(channel->ctx->tapname);
+	if (setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &opt,
+			sizeof(opt) == 0))
+	{
+	logmsg(LOG_DEBUG, "Sending on interface %s", channel->ctx->tapname);
+	sendto(sock, msg, len, 0, addr->ai_addr, addr->ai_addrlen);
 	}
 
 	return 0;

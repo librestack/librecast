@@ -10,7 +10,7 @@ LIBNAME=librecast
 LIBDIR=/usr/local/lib
 LIBFILE=lib${LIBNAME}.so
 INCLUDEDIR=/usr/local/include
-LIBS=-pthread -lncurses
+LIBS=-pthread -lpthread -lncurses -lbridge
 COMMON_OBJECTS=args.o config.o errors.o log.o misc.o pid.o socket.o
 DAEMON_OBJECTS=${COMMON_OBJECTS} daemon.o commands.o controller.o handler.o net.o signals.o
 CLIENT_OBJECTS=${COMMON_OBJECTS} client.o
@@ -20,7 +20,7 @@ NODEWATCH_OBJECTS=${COMMON_OBJECTS} nodewatch.o commands.o controller.o handler.
 all: ${DAEMON} ${CLIENT} ${NODEWATCH} ${LIBRARY}
 
 ${LIBRARY}: ${LIBRARY_OBJECTS}
-	${CC} ${CCOPTS} -shared -o ${LIBRARY} ${LIBRARY_OBJECTS}
+	${CC} ${CCOPTS} -pthread -lpthread -lbridge -shared -o ${LIBRARY} ${LIBRARY_OBJECTS}
 
 ${DAEMON}: ${DAEMON_OBJECTS}
 	${CC} ${CCOPTS} -o ${DAEMON} ${DAEMON_OBJECTS} ${LIBS}
@@ -32,7 +32,7 @@ ${NODEWATCH}: ${NODEWATCH_OBJECTS}
 	${CC} ${CCOPTS} -o ${NODEWATCH} ${NODEWATCH_OBJECTS} ${LIBS}
 
 librecast.o: ../include/librecast.h librecast.c
-	${CC} ${CCOPTS} -fpic -c librecast.c
+	${CC} ${CCOPTS} -fPIC -c librecast.c $(LIBS)
 
 client.o: main.h client.c
 	${CC} ${CCOPTS} -c client.c ${LIBS}
@@ -47,22 +47,22 @@ commands.o: commands.h commands.c
 	${CC} ${CCOPTS} -c commands.c ${LIBS}
 
 config.o: config.h config.c
-	${CC} ${CCOPTS} -fpic -c config.c ${LIBS}
+	${CC} ${CCOPTS} -fPIC -c config.c ${LIBS}
 
 controller.o: controller.h controller.c
 	${CC} ${CCOPTS} -c controller.c ${LIBS}
 
 errors.o: errors.h errors.c
-	${CC} ${CCOPTS} -fpic -c errors.c ${LIBS}
+	${CC} ${CCOPTS} -fPIC -c errors.c ${LIBS}
 
 handler.o: handler.h handler.c
 	${CC} ${CCOPTS} -c handler.c ${LIBS}
 
 log.o: log.h log.c
-	${CC} ${CCOPTS} -fpic -c log.c ${LIBS}
+	${CC} ${CCOPTS} -fPIC -c log.c ${LIBS}
 
 misc.o: misc.h misc.c
-	${CC} ${CCOPTS} -fpic -c misc.c ${LIBS}
+	${CC} ${CCOPTS} -fPIC -c misc.c ${LIBS}
 
 net.o: net.h net.c
 	${CC} ${CCOPTS} -c net.c ${LIBS}
@@ -71,7 +71,7 @@ nodewatch.o: nodewatch.h nodewatch.c
 	${CC} ${CCOPTS} -c nodewatch.c ${LIBS}
 
 pid.o: pid.h pid.c
-	${CC} ${CCOPTS} -fpic -c pid.c ${LIBS}
+	${CC} ${CCOPTS} -fPIC -c pid.c ${LIBS}
 
 signals.o: signals.h signals.c
 	${CC} ${CCOPTS} -c signals.c ${LIBS}
