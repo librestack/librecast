@@ -35,6 +35,9 @@ int lc_bridge_add_interface(const char *brname, const char *ifname);
 int lc_link_set(char *ifname, int flags);
 int lc_tap_create(char **ifname);
 
+/* create multicast group address from baseaddr and hash of groupname */
+int lc_hashgroup(char *baseaddr, char *groupname, char *hashaddr);
+
 /* destroy librecast context and clean up */
 void lc_ctx_free(lc_ctx_t *ctx);
 

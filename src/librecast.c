@@ -13,6 +13,7 @@
 #include <linux/if_tun.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <openssl/sha.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -195,6 +196,36 @@ int lc_tap_create(char **ifname)
 	}
 
         return fd;
+}
+
+int lc_hashgroup(char *baseaddr, char *groupname, char *hashaddr)
+{
+	logmsg(LOG_TRACE, "%s", __func__);
+        int i;
+        unsigned char hashgrp[SHA_DIGEST_LENGTH];
+        unsigned char binaddr[16];
+
+        if (groupname) {
+                SHA1((unsigned char *)groupname, strlen(groupname), hashgrp);
+
+                if (inet_pton(AF_INET6, baseaddr, &binaddr) != 1)
+                        return lc_error_log(LOG_ERROR, LC_ERROR_INVALID_BASEADDR);
+
+                /* we have 112 bits (14 bytes) available for the group address
+                 * XOR the hashed group with the base multicast address */
+                for (i = 0; i < 14; i++) {
+                        binaddr[i+2] ^= hashgrp[i];
+                }
+
+		if (inet_ntop(AF_INET6, binaddr, hashaddr, INET6_ADDRSTRLEN) == NULL) {
+			i = errno;
+			logmsg(LOG_ERROR, "%s (inet_ntop) %s", __func__, strerror(i));
+			return LC_ERROR_FAILURE;
+		}
+        }
+	logmsg(LOG_FULLTRACE, "%s exiting", __func__);
+
+        return 0;
 }
 
 lc_ctx_t * lc_ctx_new()
@@ -381,14 +412,19 @@ lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * url)
 	lc_channel_t *channel, *p;
 	struct addrinfo *addr = NULL;
 	struct addrinfo hints = {0};
+	char hashaddr[INET6_ADDRSTRLEN];
 
 	hints.ai_family = AF_INET6;
 	hints.ai_socktype = SOCK_DGRAM;
 	hints.ai_flags = AI_NUMERICHOST;
 
-	if (getaddrinfo(DEFAULT_ADDR, DEFAULT_PORT, &hints, &addr) != 0) {
+	/* TODO: process url, extract port and address */
+
+	if ((lc_hashgroup(DEFAULT_ADDR, url, hashaddr)) != 0)
 		return NULL;
-	}
+	logmsg(LOG_DEBUG, "channel group address: %s", hashaddr);
+	if (getaddrinfo(hashaddr, DEFAULT_PORT, &hints, &addr) != 0)
+		return NULL;
 
 	channel = calloc(1, sizeof(lc_channel_t));
 	channel->ctx = ctx;

@@ -10,7 +10,7 @@ LIBNAME=librecast
 LIBDIR=/usr/local/lib
 LIBFILE=lib${LIBNAME}.so
 INCLUDEDIR=/usr/local/include
-LIBS=-pthread -lpthread -lncurses -lbridge
+LIBS=-pthread -lpthread -lncurses -lbridge -lcrypto
 COMMON_OBJECTS=args.o config.o errors.o log.o misc.o pid.o socket.o
 DAEMON_OBJECTS=${COMMON_OBJECTS} daemon.o commands.o controller.o handler.o net.o signals.o
 CLIENT_OBJECTS=${COMMON_OBJECTS} client.o
@@ -20,7 +20,7 @@ NODEWATCH_OBJECTS=${COMMON_OBJECTS} nodewatch.o commands.o controller.o handler.
 all: ${DAEMON} ${CLIENT} ${NODEWATCH} ${LIBRARY}
 
 ${LIBRARY}: ${LIBRARY_OBJECTS}
-	${CC} ${CCOPTS} -pthread -lpthread -lbridge -shared -o ${LIBRARY} ${LIBRARY_OBJECTS}
+	${CC} ${CCOPTS} ${LIBS} -shared -o ${LIBRARY} ${LIBRARY_OBJECTS}
 
 ${DAEMON}: ${DAEMON_OBJECTS}
 	${CC} ${CCOPTS} -o ${DAEMON} ${DAEMON_OBJECTS} ${LIBS}
