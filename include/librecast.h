@@ -4,17 +4,23 @@
  */
 
 #include <sys/types.h>
+#include <netinet/in.h>
 #include <stdint.h>
 
 #define LIBRECASTD_NOT_RUNNING 0
 #define LIBRECASTD_RUNNING 1
 #define LC_BRIDGE_NAME "lc0"
 
+typedef uint64_t lc_seq_t;
+typedef uint64_t lc_rnd_t;
+typedef uint64_t lc_len_t;
 typedef struct lc_ctx_t lc_ctx_t;
 typedef struct lc_socket_t lc_socket_t;
 typedef struct lc_channel_t lc_channel_t;
+typedef struct lc_msg_head_t lc_msg_head_t;
 
 typedef struct lc_message_t {
+	char dstaddr[INET6_ADDRSTRLEN];
 	uint32_t sockid;
 	char *msg;
 	size_t len;
@@ -60,6 +66,9 @@ lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * url);
 /* bind channel to socket */
 int lc_channel_bind(lc_socket_t *sock, lc_channel_t * channel);
 
+/* find channel from address */
+lc_channel_t * lc_channel_by_address(char addr[INET6_ADDRSTRLEN]);
+
 /* unbind channel from socket */
 int lc_channel_unbind(lc_channel_t * channel);
 
@@ -82,7 +91,7 @@ int lc_channel_socket_raw(lc_channel_t * channel);
 int lc_socket_raw(lc_socket_t *sock);
 
 /* blocking message receive */
-ssize_t lc_msg_recv(lc_socket_t *sock, char **msg);
+ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, char **dest);
 
 /* send a message to a channel */
 int lc_msg_send(lc_channel_t *channel, char *msg, size_t len);

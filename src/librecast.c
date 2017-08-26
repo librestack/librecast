@@ -50,7 +50,15 @@ typedef struct lc_channel_t {
 	struct lc_socket_t *socket;
 	struct addrinfo *address;
 	uint32_t id;
+	lc_seq_t seq; /* sequence number (Lamport clock) */
+	lc_rnd_t rnd; /* random nonce */
 } lc_channel_t;
+
+typedef struct lc_message_head_t {
+	lc_seq_t seq; /* sequence number */
+	lc_rnd_t rnd; /* nonce */
+	lc_len_t len;
+} __attribute__((__packed__)) lc_message_head_t;
 
 /* structure to pass to socket listening thread */
 typedef struct lc_socket_call_t {
@@ -312,7 +320,7 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	lc_socket_t *sock, *p;
-	int s;
+	int s, i;
 
 	sock = calloc(1, sizeof(lc_socket_t));
 	sock->ctx = ctx;
@@ -328,6 +336,10 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 	else
 		sock->socket = s;
 	logmsg(LOG_DEBUG, "socket %i created with id %u", sock->socket, sock->id);
+
+	/* request ancilliary control data */
+	i = 1;
+	setsockopt(s, IPPROTO_IPV6, IPV6_RECVPKTINFO, &i, sizeof(i));
 
 	return sock;
 }
@@ -373,16 +385,41 @@ void *lc_socket_listen_thread(void *arg)
 	ssize_t len;
 	lc_message_t *msg = calloc(1, sizeof(lc_message_t));
 	lc_socket_call_t *sc = arg;
+	lc_message_head_t head;
+	lc_channel_t *chan;
+	char *buf;
+	char *body;
+	char *dstaddr[INET6_ADDRSTRLEN];
 
 	while(1) {
 		msg = calloc(1, sizeof(lc_message_t));
-		len = lc_msg_recv(sc->sock, &msg->msg);
+		len = lc_msg_recv(sc->sock, &buf, dstaddr);
+		logmsg(LOG_DEBUG, "message received to %s", *dstaddr);
 		logmsg(LOG_DEBUG, "got data %i bytes", (int)len);
 		if (len > 0) {
+			/* read header */
+			memcpy(&head, buf, sizeof(lc_message_head_t));
+			head.seq = be64toh(head.seq);
+			head.rnd = be64toh(head.rnd);
+			head.len = be64toh(head.len);
+
+			/* read body */
+			msg->msg = calloc(1, head.len);
+			body = buf + sizeof(lc_message_head_t);
+			memcpy(msg->msg, body, head.len);
+
+			/* update channel stats */
+			chan = lc_channel_by_address(*dstaddr);
+			if (chan) {
+				chan->seq = (head.seq > chan->seq) ? head.seq + 1 : chan->seq + 1;
+				chan->rnd = head.rnd;
+				logmsg(LOG_DEBUG, "channel clock set to %u", chan->seq);
+			}
+
+			/* TODO: store in channel log */
+
 			msg->sockid = sc->sock->id;
-			logmsg(LOG_DEBUG, "msg->sockid set to %u", sc->sock->id);
-			msg->len = len;
-			/* TODO: include dest address etc. */
+			msg->len = head.len;
 			if (sc->callback_msg)
 				sc->callback_msg(msg);
 		}
@@ -430,10 +467,20 @@ lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * url)
 	channel = calloc(1, sizeof(lc_channel_t));
 	channel->ctx = ctx;
 	channel->id = ++chan_id;
+	channel->seq = 0;
+	channel->rnd = 0;
 	channel->address = addr;
-	for (p = chan_list; p != NULL; p = p->next) {
-		if (p->next == NULL)
-			p->next = channel;
+
+	if (chan_list == NULL) {
+		chan_list = channel;
+	}
+	else {
+		for (p = chan_list; p != NULL; p = p->next) {
+			if (p->next == NULL) {
+				p->next = channel;
+				break;
+			}
+		}
 	}
 
 	return channel;
@@ -462,6 +509,22 @@ int lc_channel_bind(lc_socket_t *sock, lc_channel_t * channel)
 	logmsg(LOG_DEBUG, "Bound to socket %i", sock->socket);
 
 	return 0;
+}
+
+lc_channel_t * lc_channel_by_address(char addr[INET6_ADDRSTRLEN])
+{
+	logmsg(LOG_TRACE, "%s", __func__);
+	lc_channel_t *p;
+	char dst[INET6_ADDRSTRLEN];
+
+	for (p = chan_list; p != NULL; p = p->next) {
+		getnameinfo(p->address->ai_addr, p->address->ai_addrlen, dst,
+				INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+		if (strcmp(addr, dst) == 0)
+			return p;
+	}
+
+	return p;
 }
 
 int lc_channel_unbind(lc_channel_t * channel)
@@ -560,14 +623,14 @@ int lc_channel_free(lc_channel_t * channel)
 	return 0;
 }
 
-ssize_t lc_msg_recv(lc_socket_t *sock, char **msg)
+ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, char **dest)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	int i;
-	char dstaddr[INET6_ADDRSTRLEN];
 	struct iovec iov;
 	struct msghdr msgh;
 	char cmsgbuf[BUFSIZE];
+	char dstaddr[INET6_ADDRSTRLEN];
 	struct sockaddr_in from;
 	socklen_t fromlen = sizeof(from);
 	struct cmsghdr *cmsg;
@@ -611,6 +674,7 @@ ssize_t lc_msg_recv(lc_socket_t *sock, char **msg)
                         }
                 }
 		(*msg)[i + 1] = '\0';
+		*dest = dstaddr;
         }
 
 	logmsg(LOG_FULLTRACE, "recvmsg exiting");
@@ -623,6 +687,19 @@ int lc_msg_send(lc_channel_t *channel, char *msg, size_t len)
 	struct addrinfo *addr = channel->address;
 	int sock = channel->socket->socket;
 	int opt = 1;
+	lc_message_head_t *head;
+	char *buf;
+
+	head = calloc(1, sizeof(lc_message_head_t));
+	head->seq = htobe64(++channel->seq);
+	head->rnd = htobe64(++channel->rnd); /* FIXME: make random */
+	head->len = htobe64(len);
+
+	buf = calloc(1, sizeof(lc_message_head_t) + len);
+	memcpy(buf, head, sizeof(lc_message_head_t));
+	memcpy(buf + sizeof(lc_message_head_t), msg, len);
+
+	len += sizeof(lc_message_head_t);
 
 	/* set loopback */
 	setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &opt,sizeof(opt));
@@ -630,9 +707,11 @@ int lc_msg_send(lc_channel_t *channel, char *msg, size_t len)
 	if (setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &opt,
 			sizeof(opt) == 0))
 	{
-	logmsg(LOG_DEBUG, "Sending on interface %s", channel->ctx->tapname);
-	sendto(sock, msg, len, 0, addr->ai_addr, addr->ai_addrlen);
+		logmsg(LOG_DEBUG, "Sending on interface %s", channel->ctx->tapname);
+		sendto(sock, buf, len, 0, addr->ai_addr, addr->ai_addrlen);
 	}
+	free(head);
+	free(buf);
 
 	return 0;
 }
