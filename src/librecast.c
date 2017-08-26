@@ -67,7 +67,7 @@ lc_ctx_t *ctx_list = NULL;
 lc_socket_t *sock_list = NULL;
 lc_channel_t *chan_list = NULL;
 
-#define BUFSIZE 1024
+#define BUFSIZE 1500
 #define DEFAULT_ADDR "ff3e::"
 #define DEFAULT_PORT "4242"
 
@@ -386,10 +386,11 @@ void *lc_socket_listen_thread(void *arg)
 			if (sc->callback_msg)
 				sc->callback_msg(msg);
 		}
-		if (len < 0)
+		if (len < 0) {
 			free(msg);
 			if (sc->callback_err)
 				sc->callback_err(len);
+		}
 		free(msg->msg);
 		free(msg);
 	}
