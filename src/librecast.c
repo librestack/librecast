@@ -413,7 +413,7 @@ void *lc_socket_listen_thread(void *arg)
 			if (chan) {
 				chan->seq = (head.seq > chan->seq) ? head.seq + 1 : chan->seq + 1;
 				chan->rnd = head.rnd;
-				logmsg(LOG_DEBUG, "channel clock set to %u", chan->seq);
+				logmsg(LOG_DEBUG, "channel clock set to %u.%u", chan->seq, chan->rnd);
 			}
 
 			/* TODO: store in channel log */
@@ -692,7 +692,7 @@ int lc_msg_send(lc_channel_t *channel, char *msg, size_t len)
 
 	head = calloc(1, sizeof(lc_message_head_t));
 	head->seq = htobe64(++channel->seq);
-	head->rnd = htobe64(++channel->rnd); /* FIXME: make random */
+	lc_getrandom(&head->rnd, sizeof(lc_rnd_t), 0);
 	head->len = htobe64(len);
 
 	buf = calloc(1, sizeof(lc_message_head_t) + len);
@@ -736,4 +736,18 @@ int lc_librecast_running()
 	ret = kill(pid, 0);
 
 	return (ret == 0) ? LIBRECASTD_RUNNING : LIBRECASTD_NOT_RUNNING;
+}
+
+int lc_getrandom(void *buf, size_t buflen, unsigned int flags)
+{
+	int fd;
+	size_t len;
+
+	if ((fd = open("/dev/urandom", O_RDONLY)) == -1)
+		return lc_error_log(LOG_ERROR, LC_ERROR_RANDOM_OPEN);
+	if ((len = read(fd, buf, buflen)) == -1)
+		return lc_error_log(LOG_ERROR, LC_ERROR_RANDOM_READ);
+	close(fd);
+
+	return 0;
 }

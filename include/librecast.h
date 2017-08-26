@@ -108,3 +108,5 @@ int lc_joingroupbyaddr(unsigned char *addr, char *src);
  * src can be NULL for ASM mode, or a valid source address for SSM */
 int lc_joingroupbyname(char*groupname, char *src);
 
+/* get some random bytes */
+int lc_getrandom(void *buf, size_t buflen, unsigned int flags);

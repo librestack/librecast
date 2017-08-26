@@ -43,7 +43,9 @@
 	X(36, LC_ERROR_SOCK_IOCTL,         "Unable to create ioctl socket")      \
 	X(37, LC_ERROR_IF_UP_FAIL,         "Unable to bring up interface")       \
 	X(38, LC_ERROR_CTX_REQUIRED,       "Librecast context required for this operation") \
-	X(39, LC_ERROR_INVALID_BASEADDR,   "Invalid hashgroup baseaddr")
+	X(39, LC_ERROR_INVALID_BASEADDR,   "Invalid hashgroup baseaddr") \
+	X(40, LC_ERROR_RANDOM_OPEN,        "Unable to open random source") \
+	X(41, LC_ERROR_RANDOM_READ,        "Unable to read random source")
 #undef X
 
 #define LC_ERROR_MSG(code, name, msg) case code: return msg;
