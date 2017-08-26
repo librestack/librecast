@@ -241,12 +241,9 @@ lc_ctx_t * lc_ctx_new()
 	logmsg(LOG_TRACE, "%s", __func__);
 	lc_ctx_t *ctx, *p;
 
-	/* FIXME: randomize ids  - replace with proper hashing */
-	time_t t;
-	srand((unsigned)time(&t));
-	ctx_id = rand() % UINT32_MAX;
-	sock_id = rand() % UINT32_MAX;
-	chan_id = rand() % UINT32_MAX;
+	lc_getrandom(&ctx_id, sizeof(ctx_id), 0);
+	lc_getrandom(&sock_id, sizeof(sock_id), 0);
+	lc_getrandom(&chan_id, sizeof(chan_id), 0);
 
 	/* create bridge */
 	if ((lc_bridge_init()) != 0)
