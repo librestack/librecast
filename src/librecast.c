@@ -206,15 +206,25 @@ int lc_tap_create(char **ifname)
         return fd;
 }
 
-int lc_hashgroup(char *baseaddr, char *groupname, char *hashaddr)
+int lc_hashgroup(char *baseaddr, char *groupname, char *hashaddr, unsigned int flags)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
         int i;
         unsigned char hashgrp[SHA_DIGEST_LENGTH];
         unsigned char binaddr[16];
+        SHA_CTX *c = NULL;
 
         if (groupname) {
-                SHA1((unsigned char *)groupname, strlen(groupname), hashgrp);
+		c = malloc(sizeof(SHA_CTX));
+	        if (!SHA1_Init(c))
+		        return lc_error_log(LOG_ERROR, LC_ERROR_HASH_INIT);
+	        if (!SHA1_Update(c, (unsigned char *)groupname, strlen(groupname)))
+		        return lc_error_log(LOG_ERROR, LC_ERROR_HASH_UPDATE);
+	        if (!SHA1_Update(c, &flags, sizeof(flags)))
+		        return lc_error_log(LOG_ERROR, LC_ERROR_HASH_UPDATE);
+	        if (!SHA1_Final(hashgrp, c))
+		        return lc_error_log(LOG_ERROR, LC_ERROR_HASH_FINAL);
+	        free(c);
 
                 if (inet_pton(AF_INET6, baseaddr, &binaddr) != 1)
                         return lc_error_log(LOG_ERROR, LC_ERROR_INVALID_BASEADDR);
@@ -455,7 +465,7 @@ lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * url)
 
 	/* TODO: process url, extract port and address */
 
-	if ((lc_hashgroup(DEFAULT_ADDR, url, hashaddr)) != 0)
+	if ((lc_hashgroup(DEFAULT_ADDR, url, hashaddr, 0)) != 0)
 		return NULL;
 	logmsg(LOG_DEBUG, "channel group address: %s", hashaddr);
 	if (getaddrinfo(hashaddr, DEFAULT_PORT, &hints, &addr) != 0)

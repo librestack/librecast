@@ -45,7 +45,10 @@
 	X(38, LC_ERROR_CTX_REQUIRED,       "Librecast context required for this operation") \
 	X(39, LC_ERROR_INVALID_BASEADDR,   "Invalid hashgroup baseaddr") \
 	X(40, LC_ERROR_RANDOM_OPEN,        "Unable to open random source") \
-	X(41, LC_ERROR_RANDOM_READ,        "Unable to read random source")
+	X(41, LC_ERROR_RANDOM_READ,        "Unable to read random source") \
+	X(42, LC_ERROR_HASH_INIT,          "Unable to initialize hash") \
+	X(43, LC_ERROR_HASH_UPDATE,        "Unable to hash data") \
+	X(44, LC_ERROR_HASH_FINAL,         "Unable to finalize hash")
 #undef X
 
 #define LC_ERROR_MSG(code, name, msg) case code: return msg;
