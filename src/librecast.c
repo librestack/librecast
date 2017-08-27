@@ -400,8 +400,12 @@ void *lc_socket_listen_thread(void *arg)
 	char *srcaddr[INET6_ADDRSTRLEN];
 
 	while(1) {
-		msg = calloc(1, sizeof(lc_message_t));
+		/* about to call a blocking function, prep cleanup handlers */
+		pthread_cleanup_push(free, arg);
+		pthread_cleanup_push(free, msg);
 		len = lc_msg_recv(sc->sock, &buf, dstaddr, srcaddr);
+		pthread_cleanup_pop(0);
+		pthread_cleanup_pop(0);
 		logmsg(LOG_DEBUG, "message received to %s", *dstaddr);
 		logmsg(LOG_DEBUG, "message received from %s", *srcaddr);
 		logmsg(LOG_DEBUG, "got data %i bytes", (int)len);
@@ -438,18 +442,22 @@ void *lc_socket_listen_thread(void *arg)
 				sc->callback_err(len);
 		}
 		free(msg->msg);
-		free(msg);
+		//free(msg);
+		bzero(msg, sizeof(lc_message_t));
 	}
 	/* not reached */
+	free(sc);
 	return NULL;
 }
 
 void lc_socket_close(lc_socket_t *sock)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
-	if (sock)
+	if (sock) {
+		lc_socket_listen_cancel(sock);
 		if (sock->socket)
 			close(sock->socket);
+	}
 	free(sock);
 }
 
@@ -639,7 +647,7 @@ int lc_channel_free(lc_channel_t * channel)
 ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, char **dest, char **src)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
-	int i;
+	int i, err;
 	struct iovec iov;
 	struct msghdr msgh;
 	char cmsgbuf[BUFSIZE];
@@ -654,6 +662,8 @@ ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, char **dest, char **src)
 	assert(sock != NULL);
 
 	*msg = calloc(1, BUFSIZE);
+	if (sock->thread != 0) /* if we're in a thread, prep cleanup handler */
+		pthread_cleanup_push(free, *msg);
 
 	memset(&msgh, 0, sizeof(struct msghdr));
 	iov.iov_base = *msg;
@@ -668,7 +678,9 @@ ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, char **dest, char **src)
 
 	logmsg(LOG_DEBUG, "recvmsg on sock = %i", sock->socket);
 	i = recvmsg(sock->socket, &msgh, 0);
-	int err = errno;
+	err = errno;
+	if (sock->thread != 0) /* release thread cleanup handler before next block */
+		pthread_cleanup_pop(0);
 	if (i == -1) {
 		logmsg(LOG_DEBUG, "recvmsg ERROR: %s", strerror(err));
 	}
