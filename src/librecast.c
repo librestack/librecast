@@ -515,10 +515,13 @@ lc_channel_t * lc_channel_by_address(char addr[INET6_ADDRSTRLEN])
 	char dst[INET6_ADDRSTRLEN];
 
 	for (p = chan_list; p != NULL; p = p->next) {
-		getnameinfo(p->address->ai_addr, p->address->ai_addrlen, dst,
-				INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+		if ((getnameinfo(p->address->ai_addr, p->address->ai_addrlen, dst,
+				INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST)) != 0)
+		{
+			continue;
+		}
 		if (strcmp(addr, dst) == 0)
-			return p;
+			break;
 	}
 
 	return p;
