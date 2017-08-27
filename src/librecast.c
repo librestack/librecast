@@ -580,6 +580,7 @@ int lc_channel_join(lc_channel_t * channel)
 			joins++;
 		}
 	}
+	freeifaddrs(ifaddr);
 	if (joins > 0)
 		return 0;
 
