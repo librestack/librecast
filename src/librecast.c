@@ -397,11 +397,13 @@ void *lc_socket_listen_thread(void *arg)
 	char *buf;
 	char *body;
 	char *dstaddr[INET6_ADDRSTRLEN];
+	char *srcaddr[INET6_ADDRSTRLEN];
 
 	while(1) {
 		msg = calloc(1, sizeof(lc_message_t));
-		len = lc_msg_recv(sc->sock, &buf, dstaddr);
+		len = lc_msg_recv(sc->sock, &buf, dstaddr, srcaddr);
 		logmsg(LOG_DEBUG, "message received to %s", *dstaddr);
+		logmsg(LOG_DEBUG, "message received from %s", *srcaddr);
 		logmsg(LOG_DEBUG, "got data %i bytes", (int)len);
 		if (len > 0) {
 			/* read header */
@@ -633,7 +635,7 @@ int lc_channel_free(lc_channel_t * channel)
 	return 0;
 }
 
-ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, char **dest)
+ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, char **dest, char **src)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	int i;
@@ -641,6 +643,7 @@ ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, char **dest)
 	struct msghdr msgh;
 	char cmsgbuf[BUFSIZE];
 	char dstaddr[INET6_ADDRSTRLEN];
+	char srcaddr[INET6_ADDRSTRLEN];
 	struct sockaddr_in from;
 	socklen_t fromlen = sizeof(from);
 	struct cmsghdr *cmsg;
@@ -680,11 +683,14 @@ ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, char **dest)
                                 pi = (struct in6_pktinfo *) CMSG_DATA(cmsg);
                                 da = pi->ipi6_addr;
                                 inet_ntop(AF_INET6, &da, dstaddr, INET6_ADDRSTRLEN);
+                                inet_ntop(AF_INET6, &(((struct sockaddr_in6*)&from)->sin6_addr),
+		                                srcaddr, INET6_ADDRSTRLEN);
                                 break;
                         }
                 }
 		(*msg)[i + 1] = '\0';
 		*dest = dstaddr;
+		*src = srcaddr;
         }
 
 	logmsg(LOG_FULLTRACE, "recvmsg exiting");

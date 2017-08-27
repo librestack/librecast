@@ -91,7 +91,7 @@ int lc_channel_socket_raw(lc_channel_t * channel);
 int lc_socket_raw(lc_socket_t *sock);
 
 /* blocking message receive */
-ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, char **dest);
+ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, char **dest, char **src);
 
 /* send a message to a channel */
 int lc_msg_send(lc_channel_t *channel, char *msg, size_t len);
