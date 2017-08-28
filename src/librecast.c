@@ -92,8 +92,8 @@ lc_channel_t *chan_list = NULL;
 #undef X
 
 #define LC_SQL_STMTS(X) \
-	X(SQL_CHANNEL_KEYVAL_INSERT, "INSERT INTO keyval_channel (src, seq, rnd, channel, k, v) VALUES (%u, %u, %u, \"%s\", \"%s\", \"%s\");") \
-	X(SQL_CHANNEL_MESSAGE_INSERT, "INSERT INTO message (src, dst, seq, rnd, channel, msg) VALUES (%u, %u, %u, %u, \"%s\", \"%s\");")
+	X(SQL_CHANNEL_KEYVAL_INSERT, "INSERT INTO keyval_channel (src, seq, rnd, channel, k, v) VALUES (@src, @seq, @rnd, @channel, @k, @v);") \
+	X(SQL_CHANNEL_MESSAGE_INSERT, "INSERT INTO message (src, dst, seq, rnd, channel, msg) VALUES (@src, @dst, @seq, @rnd, @channel, @msg);")
 #undef X
 
 #define LC_SQL_CREATE_TABLES(id, sql) if ((err = lc_db_exec(db, sql)) != 0) return err;
@@ -278,8 +278,6 @@ int lc_db_exec(lc_ctx_db_t *db, char *sql)
 	if (sql == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_INVALID_PARAMS);
 
-	logmsg(LOG_DEBUG, "SQL: %s", sql);
-
         sqlite3_exec(db, sql, NULL, 0, &errmsg);
         if (errmsg != NULL) {
                 logmsg(LOG_ERROR, "%s", errmsg);
@@ -321,6 +319,9 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 {
 	char *sql;
 	lc_ctx_db_t *db;
+	sqlite3_stmt *stmt;
+	char bdst[16];
+	char bsrc[16];
 
 	if (chan == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
@@ -329,10 +330,22 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	if (db == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_DB_REQUIRED);
 
-	asprintf(&sql, lc_db_sql(SQL_CHANNEL_MESSAGE_INSERT),
-			msg->srcaddr, msg->seq, msg->rnd, chan->uri, msg->msg);
-	lc_db_exec(db, sql);
-	free(sql);
+	sql = lc_db_sql(SQL_CHANNEL_MESSAGE_INSERT);
+	memcpy(bdst, &msg->dst, 16);
+	memcpy(bsrc, &msg->src, 16);
+
+	/* FIXME: error checking */
+
+	sqlite3_prepare(db, sql, (int)strlen(sql), &stmt, NULL);
+	sqlite3_bind_blob(stmt, 1, bsrc, 16, NULL);
+	sqlite3_bind_blob(stmt, 2, bdst, 16, NULL);
+	sqlite3_bind_int(stmt, 3, msg->seq);
+	sqlite3_bind_int(stmt, 4, msg->rnd);
+	sqlite3_bind_text(stmt, 5, chan->uri, strlen(chan->uri), NULL);
+	sqlite3_bind_text(stmt, 6, msg->msg, msg->len, NULL);
+
+	sqlite3_step(stmt);
+	sqlite3_finalize(stmt);
 
 	return 0;
 }
@@ -536,6 +549,8 @@ void *lc_socket_listen_thread(void *arg)
 	lc_channel_t *chan;
 	char *buf;
 	char *body;
+	struct in6_addr dst;
+	struct in6_addr src;
 	char *dstaddr;
 	char *srcaddr;
 
@@ -543,9 +558,14 @@ void *lc_socket_listen_thread(void *arg)
 		/* about to call a blocking function, prep cleanup handlers */
 		pthread_cleanup_push(free, arg);
 		pthread_cleanup_push(free, msg);
-		len = lc_msg_recv(sc->sock, &buf, &dstaddr, &srcaddr);
+		len = lc_msg_recv(sc->sock, &buf, &dst, &src);
 		pthread_cleanup_pop(0);
 		pthread_cleanup_pop(0);
+
+		dstaddr = calloc(1, INET6_ADDRSTRLEN);
+		srcaddr = calloc(1, INET6_ADDRSTRLEN);
+		inet_ntop(AF_INET6, &dst, dstaddr, INET6_ADDRSTRLEN);
+		inet_ntop(AF_INET6, &src, srcaddr, INET6_ADDRSTRLEN);
 		logmsg(LOG_DEBUG, "message destination %s", dstaddr);
 		logmsg(LOG_DEBUG, "message source      %s", srcaddr);
 		logmsg(LOG_DEBUG, "got data %i bytes", (int)len);
@@ -804,7 +824,7 @@ int lc_channel_free(lc_channel_t * channel)
 	return 0;
 }
 
-ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, char **dest, char **src)
+ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, struct in6_addr *dst, struct in6_addr *src)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	int i, err;
@@ -815,7 +835,6 @@ ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, char **dest, char **src)
 	socklen_t fromlen = sizeof(from);
 	struct cmsghdr *cmsg;
 	struct in6_pktinfo *pi;
-	struct in6_addr da;
 
 	assert(sock != NULL);
 
@@ -851,12 +870,8 @@ ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, char **dest, char **src)
                           && (cmsg->cmsg_type == IPV6_PKTINFO))
                         {
                                 pi = (struct in6_pktinfo *) CMSG_DATA(cmsg);
-                                da = pi->ipi6_addr;
-                                *dest = calloc(1, INET6_ADDRSTRLEN);
-                                *src = calloc(1, INET6_ADDRSTRLEN);
-                                inet_ntop(AF_INET6, &da, *dest, INET6_ADDRSTRLEN);
-                                inet_ntop(AF_INET6, &(((struct sockaddr_in6*)&from)->sin6_addr),
-		                                *src, INET6_ADDRSTRLEN);
+                                *dst = pi->ipi6_addr;
+                                *src = ((struct sockaddr_in6*)&from)->sin6_addr;
                                 break;
                         }
                 }

@@ -21,8 +21,8 @@ typedef struct lc_channel_t lc_channel_t;
 typedef struct lc_msg_head_t lc_msg_head_t;
 
 typedef struct lc_message_t {
-	char dstaddr[INET6_ADDRSTRLEN];
-	char srcaddr[INET6_ADDRSTRLEN];
+	struct in6_addr dst;
+	struct in6_addr src;
 	uint64_t seq;
 	uint64_t rnd;
 	uint32_t sockid;
@@ -101,7 +101,8 @@ int lc_channel_socket_raw(lc_channel_t * channel);
 int lc_socket_raw(lc_socket_t *sock);
 
 /* blocking message receive */
-ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, char **dest, char **src);
+//ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, char **dest, char **src);
+ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, struct in6_addr *dst, struct in6_addr *src);
 
 /* send a message to a channel */
 int lc_msg_send(lc_channel_t *channel, char *msg, size_t len);
