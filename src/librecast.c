@@ -15,6 +15,7 @@
 #include <netinet/in.h>
 #include <openssl/sha.h>
 #include <signal.h>
+#include <sqlite3.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,8 +30,11 @@
 #include <net/if.h>
 #endif
 
+typedef sqlite3 lc_ctx_db_t;
+
 typedef struct lc_ctx_t {
 	lc_ctx_t *next;
+	lc_ctx_db_t *db;
 	uint32_t id;
 	int fdtap;
 	char *tapname;
@@ -79,8 +83,22 @@ lc_channel_t *chan_list = NULL;
 #define DEFAULT_ADDR "ff3e::"
 #define DEFAULT_PORT "4242"
 
+#define LC_SQL_SCHEMA(X) \
+	X(SQL_CREATE_TABLE_KEYVAL, "CREATE TABLE IF NOT EXISTS keyval (src UNSIGNED INTEGER, seq UNSIGNED INTEGER, rnd UNSIGNED INTEGER, k TEXT UNIQUE, v TEXT);") \
+	X(SQL_CREATE_TABLE_KEYVAL_CHANNEL, "CREATE TABLE IF NOT EXISTS keyval_channel (src UNSIGNED INTEGER, seq UNSIGNED INTEGER, rnd UNSIGNED INTEGER, channel TEXT, k TEXT, v TEXT);") \
+	X(SQL_CREATE_INDEX_KEYVAL_CHANNEL, "CREATE UNIQUE INDEX IF NOT EXISTS idx_keyval_channel_00 (channel, k);") \
+	X(SQL_CREATE_TABLE_MESSAGE, "CREATE TABLE IF NOT EXISTS message (id INTEGER PRIMARY KEY DESC, src UNSIGNED INTEGER, dst UNSIGNED INTEGER, seq UNSIGNED INTEGER, rnd UNSIGNED INTEGER, msg TEXT);")
+#undef X
+#define LC_SQL_CREATE_TABLES(id, sql) if ((err = lc_db_exec(db, sql)) != 0) return err;
+
 /* socket listener thread */
 void *lc_socket_listen_thread(void *sc);
+
+/* private databse functions */
+int lc_db_open(lc_ctx_db_t *db);
+int lc_db_close(lc_ctx_db_t *db);
+int lc_db_exec(lc_ctx_db_t *db, char *sql);
+int lc_db_schema_create(lc_ctx_db_t *db);
 
 int lc_bridge_init()
 {
@@ -206,6 +224,67 @@ int lc_tap_create(char **ifname)
         return fd;
 }
 
+int lc_db_open(lc_ctx_db_t *db)
+{
+	int err;
+
+	if ((err = sqlite3_open(LC_DATABASE_FILE, &db))) {
+		logmsg(LOG_ERROR, "Can't open database: %s", sqlite3_errmsg(db));
+		sqlite3_close(db);
+		return LC_ERROR_DB_OPEN;
+	}
+
+	return 0;
+}
+
+int lc_db_close(lc_ctx_db_t *db)
+{
+	sqlite3_close(db);
+	db = NULL;
+
+	return 0;
+}
+
+int lc_db_exec(lc_ctx_db_t *db, char *sql)
+{
+	char *errmsg = 0;
+
+	logmsg(LOG_DEBUG, "SQL: %s", sql);
+
+        sqlite3_exec(db, sql, NULL, 0, &errmsg);
+        if (errmsg != NULL) {
+                logmsg(LOG_ERROR, "%s", errmsg);
+                sqlite3_free(errmsg);
+		return LC_ERROR_DB_EXEC;
+        }
+
+	return 0;
+}
+
+int lc_db_schema_create(lc_ctx_db_t *db)
+{
+	int err;
+
+	LC_SQL_SCHEMA(LC_SQL_CREATE_TABLES)
+
+	return 0;
+}
+
+int lc_channel_setval(lc_channel_t *chan, char *key, char *val)
+{
+	int err;
+	lc_ctx_db_t *db = chan->ctx->db;
+
+	if (!db) {
+		if ((err = lc_db_open(db)) != 0)
+			return err;
+	}
+
+	/* TODO: write to database */
+
+	return 0;
+}
+
 int lc_hashgroup(char *baseaddr, char *groupname, char *hashaddr, unsigned int flags)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
@@ -279,14 +358,22 @@ lc_ctx_t * lc_ctx_new()
 	/* plug TAP into bridge */
 	if ((lc_bridge_add_interface(LC_BRIDGE_NAME, tap)) == -1) {
 		lc_error_log(LOG_ERROR, LC_ERROR_IF_BRIDGE_FAIL);
-		lc_ctx_free(ctx);
-		return NULL;
+		goto ctx_err;
 	}
 
 	ctx->tapname = tap;
 	ctx->fdtap = fdtap;
 
+	/* prepare database */
+	if (lc_db_open(ctx->db) != 0)
+		goto ctx_err;
+	if (lc_db_schema_create(ctx->db) != 0)
+		goto ctx_err;
+
 	return ctx;
+ctx_err:
+	lc_ctx_free(ctx);
+	return NULL;
 }
 
 uint32_t lc_ctx_get_id(lc_ctx_t *ctx)
@@ -319,6 +406,7 @@ void lc_ctx_free(lc_ctx_t *ctx)
 		if (ctx->tapname)
 			free(ctx->tapname);
 		close(ctx->fdtap);
+		lc_db_close(ctx->db);
 		free(ctx);
 	}
 }
@@ -433,6 +521,8 @@ void *lc_socket_listen_thread(void *arg)
 
 			msg->sockid = sc->sock->id;
 			msg->len = head.len;
+			msg->seq = head.seq;
+			msg->rnd = head.rnd;
 			if (sc->callback_msg)
 				sc->callback_msg(msg);
 		}
@@ -442,7 +532,6 @@ void *lc_socket_listen_thread(void *arg)
 				sc->callback_err(len);
 		}
 		free(msg->msg);
-		//free(msg);
 		bzero(msg, sizeof(lc_message_t));
 	}
 	/* not reached */
@@ -468,6 +557,11 @@ lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * url)
 	struct addrinfo *addr = NULL;
 	struct addrinfo hints = {0};
 	char hashaddr[INET6_ADDRSTRLEN];
+
+	if (!ctx) {
+		lc_error_log(LOG_ERROR, LC_ERROR_CTX_REQUIRED);
+		return NULL;
+	}
 
 	hints.ai_family = AF_INET6;
 	hints.ai_socktype = SOCK_DGRAM;
@@ -506,9 +600,15 @@ lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * url)
 int lc_channel_bind(lc_socket_t *sock, lc_channel_t * channel)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
-	struct addrinfo *addr = channel->address;
+	struct addrinfo *addr;
 	int err, opt;
 
+	if (!sock)
+		return lc_error_log(LOG_ERROR, LC_ERROR_SOCKET_REQUIRED);
+	if (!channel)
+		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
+
+	addr = channel->address;
 	channel->socket = sock;
 
 	opt = 1;
@@ -557,6 +657,10 @@ int lc_channel_unbind(lc_channel_t * channel)
 int lc_channel_join(lc_channel_t * channel)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
+
+	if (!channel)
+		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
+
 	struct ipv6_mreq req;
 	struct ifaddrs *ifaddr, *ifa;
 	int sock = channel->socket->socket;
@@ -713,6 +817,9 @@ ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, char **dest, char **src)
 int lc_msg_send(lc_channel_t *channel, char *msg, size_t len)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
+	if (!channel)
+		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
+
 	struct addrinfo *addr = channel->address;
 	int sock = channel->socket->socket;
 	int opt = 1;

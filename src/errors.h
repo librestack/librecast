@@ -48,7 +48,11 @@
 	X(41, LC_ERROR_RANDOM_READ,        "Unable to read random source") \
 	X(42, LC_ERROR_HASH_INIT,          "Unable to initialize hash") \
 	X(43, LC_ERROR_HASH_UPDATE,        "Unable to hash data") \
-	X(44, LC_ERROR_HASH_FINAL,         "Unable to finalize hash")
+	X(44, LC_ERROR_HASH_FINAL,         "Unable to finalize hash") \
+	X(45, LC_ERROR_DB_OPEN,            "Unable to open database") \
+	X(46, LC_ERROR_DB_EXEC,            "Error executing database operation") \
+	X(47, LC_ERROR_SOCKET_REQUIRED,    "Librecast socket required for this operation") \
+	X(48, LC_ERROR_CHANNEL_REQUIRED,   "Librecast channel required for this operation")
 #undef X
 
 #define LC_ERROR_MSG(code, name, msg) case code: return msg;

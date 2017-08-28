@@ -10,6 +10,7 @@
 #define LIBRECASTD_NOT_RUNNING 0
 #define LIBRECASTD_RUNNING 1
 #define LC_BRIDGE_NAME "lc0"
+#define LC_DATABASE_FILE "/var/cache/librecast.sqlite"
 
 typedef uint64_t lc_seq_t;
 typedef uint64_t lc_rnd_t;
@@ -21,6 +22,9 @@ typedef struct lc_msg_head_t lc_msg_head_t;
 
 typedef struct lc_message_t {
 	char dstaddr[INET6_ADDRSTRLEN];
+	char srcaddr[INET6_ADDRSTRLEN];
+	uint64_t seq;
+	uint64_t rnd;
 	uint32_t sockid;
 	char *msg;
 	size_t len;
@@ -43,6 +47,12 @@ int lc_tap_create(char **ifname);
 
 /* create multicast group address from baseaddr and hash of groupname */
 int lc_hashgroup(char *baseaddr, char *groupname, char *hashaddr, unsigned int flags);
+
+/* data storage functions */
+int lc_getval(char *key, char *val);
+int lc_setval(char *key, char *val);
+int lc_channel_getval(lc_channel_t *chan, char *key, char *val);
+int lc_channel_setval(lc_channel_t *chan, char *key, char *val);
 
 /* destroy librecast context and clean up */
 void lc_ctx_free(lc_ctx_t *ctx);
