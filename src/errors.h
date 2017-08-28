@@ -51,8 +51,10 @@
 	X(44, LC_ERROR_HASH_FINAL,         "Unable to finalize hash") \
 	X(45, LC_ERROR_DB_OPEN,            "Unable to open database") \
 	X(46, LC_ERROR_DB_EXEC,            "Error executing database operation") \
-	X(47, LC_ERROR_SOCKET_REQUIRED,    "Librecast socket required for this operation") \
-	X(48, LC_ERROR_CHANNEL_REQUIRED,   "Librecast channel required for this operation")
+	X(47, LC_ERROR_DB_REQUIRED,        "Database required") \
+	X(48, LC_ERROR_SOCKET_REQUIRED,    "Librecast socket required for this operation") \
+	X(49, LC_ERROR_CHANNEL_REQUIRED,   "Librecast channel required for this operation") \
+	X(50, LC_ERROR_INVALID_PARAMS,     "Invalid arguments to function")
 #undef X
 
 #define LC_ERROR_MSG(code, name, msg) case code: return msg;

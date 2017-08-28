@@ -53,6 +53,7 @@ typedef struct lc_channel_t {
 	lc_ctx_t *ctx;
 	struct lc_socket_t *socket;
 	struct addrinfo *address;
+	char *uri;
 	uint32_t id;
 	lc_seq_t seq; /* sequence number (Lamport clock) */
 	lc_rnd_t rnd; /* random nonce */
@@ -86,17 +87,31 @@ lc_channel_t *chan_list = NULL;
 #define LC_SQL_SCHEMA(X) \
 	X(SQL_CREATE_TABLE_KEYVAL, "CREATE TABLE IF NOT EXISTS keyval (src UNSIGNED INTEGER, seq UNSIGNED INTEGER, rnd UNSIGNED INTEGER, k TEXT UNIQUE, v TEXT);") \
 	X(SQL_CREATE_TABLE_KEYVAL_CHANNEL, "CREATE TABLE IF NOT EXISTS keyval_channel (src UNSIGNED INTEGER, seq UNSIGNED INTEGER, rnd UNSIGNED INTEGER, channel TEXT, k TEXT, v TEXT);") \
-	X(SQL_CREATE_INDEX_KEYVAL_CHANNEL, "CREATE UNIQUE INDEX IF NOT EXISTS idx_keyval_channel_00 (channel, k);") \
-	X(SQL_CREATE_TABLE_MESSAGE, "CREATE TABLE IF NOT EXISTS message (id INTEGER PRIMARY KEY DESC, src UNSIGNED INTEGER, dst UNSIGNED INTEGER, seq UNSIGNED INTEGER, rnd UNSIGNED INTEGER, msg TEXT);")
+	X(SQL_CREATE_INDEX_KEYVAL_CHANNEL, "CREATE UNIQUE INDEX IF NOT EXISTS idx_keyval_channel_00 ON keyval_channel (channel, k);") \
+	X(SQL_CREATE_TABLE_MESSAGE, "CREATE TABLE IF NOT EXISTS message (id INTEGER PRIMARY KEY DESC, src UNSIGNED INTEGER, dst UNSIGNED INTEGER, seq UNSIGNED INTEGER, rnd UNSIGNED INTEGER, channel TEXT, msg TEXT);")
 #undef X
+
+#define LC_SQL_STMTS(X) \
+	X(SQL_CHANNEL_KEYVAL_INSERT, "INSERT INTO keyval_channel (src, seq, rnd, channel, k, v) VALUES (%u, %u, %u, \"%s\", \"%s\", \"%s\");") \
+	X(SQL_CHANNEL_MESSAGE_INSERT, "INSERT INTO message (src, dst, seq, rnd, channel, msg) VALUES (%u, %u, %u, %u, \"%s\", \"%s\");")
+#undef X
+
 #define LC_SQL_CREATE_TABLES(id, sql) if ((err = lc_db_exec(db, sql)) != 0) return err;
+#define LC_SQL_TEXT(id, sql) case id: return sql;
+#define LC_SQL_ENUM(id, sql) id,
+
+typedef enum {
+	LC_SQL_SCHEMA(LC_SQL_ENUM)
+	LC_SQL_STMTS(LC_SQL_ENUM)
+} lc_db_sql_t;
 
 /* socket listener thread */
 void *lc_socket_listen_thread(void *sc);
 
 /* private database functions */
-int lc_db_open(lc_ctx_db_t *db);
+int lc_db_open(lc_ctx_db_t **db);
 int lc_db_close(lc_ctx_db_t *db);
+char *lc_db_sql(lc_db_sql_t code);
 int lc_db_exec(lc_ctx_db_t *db, char *sql);
 int lc_db_schema_create(lc_ctx_db_t *db);
 
@@ -224,13 +239,13 @@ int lc_tap_create(char **ifname)
         return fd;
 }
 
-int lc_db_open(lc_ctx_db_t *db)
+int lc_db_open(lc_ctx_db_t **db)
 {
 	int err;
 
-	if ((err = sqlite3_open(LC_DATABASE_FILE, &db))) {
-		logmsg(LOG_ERROR, "Can't open database: %s", sqlite3_errmsg(db));
-		sqlite3_close(db);
+	if ((err = sqlite3_open(LC_DATABASE_FILE, db))) {
+		logmsg(LOG_ERROR, "Can't open database: %s", sqlite3_errmsg(*db));
+		sqlite3_close(*db);
 		return LC_ERROR_DB_OPEN;
 	}
 
@@ -245,9 +260,23 @@ int lc_db_close(lc_ctx_db_t *db)
 	return 0;
 }
 
+char *lc_db_sql(lc_db_sql_t code)
+{
+	switch (code) {
+		LC_SQL_STMTS(LC_SQL_TEXT)
+		LC_SQL_SCHEMA(LC_SQL_TEXT)
+	}
+	return NULL;
+}
+
 int lc_db_exec(lc_ctx_db_t *db, char *sql)
 {
 	char *errmsg = 0;
+
+	if (db == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_DB_REQUIRED);
+	if (sql == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_INVALID_PARAMS);
 
 	logmsg(LOG_DEBUG, "SQL: %s", sql);
 
@@ -265,6 +294,9 @@ int lc_db_schema_create(lc_ctx_db_t *db)
 {
 	int err;
 
+	if (db == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_DB_REQUIRED);
+
 	LC_SQL_SCHEMA(LC_SQL_CREATE_TABLES)
 
 	return 0;
@@ -276,11 +308,24 @@ int lc_channel_setval(lc_channel_t *chan, char *key, char *val)
 	lc_ctx_db_t *db = chan->ctx->db;
 
 	if (!db) {
-		if ((err = lc_db_open(db)) != 0)
+		if ((err = lc_db_open(&db)) != 0)
 			return err;
 	}
 
-	/* TODO: write to database */
+	/* TODO: send msg to network */
+
+	return 0;
+}
+
+int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
+{
+	char *sql;
+	lc_ctx_db_t *db = chan->ctx->db;
+
+	asprintf(&sql, lc_db_sql(SQL_CHANNEL_MESSAGE_INSERT),
+			msg->srcaddr, msg->seq, msg->rnd, chan->uri, msg->msg);
+	lc_db_exec(db, sql);
+	free(sql);
 
 	return 0;
 }
@@ -365,7 +410,7 @@ lc_ctx_t * lc_ctx_new()
 	ctx->fdtap = fdtap;
 
 	/* prepare database */
-	if (lc_db_open(ctx->db) != 0)
+	if (lc_db_open(&ctx->db) != 0)
 		goto ctx_err;
 	if (lc_db_schema_create(ctx->db) != 0)
 		goto ctx_err;
@@ -517,12 +562,14 @@ void *lc_socket_listen_thread(void *arg)
 				logmsg(LOG_DEBUG, "channel clock set to %u.%u", chan->seq, chan->rnd);
 			}
 
-			/* TODO: store in channel log */
-
 			msg->sockid = sc->sock->id;
 			msg->len = head.len;
 			msg->seq = head.seq;
 			msg->rnd = head.rnd;
+
+			/* store in channel log */
+			//lc_channel_logmsg(chan, msg);
+
 			if (sc->callback_msg)
 				sc->callback_msg(msg);
 		}
@@ -550,7 +597,7 @@ void lc_socket_close(lc_socket_t *sock)
 	free(sock);
 }
 
-lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * url)
+lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * uri)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	lc_channel_t *channel, *p;
@@ -569,13 +616,14 @@ lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * url)
 
 	/* TODO: process url, extract port and address */
 
-	if ((lc_hashgroup(DEFAULT_ADDR, url, hashaddr, 0)) != 0)
+	if ((lc_hashgroup(DEFAULT_ADDR, uri, hashaddr, 0)) != 0)
 		return NULL;
 	logmsg(LOG_DEBUG, "channel group address: %s", hashaddr);
 	if (getaddrinfo(hashaddr, DEFAULT_PORT, &hints, &addr) != 0)
 		return NULL;
 
 	channel = calloc(1, sizeof(lc_channel_t));
+	channel->uri = uri;
 	channel->ctx = ctx;
 	channel->id = ++chan_id;
 	channel->seq = 0;
