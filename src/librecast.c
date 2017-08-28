@@ -307,7 +307,7 @@ int lc_channel_setval(lc_channel_t *chan, char *key, char *val)
 	int err;
 	lc_ctx_db_t *db = chan->ctx->db;
 
-	if (!db) {
+	if (db == NULL) {
 		if ((err = lc_db_open(&db)) != 0)
 			return err;
 	}
@@ -320,7 +320,14 @@ int lc_channel_setval(lc_channel_t *chan, char *key, char *val)
 int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 {
 	char *sql;
-	lc_ctx_db_t *db = chan->ctx->db;
+	lc_ctx_db_t *db;
+
+	if (chan == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
+
+	db = chan->ctx->db;
+	if (db == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_DB_REQUIRED);
 
 	asprintf(&sql, lc_db_sql(SQL_CHANNEL_MESSAGE_INSERT),
 			msg->srcaddr, msg->seq, msg->rnd, chan->uri, msg->msg);
@@ -529,18 +536,18 @@ void *lc_socket_listen_thread(void *arg)
 	lc_channel_t *chan;
 	char *buf;
 	char *body;
-	char *dstaddr[INET6_ADDRSTRLEN];
-	char *srcaddr[INET6_ADDRSTRLEN];
+	char *dstaddr;
+	char *srcaddr;
 
 	while(1) {
 		/* about to call a blocking function, prep cleanup handlers */
 		pthread_cleanup_push(free, arg);
 		pthread_cleanup_push(free, msg);
-		len = lc_msg_recv(sc->sock, &buf, dstaddr, srcaddr);
+		len = lc_msg_recv(sc->sock, &buf, &dstaddr, &srcaddr);
 		pthread_cleanup_pop(0);
 		pthread_cleanup_pop(0);
-		logmsg(LOG_DEBUG, "message received to %s", *dstaddr);
-		logmsg(LOG_DEBUG, "message received from %s", *srcaddr);
+		logmsg(LOG_DEBUG, "message destination %s", dstaddr);
+		logmsg(LOG_DEBUG, "message source      %s", srcaddr);
 		logmsg(LOG_DEBUG, "got data %i bytes", (int)len);
 		if (len > 0) {
 			/* read header */
@@ -554,22 +561,21 @@ void *lc_socket_listen_thread(void *arg)
 			body = buf + sizeof(lc_message_head_t);
 			memcpy(msg->msg, body, head.len);
 
-			/* update channel stats */
-			chan = lc_channel_by_address(*dstaddr);
-			if (chan) {
-				chan->seq = (head.seq > chan->seq) ? head.seq + 1 : chan->seq + 1;
-				chan->rnd = head.rnd;
-				logmsg(LOG_DEBUG, "channel clock set to %u.%u", chan->seq, chan->rnd);
-			}
-
 			msg->sockid = sc->sock->id;
 			msg->len = head.len;
 			msg->seq = head.seq;
 			msg->rnd = head.rnd;
 
-			/* store in channel log */
-			//lc_channel_logmsg(chan, msg);
+			/* update channel stats */
+			chan = lc_channel_by_address(dstaddr);
+			if (chan) {
+				chan->seq = (head.seq > chan->seq) ? head.seq + 1 : chan->seq + 1;
+				chan->rnd = head.rnd;
+				logmsg(LOG_DEBUG, "channel clock set to %u.%u", chan->seq, chan->rnd);
+				lc_channel_logmsg(chan, msg); /* store in channel log */
+			}
 
+			/* callback to message handler */
 			if (sc->callback_msg)
 				sc->callback_msg(msg);
 		}
@@ -579,6 +585,8 @@ void *lc_socket_listen_thread(void *arg)
 				sc->callback_err(len);
 		}
 		free(msg->msg);
+		free(dstaddr);
+		free(srcaddr);
 		bzero(msg, sizeof(lc_message_t));
 	}
 	/* not reached */
@@ -803,8 +811,6 @@ ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, char **dest, char **src)
 	struct iovec iov;
 	struct msghdr msgh;
 	char cmsgbuf[BUFSIZE];
-	char dstaddr[INET6_ADDRSTRLEN];
-	char srcaddr[INET6_ADDRSTRLEN];
 	struct sockaddr_in from;
 	socklen_t fromlen = sizeof(from);
 	struct cmsghdr *cmsg;
@@ -837,7 +843,6 @@ ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, char **dest, char **src)
 		logmsg(LOG_DEBUG, "recvmsg ERROR: %s", strerror(err));
 	}
         if (i > 0) {
-                dstaddr[0] = '\0';
                 for (cmsg = CMSG_FIRSTHDR(&msgh);
                      cmsg != NULL;
                      cmsg = CMSG_NXTHDR(&msgh, cmsg))
@@ -847,18 +852,17 @@ ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, char **dest, char **src)
                         {
                                 pi = (struct in6_pktinfo *) CMSG_DATA(cmsg);
                                 da = pi->ipi6_addr;
-                                inet_ntop(AF_INET6, &da, dstaddr, INET6_ADDRSTRLEN);
+                                *dest = calloc(1, INET6_ADDRSTRLEN);
+                                *src = calloc(1, INET6_ADDRSTRLEN);
+                                inet_ntop(AF_INET6, &da, *dest, INET6_ADDRSTRLEN);
                                 inet_ntop(AF_INET6, &(((struct sockaddr_in6*)&from)->sin6_addr),
-		                                srcaddr, INET6_ADDRSTRLEN);
+		                                *src, INET6_ADDRSTRLEN);
                                 break;
                         }
                 }
-		(*msg)[i + 1] = '\0';
-		*dest = dstaddr;
-		*src = srcaddr;
         }
 
-	logmsg(LOG_FULLTRACE, "recvmsg exiting");
+	logmsg(LOG_FULLTRACE, "%s exiting", __func__);
 	return i;
 }
 
