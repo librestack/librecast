@@ -94,7 +94,7 @@ lc_channel_t *chan_list = NULL;
 /* socket listener thread */
 void *lc_socket_listen_thread(void *sc);
 
-/* private databse functions */
+/* private database functions */
 int lc_db_open(lc_ctx_db_t *db);
 int lc_db_close(lc_ctx_db_t *db);
 int lc_db_exec(lc_ctx_db_t *db, char *sql);
