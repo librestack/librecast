@@ -100,7 +100,8 @@ lc_channel_t *chan_list = NULL;
 #define LC_SQL_TEXT(id, sql) case id: return sql;
 #define LC_SQL_ENUM(id, sql) id,
 
-#define ESQL(expr) if (err == 0) TEST((err = (expr)) == SQLITE_OK, #expr)
+#define E_OK(expr) if (err == 0) TEST((err = (expr)) == SQLITE_OK, #expr)
+#define E_DONE(expr) if (err == 0) TEST((err = (expr)) == SQLITE_DONE, #expr)
 #define TEST(test, f) ((test) ? (void)0 : ((void)logmsg(LOG_DEBUG, "ERROR(%i): %s", err, #f), err=LC_ERROR_DB_EXEC))
 
 typedef enum {
@@ -345,15 +346,15 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	memcpy(bsrc, &msg->src, 16);
 
 	err = 0;
-	ESQL(sqlite3_prepare_v2(db, sql, (int)strlen(sql), &stmt, NULL));
-	ESQL(sqlite3_bind_blob(stmt, 1, bsrc, 16, NULL));
-	ESQL(sqlite3_bind_blob(stmt, 2, bdst, 16, NULL));
-	ESQL(sqlite3_bind_int(stmt, 3, msg->seq));
-	ESQL(sqlite3_bind_int(stmt, 4, msg->rnd));
-	ESQL(sqlite3_bind_text(stmt, 5, chan->uri, strlen(chan->uri), NULL));
-	ESQL(sqlite3_bind_text(stmt, 6, msg->msg, msg->len, NULL));
-	ESQL(sqlite3_step(stmt));
-	ESQL(sqlite3_finalize(stmt));
+	E_OK(sqlite3_prepare_v2(db, sql, (int)strlen(sql), &stmt, NULL));
+	E_OK(sqlite3_bind_blob(stmt, 1, bsrc, 16, NULL));
+	E_OK(sqlite3_bind_blob(stmt, 2, bdst, 16, NULL));
+	E_OK(sqlite3_bind_int(stmt, 3, msg->seq));
+	E_OK(sqlite3_bind_int(stmt, 4, msg->rnd));
+	E_OK(sqlite3_bind_text(stmt, 5, chan->uri, strlen(chan->uri), NULL));
+	E_OK(sqlite3_bind_text(stmt, 6, msg->msg, msg->len, NULL));
+	E_DONE(sqlite3_step(stmt));
+	E_OK(sqlite3_finalize(stmt));
 
 	logmsg(LOG_FULLTRACE, "%s exiting", __func__);
 	return err;
