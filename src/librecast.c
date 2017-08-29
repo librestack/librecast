@@ -100,6 +100,9 @@ lc_channel_t *chan_list = NULL;
 #define LC_SQL_TEXT(id, sql) case id: return sql;
 #define LC_SQL_ENUM(id, sql) id,
 
+#define ESQL(expr) if (err == 0) TEST((err = (expr)) == SQLITE_OK, #expr)
+#define TEST(test, f) ((test) ? (void)0 : ((void)logmsg(LOG_DEBUG, "ERROR(%i): %s", err, #f), err=LC_ERROR_DB_EXEC))
+
 typedef enum {
 	LC_SQL_SCHEMA(LC_SQL_ENUM)
 	LC_SQL_STMTS(LC_SQL_ENUM)
@@ -254,6 +257,7 @@ int lc_db_open(lc_ctx_db_t **db)
 
 int lc_db_close(lc_ctx_db_t *db)
 {
+	logmsg(LOG_TRACE, "%s", __func__);
 	sqlite3_close(db);
 	db = NULL;
 
@@ -262,6 +266,7 @@ int lc_db_close(lc_ctx_db_t *db)
 
 char *lc_db_sql(lc_db_sql_t code)
 {
+	logmsg(LOG_TRACE, "%s", __func__);
 	switch (code) {
 		LC_SQL_STMTS(LC_SQL_TEXT)
 		LC_SQL_SCHEMA(LC_SQL_TEXT)
@@ -271,6 +276,7 @@ char *lc_db_sql(lc_db_sql_t code)
 
 int lc_db_exec(lc_ctx_db_t *db, char *sql)
 {
+	logmsg(LOG_TRACE, "%s", __func__);
 	char *errmsg = 0;
 
 	if (db == NULL)
@@ -290,6 +296,7 @@ int lc_db_exec(lc_ctx_db_t *db, char *sql)
 
 int lc_db_schema_create(lc_ctx_db_t *db)
 {
+	logmsg(LOG_TRACE, "%s", __func__);
 	int err;
 
 	if (db == NULL)
@@ -302,6 +309,7 @@ int lc_db_schema_create(lc_ctx_db_t *db)
 
 int lc_channel_setval(lc_channel_t *chan, char *key, char *val)
 {
+	logmsg(LOG_TRACE, "%s", __func__);
 	int err;
 	lc_ctx_db_t *db = chan->ctx->db;
 
@@ -317,11 +325,13 @@ int lc_channel_setval(lc_channel_t *chan, char *key, char *val)
 
 int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 {
-	char *sql;
+	logmsg(LOG_TRACE, "%s", __func__);
 	lc_ctx_db_t *db;
 	sqlite3_stmt *stmt;
+	char *sql;
 	char bdst[16];
 	char bsrc[16];
+	int err;
 
 	if (chan == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
@@ -334,20 +344,19 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	memcpy(bdst, &msg->dst, 16);
 	memcpy(bsrc, &msg->src, 16);
 
-	/* FIXME: error checking */
+	err = 0;
+	ESQL(sqlite3_prepare_v2(db, sql, (int)strlen(sql), &stmt, NULL));
+	ESQL(sqlite3_bind_blob(stmt, 1, bsrc, 16, NULL));
+	ESQL(sqlite3_bind_blob(stmt, 2, bdst, 16, NULL));
+	ESQL(sqlite3_bind_int(stmt, 3, msg->seq));
+	ESQL(sqlite3_bind_int(stmt, 4, msg->rnd));
+	ESQL(sqlite3_bind_text(stmt, 5, chan->uri, strlen(chan->uri), NULL));
+	ESQL(sqlite3_bind_text(stmt, 6, msg->msg, msg->len, NULL));
+	ESQL(sqlite3_step(stmt));
+	ESQL(sqlite3_finalize(stmt));
 
-	sqlite3_prepare(db, sql, (int)strlen(sql), &stmt, NULL);
-	sqlite3_bind_blob(stmt, 1, bsrc, 16, NULL);
-	sqlite3_bind_blob(stmt, 2, bdst, 16, NULL);
-	sqlite3_bind_int(stmt, 3, msg->seq);
-	sqlite3_bind_int(stmt, 4, msg->rnd);
-	sqlite3_bind_text(stmt, 5, chan->uri, strlen(chan->uri), NULL);
-	sqlite3_bind_text(stmt, 6, msg->msg, msg->len, NULL);
-
-	sqlite3_step(stmt);
-	sqlite3_finalize(stmt);
-
-	return 0;
+	logmsg(LOG_FULLTRACE, "%s exiting", __func__);
+	return err;
 }
 
 int lc_hashgroup(char *baseaddr, char *groupname, char *hashaddr, unsigned int flags)
