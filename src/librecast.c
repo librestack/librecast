@@ -368,6 +368,11 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	E_DONE(sqlite3_step(stmt));
 	E_OK(sqlite3_finalize(stmt));
 
+	free(seq);
+	free(rnd);
+	free(dst);
+	free(src);
+
 	logmsg(LOG_FULLTRACE, "%s exiting", __func__);
 	return err;
 }
