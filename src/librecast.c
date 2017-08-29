@@ -88,7 +88,7 @@ lc_channel_t *chan_list = NULL;
 	X(SQL_CREATE_TABLE_KEYVAL, "CREATE TABLE IF NOT EXISTS keyval (src UNSIGNED INTEGER, seq UNSIGNED INTEGER, rnd UNSIGNED INTEGER, k TEXT UNIQUE, v TEXT);") \
 	X(SQL_CREATE_TABLE_KEYVAL_CHANNEL, "CREATE TABLE IF NOT EXISTS keyval_channel (src UNSIGNED INTEGER, seq UNSIGNED INTEGER, rnd UNSIGNED INTEGER, channel TEXT, k TEXT, v TEXT);") \
 	X(SQL_CREATE_INDEX_KEYVAL_CHANNEL, "CREATE UNIQUE INDEX IF NOT EXISTS idx_keyval_channel_00 ON keyval_channel (channel, k);") \
-	X(SQL_CREATE_TABLE_MESSAGE, "CREATE TABLE IF NOT EXISTS message (id INTEGER PRIMARY KEY DESC, src UNSIGNED INTEGER, dst UNSIGNED INTEGER, seq UNSIGNED INTEGER, rnd UNSIGNED INTEGER, channel TEXT, msg TEXT);")
+	X(SQL_CREATE_TABLE_MESSAGE, "CREATE TABLE IF NOT EXISTS message (id INTEGER PRIMARY KEY DESC, src BLOB, dst BLOB, seq BLOB, rnd BLOB, channel TEXT, msg TEXT);")
 #undef X
 
 #define LC_SQL_STMTS(X) \
@@ -329,10 +329,12 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	logmsg(LOG_TRACE, "%s", __func__);
 	lc_ctx_db_t *db;
 	sqlite3_stmt *stmt;
-	char *sql;
-	char bdst[16];
-	char bsrc[16];
 	int err;
+	char *sql;
+	char *dst;
+	char *src;
+	char *seq;
+	char *rnd;
 
 	if (chan == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
@@ -342,15 +344,25 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 		return lc_error_log(LOG_ERROR, LC_ERROR_DB_REQUIRED);
 
 	sql = lc_db_sql(SQL_CHANNEL_MESSAGE_INSERT);
-	memcpy(bdst, &msg->dst, 16);
-	memcpy(bsrc, &msg->src, 16);
+
+	/* Sqlite can't handle unsigned 64 or 128 bit values as integers.
+	 * We could store these as blobs, but that makes the database unreadable,
+	 * so storing these values as text for now. */
+
+	dst = calloc(1, INET6_ADDRSTRLEN);
+	src = calloc(1, INET6_ADDRSTRLEN);
+	inet_ntop(AF_INET6, &msg->dst, dst, INET6_ADDRSTRLEN);
+	inet_ntop(AF_INET6, &msg->src, src, INET6_ADDRSTRLEN);
+
+	asprintf(&seq, "%lu", msg->seq);
+	asprintf(&rnd, "%lu", msg->rnd);
 
 	err = 0;
 	E_OK(sqlite3_prepare_v2(db, sql, (int)strlen(sql), &stmt, NULL));
-	E_OK(sqlite3_bind_blob(stmt, 1, bsrc, 16, NULL));
-	E_OK(sqlite3_bind_blob(stmt, 2, bdst, 16, NULL));
-	E_OK(sqlite3_bind_int(stmt, 3, msg->seq));
-	E_OK(sqlite3_bind_int(stmt, 4, msg->rnd));
+	E_OK(sqlite3_bind_text(stmt, 1, src, INET6_ADDRSTRLEN, NULL));
+	E_OK(sqlite3_bind_text(stmt, 2, dst, INET6_ADDRSTRLEN, NULL));
+	E_OK(sqlite3_bind_text(stmt, 3, seq, 8, NULL));
+	E_OK(sqlite3_bind_text(stmt, 4, rnd, 8, NULL));
 	E_OK(sqlite3_bind_text(stmt, 5, chan->uri, strlen(chan->uri), NULL));
 	E_OK(sqlite3_bind_text(stmt, 6, msg->msg, msg->len, NULL));
 	E_DONE(sqlite3_step(stmt));
@@ -595,6 +607,8 @@ void *lc_socket_listen_thread(void *arg)
 			msg->len = head.len;
 			msg->seq = head.seq;
 			msg->rnd = head.rnd;
+			msg->src = src;
+			msg->dst = dst;
 
 			/* update channel stats */
 			chan = lc_channel_by_address(dstaddr);
