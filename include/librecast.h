@@ -30,6 +30,22 @@ typedef struct lc_message_t {
 	size_t len;
 } lc_message_t;
 
+#define LC_OPCODES(X) \
+	X(0x0, LC_OP_NOOP, "NOOP", lc_op_noop) \
+	X(0x1, LC_OP_PING, "PING", lc_op_ping) \
+	X(0x2, LC_OP_PONG, "PONG", lc_op_pong) \
+	X(0x3, LC_OP_GET,  "GET",  lc_op_get) \
+	X(0x4, LC_OP_SET,  "SET",  lc_op_put) \
+	X(0x5, LC_OP_DEL,  "DEL",  lc_op_del)
+#undef X
+
+#define LC_OPCODE_ENUM(code, name, text, f) name = code,
+
+typedef enum {
+	LC_OPCODES(LC_OPCODE_ENUM)
+} lc_opcode_t;
+
+
 /* create new librecast context and set up environment */
 lc_ctx_t * lc_ctx_new();
 
