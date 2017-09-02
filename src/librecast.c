@@ -323,14 +323,15 @@ int lc_channel_setval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
 			return err;
 	}
 
-	/* pack data */
+	/* pack data: [keylen][key][data] */
 	keylen = htobe64(key->size);
-	pkt = malloc(sizeof(lc_len_t) + val->size);
+	pkt = malloc(sizeof(lc_len_t) + key->size + val->size);
 	memcpy(pkt, &keylen, sizeof(lc_len_t));
-	memcpy(pkt + sizeof(lc_len_t), val->data, val->size);
+	memcpy(pkt + sizeof(lc_len_t), key->data, key->size);
+	memcpy(pkt + sizeof(lc_len_t) + key->size, val->data, val->size);
 
 	/* prepare message */
-	lc_msg_init_data(&msg, pkt, sizeof(lc_len_t) + val->size, free, NULL);
+	lc_msg_init_data(&msg, pkt, sizeof(lc_len_t) + key->size + val->size, NULL, NULL);
 	int i = LC_OP_SET;
 	lc_msg_set(&msg, LC_ATTR_OPCODE, &i);
 	lc_msg_set(&msg, LC_ATTR_DATA, pkt);
