@@ -968,7 +968,10 @@ int lc_socket_raw(lc_socket_t *sock)
 int lc_channel_free(lc_channel_t * channel)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
-	freeaddrinfo(channel->address);
+	if (channel == NULL)
+		return 0;
+	if (channel->address != NULL)
+		freeaddrinfo(channel->address);
 	free(channel);
 	return 0;
 }
