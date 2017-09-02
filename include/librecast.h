@@ -19,16 +19,7 @@ typedef struct lc_ctx_t lc_ctx_t;
 typedef struct lc_socket_t lc_socket_t;
 typedef struct lc_channel_t lc_channel_t;
 typedef struct lc_msg_head_t lc_msg_head_t;
-
-typedef struct lc_message_t {
-	struct in6_addr dst;
-	struct in6_addr src;
-	uint64_t seq;
-	uint64_t rnd;
-	uint32_t sockid;
-	char *msg;
-	size_t len;
-} lc_message_t;
+typedef void *lc_free_fn_t(void *msg, void *hint);
 
 #define LC_OPCODES(X) \
 	X(0x0, LC_OP_NOOP, "NOOP", lc_op_noop) \
@@ -45,9 +36,38 @@ typedef enum {
 	LC_OPCODES(LC_OPCODE_ENUM)
 } lc_opcode_t;
 
+typedef enum {
+	LC_ATTR_DATA,
+	LC_ATTR_LEN,
+	LC_ATTR_OPCODE,
+} lc_msg_attr_t;
+
+typedef struct lc_message_t {
+	struct in6_addr dst;
+	struct in6_addr src;
+	lc_seq_t seq;
+	lc_rnd_t rnd;
+	lc_len_t len;
+	uint32_t sockid;
+	lc_opcode_t op;
+	lc_free_fn_t *free;
+	void *hint;
+	void *data;
+} lc_message_t;
 
 /* create new librecast context and set up environment */
 lc_ctx_t * lc_ctx_new();
+
+/* manage message structures */
+int lc_msg_init(lc_message_t *msg);
+int lc_msg_init_size(lc_message_t *msg, size_t len);
+int lc_msg_init_data(lc_message_t *msg, void *data, size_t len, void *f, void *hint);
+void lc_msg_free(lc_message_t *msg);
+int lc_msg_get(lc_message_t *msg, lc_msg_attr_t attr, void *value);
+int lc_msg_set(lc_message_t *msg, lc_msg_attr_t attr, void *value);
+
+/* return pointer to message payload */
+void *lc_msg_data(lc_message_t *msg);
 
 /* return structure ids */
 uint32_t lc_ctx_get_id(lc_ctx_t *ctx);
@@ -120,7 +140,7 @@ int lc_socket_raw(lc_socket_t *sock);
 ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, struct in6_addr *dst, struct in6_addr *src);
 
 /* send a message to a channel */
-int lc_msg_send(lc_channel_t *channel, char *msg, size_t len);
+int lc_msg_send(lc_channel_t *channel, lc_message_t *msg);
 
 /* Is librecast running?  */
 int lc_librecast_running();

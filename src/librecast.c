@@ -62,6 +62,7 @@ typedef struct lc_channel_t {
 typedef struct lc_message_head_t {
 	lc_seq_t seq; /* sequence number */
 	lc_rnd_t rnd; /* nonce */
+	lc_opcode_t op;
 	lc_len_t len;
 } __attribute__((__packed__)) lc_message_head_t;
 
@@ -319,7 +320,112 @@ int lc_channel_setval(lc_channel_t *chan, char *key, char *val)
 			return err;
 	}
 
-	/* TODO: send msg to network */
+	lc_message_t msg = {};
+	lc_msg_init(&msg);
+	int i = LC_OP_SET;
+	lc_msg_set(&msg, LC_ATTR_OPCODE, &i);
+	lc_msg_set(&msg, LC_ATTR_DATA, val);
+	err = lc_msg_send(chan, &msg);
+
+	return 0;
+}
+
+int lc_msg_init(lc_message_t *msg)
+{
+	bzero(msg, sizeof(lc_message_t));
+	return 0;
+}
+
+int lc_msg_init_size(lc_message_t *msg, size_t len)
+{
+	int err;
+
+	if ((err = lc_msg_init(msg)) != 0)
+		return err;
+
+	msg->len = len;
+	if ((msg->data = malloc(len)) == NULL)
+		return LC_ERROR_MALLOC;
+
+	return 0;
+}
+
+int lc_msg_init_data(lc_message_t *msg, void *data, size_t len, void *f, void *hint)
+{
+	int err;
+
+	if ((err = lc_msg_init(msg)) != 0)
+		return err;
+
+	msg->len = len;
+	if ((msg->data = malloc(len)) == NULL)
+		return LC_ERROR_MALLOC;
+	memcpy(lc_msg_data(msg), data, len);
+
+	msg->free = f;
+	msg->hint = hint;
+
+	return 0;
+}
+
+void lc_msg_free(lc_message_t *msg)
+{
+	if (msg->data != NULL) {
+		if (*msg->free != NULL)
+			msg->free(msg, msg->hint);
+		else
+			free(msg->data);
+	}
+	msg = NULL;
+}
+
+void *lc_msg_data(lc_message_t *msg)
+{
+	if (msg == NULL)
+		return NULL;
+	return msg->data;
+}
+
+int lc_msg_get(lc_message_t *msg, lc_msg_attr_t attr, void *value)
+{
+	if (msg == NULL)
+		return LC_ERROR_INVALID_PARAMS;
+
+	switch (attr) {
+	case LC_ATTR_DATA:
+		value = msg->data;
+		break;
+	case LC_ATTR_LEN:
+		value = &msg->len;
+		break;
+	case LC_ATTR_OPCODE:
+		value = &msg->op;
+		break;
+	default:
+		return LC_ERROR_MSG_ATTR_UNKNOWN;
+	}
+
+	return 0;
+}
+
+int lc_msg_set(lc_message_t *msg, lc_msg_attr_t attr, void *value)
+{
+	if (msg == NULL)
+		return LC_ERROR_INVALID_PARAMS;
+
+	switch (attr) {
+	case LC_ATTR_DATA:
+		msg->data = value;
+		break;
+	case LC_ATTR_LEN:
+		msg->len = *(lc_len_t *)value;
+		break;
+	case LC_ATTR_OPCODE:
+		msg->op = *(lc_opcode_t *)value;
+		break;
+	default:
+		return LC_ERROR_MSG_ATTR_UNKNOWN;
+	}
 
 	return 0;
 }
@@ -364,7 +470,7 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	E_OK(sqlite3_bind_text(stmt, 3, seq, 8, NULL));
 	E_OK(sqlite3_bind_text(stmt, 4, rnd, 8, NULL));
 	E_OK(sqlite3_bind_text(stmt, 5, chan->uri, strlen(chan->uri), NULL));
-	E_OK(sqlite3_bind_text(stmt, 6, msg->msg, msg->len, NULL));
+	E_OK(sqlite3_bind_text(stmt, 6, msg->data, msg->len, NULL));
 	E_DONE(sqlite3_step(stmt));
 	E_OK(sqlite3_finalize(stmt));
 
@@ -556,10 +662,13 @@ int lc_socket_listen(lc_socket_t *sock, void (*callback_msg)(lc_message_t*),
 
 int lc_socket_listen_cancel(lc_socket_t *sock)
 {
+	int err;
 	logmsg(LOG_TRACE, "%s", __func__);
 	if (sock->thread != 0) {
-		pthread_cancel(sock->thread);
-		pthread_join(sock->thread, NULL);
+		if ((err = pthread_cancel(sock->thread)) != 0)
+			return lc_error_log(LOG_ERROR, LC_ERROR_THREAD_CANCEL);
+		if ((err = pthread_join(sock->thread, NULL)) != 0)
+			return lc_error_log(LOG_ERROR, LC_ERROR_THREAD_JOIN);
 		sock->thread = 0;
 	}
 
@@ -604,9 +713,9 @@ void *lc_socket_listen_thread(void *arg)
 			head.len = be64toh(head.len);
 
 			/* read body */
-			msg->msg = calloc(1, head.len);
+			msg->data = calloc(1, head.len);
 			body = buf + sizeof(lc_message_head_t);
-			memcpy(msg->msg, body, head.len);
+			memcpy(msg->data, body, head.len);
 
 			msg->sockid = sc->sock->id;
 			msg->len = head.len;
@@ -633,7 +742,7 @@ void *lc_socket_listen_thread(void *arg)
 			if (sc->callback_err)
 				sc->callback_err(len);
 		}
-		free(msg->msg);
+		free(msg->data);
 		free(dstaddr);
 		free(srcaddr);
 		bzero(msg, sizeof(lc_message_t));
@@ -867,9 +976,9 @@ ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, struct in6_addr *dst, struct 
 
 	assert(sock != NULL);
 
-	*msg = calloc(1, BUFSIZE);
 	if (sock->thread != 0) /* if we're in a thread, prep cleanup handler */
 		pthread_cleanup_push(free, *msg);
+	*msg = calloc(1, BUFSIZE);
 
 	memset(&msgh, 0, sizeof(struct msghdr));
 	iov.iov_base = *msg;
@@ -910,7 +1019,7 @@ ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, struct in6_addr *dst, struct 
 	return i;
 }
 
-int lc_msg_send(lc_channel_t *channel, char *msg, size_t len)
+int lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	if (!channel)
@@ -921,15 +1030,18 @@ int lc_msg_send(lc_channel_t *channel, char *msg, size_t len)
 	int opt = 1;
 	lc_message_head_t *head;
 	char *buf;
+	size_t len, bytes;
 
 	head = calloc(1, sizeof(lc_message_head_t));
 	head->seq = htobe64(++channel->seq);
 	lc_getrandom(&head->rnd, sizeof(lc_rnd_t), 0);
-	head->len = htobe64(len);
+	head->len = htobe64(msg->len);
+	head->op = msg->op;
+	len = msg->len;
 
 	buf = calloc(1, sizeof(lc_message_head_t) + len);
 	memcpy(buf, head, sizeof(lc_message_head_t));
-	memcpy(buf + sizeof(lc_message_head_t), msg, len);
+	memcpy(buf + sizeof(lc_message_head_t), msg->data, len);
 
 	len += sizeof(lc_message_head_t);
 
@@ -940,10 +1052,12 @@ int lc_msg_send(lc_channel_t *channel, char *msg, size_t len)
 			sizeof(opt) == 0))
 	{
 		logmsg(LOG_DEBUG, "Sending on interface %s", channel->ctx->tapname);
-		sendto(sock, buf, len, 0, addr->ai_addr, addr->ai_addrlen);
+		bytes = sendto(sock, buf, len, 0, addr->ai_addr, addr->ai_addrlen);
+		logmsg(LOG_DEBUG, "Sent %i bytes", (int)bytes);
 	}
 	free(head);
 	free(buf);
+	lc_msg_free(msg);
 
 	return 0;
 }
