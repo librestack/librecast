@@ -309,9 +309,12 @@ int lc_db_schema_create(lc_ctx_db_t *db)
 	return 0;
 }
 
-int lc_channel_setval(lc_channel_t *chan, char *key, char *val)
+int lc_channel_setval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
+	lc_message_t msg;
+	lc_len_t keylen;
+	void *pkt;
 	int err;
 	lc_ctx_db_t *db = chan->ctx->db;
 
@@ -320,11 +323,19 @@ int lc_channel_setval(lc_channel_t *chan, char *key, char *val)
 			return err;
 	}
 
-	lc_message_t msg = {};
-	lc_msg_init(&msg);
+	/* pack data */
+	keylen = htobe64(key->size);
+	pkt = malloc(sizeof(lc_len_t) + val->size);
+	memcpy(pkt, &keylen, sizeof(lc_len_t));
+	memcpy(pkt + sizeof(lc_len_t), val->data, val->size);
+
+	/* prepare message */
+	lc_msg_init_data(&msg, pkt, sizeof(lc_len_t) + val->size, free, NULL);
 	int i = LC_OP_SET;
 	lc_msg_set(&msg, LC_ATTR_OPCODE, &i);
-	lc_msg_set(&msg, LC_ATTR_DATA, val);
+	lc_msg_set(&msg, LC_ATTR_DATA, pkt);
+
+	/* send */
 	err = lc_msg_send(chan, &msg);
 
 	return 0;

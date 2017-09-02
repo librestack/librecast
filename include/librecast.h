@@ -55,6 +55,11 @@ typedef struct lc_message_t {
 	void *data;
 } lc_message_t;
 
+typedef struct {
+	lc_len_t size;
+	void    *data;
+} lc_val_t;
+
 /* create new librecast context and set up environment */
 lc_ctx_t * lc_ctx_new();
 
@@ -85,10 +90,10 @@ int lc_tap_create(char **ifname);
 int lc_hashgroup(char *baseaddr, char *groupname, char *hashaddr, unsigned int flags);
 
 /* data storage functions */
-int lc_getval(char *key, char *val);
-int lc_setval(char *key, char *val);
-int lc_channel_getval(lc_channel_t *chan, char *key, char *val);
-int lc_channel_setval(lc_channel_t *chan, char *key, char *val);
+int lc_getval(lc_val_t *key, lc_val_t *val);
+int lc_setval(lc_val_t *key, lc_val_t *val);
+int lc_channel_getval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val);
+int lc_channel_setval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val);
 
 /* destroy librecast context and clean up */
 void lc_ctx_free(lc_ctx_t *ctx);
