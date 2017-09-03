@@ -62,7 +62,7 @@ typedef struct lc_channel_t {
 typedef struct lc_message_head_t {
 	lc_seq_t seq; /* sequence number */
 	lc_rnd_t rnd; /* nonce */
-	lc_opcode_t op;
+	uint8_t op;
 	lc_len_t len;
 } __attribute__((__packed__)) lc_message_head_t;
 
@@ -723,6 +723,9 @@ void *lc_socket_listen_thread(void *arg)
 			head.seq = be64toh(head.seq);
 			head.rnd = be64toh(head.rnd);
 			head.len = be64toh(head.len);
+			head.op = head.op;
+
+			logmsg(LOG_DEBUG, "OPCODE: %lu", head.op);
 
 			/* read body */
 			msg->data = calloc(1, head.len);
@@ -1053,6 +1056,8 @@ int lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 	head->len = htobe64(msg->len);
 	head->op = msg->op;
 	len = msg->len;
+
+	logmsg(LOG_DEBUG, "sending message with OPCODE %lu", msg->op);
 
 	buf = calloc(1, sizeof(lc_message_head_t) + len);
 	memcpy(buf, head, sizeof(lc_message_head_t));
