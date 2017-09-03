@@ -89,12 +89,12 @@ lc_channel_t *chan_list = NULL;
 	X(SQL_CREATE_TABLE_KEYVAL, "CREATE TABLE IF NOT EXISTS keyval (src UNSIGNED INTEGER, seq UNSIGNED INTEGER, rnd UNSIGNED INTEGER, k TEXT UNIQUE, v TEXT);") \
 	X(SQL_CREATE_TABLE_KEYVAL_CHANNEL, "CREATE TABLE IF NOT EXISTS keyval_channel (src UNSIGNED INTEGER, seq UNSIGNED INTEGER, rnd UNSIGNED INTEGER, channel TEXT, k TEXT, v TEXT);") \
 	X(SQL_CREATE_INDEX_KEYVAL_CHANNEL, "CREATE UNIQUE INDEX IF NOT EXISTS idx_keyval_channel_00 ON keyval_channel (channel, k);") \
-	X(SQL_CREATE_TABLE_MESSAGE, "CREATE TABLE IF NOT EXISTS message (id INTEGER PRIMARY KEY DESC, src TEXT, dst TEXT, seq TEXT, rnd TEXT, channel TEXT, msg TEXT);")
+	X(SQL_CREATE_TABLE_MESSAGE, "CREATE TABLE IF NOT EXISTS message (id INTEGER PRIMARY KEY DESC, src TEXT, dst TEXT, seq TEXT, rnd TEXT, opcode INTEGER, channel TEXT, data TEXT);")
 #undef X
 
 #define LC_SQL_STMTS(X) \
 	X(SQL_CHANNEL_KEYVAL_INSERT, "INSERT INTO keyval_channel (src, seq, rnd, channel, k, v) VALUES (@src, @seq, @rnd, @channel, @k, @v);") \
-	X(SQL_CHANNEL_MESSAGE_INSERT, "INSERT INTO message (src, dst, seq, rnd, channel, msg) VALUES (@src, @dst, @seq, @rnd, @channel, @msg);")
+	X(SQL_CHANNEL_MESSAGE_INSERT, "INSERT INTO message (src, dst, seq, rnd, opcode, channel, data) VALUES (@src, @dst, @seq, @rnd, @opcode, @channel, @data);")
 #undef X
 
 #define LC_SQL_CREATE_TABLES(id, sql) if ((err = lc_db_exec(db, sql)) != 0) return err;
@@ -481,8 +481,9 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	E_OK(sqlite3_bind_text(stmt, 2, dst, INET6_ADDRSTRLEN, NULL));
 	E_OK(sqlite3_bind_text(stmt, 3, seq, 8, NULL));
 	E_OK(sqlite3_bind_text(stmt, 4, rnd, 8, NULL));
-	E_OK(sqlite3_bind_text(stmt, 5, chan->uri, strlen(chan->uri), NULL));
-	E_OK(sqlite3_bind_text(stmt, 6, msg->data, msg->len, NULL));
+	E_OK(sqlite3_bind_int(stmt, 5, msg->op));
+	E_OK(sqlite3_bind_text(stmt, 6, chan->uri, strlen(chan->uri), NULL));
+	E_OK(sqlite3_bind_blob(stmt, 7, msg->data, msg->len, NULL));
 	E_DONE(sqlite3_step(stmt));
 	E_OK(sqlite3_finalize(stmt));
 
@@ -723,9 +724,8 @@ void *lc_socket_listen_thread(void *arg)
 			head.seq = be64toh(head.seq);
 			head.rnd = be64toh(head.rnd);
 			head.len = be64toh(head.len);
-			head.op = head.op;
 
-			logmsg(LOG_DEBUG, "OPCODE: %lu", head.op);
+			logmsg(LOG_DEBUG, "OPCODE received: %lu", head.op);
 
 			/* read body */
 			msg->data = calloc(1, head.len);
@@ -736,6 +736,7 @@ void *lc_socket_listen_thread(void *arg)
 			msg->len = head.len;
 			msg->seq = head.seq;
 			msg->rnd = head.rnd;
+			msg->op = head.op;
 			msg->src = src;
 			msg->dst = dst;
 
