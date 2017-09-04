@@ -26,7 +26,7 @@ typedef void *lc_free_fn_t(void *msg, void *hint);
 	X(0x1, LC_OP_PING, "PING", lc_op_ping) \
 	X(0x2, LC_OP_PONG, "PONG", lc_op_pong) \
 	X(0x3, LC_OP_GET,  "GET",  lc_op_get) \
-	X(0x4, LC_OP_SET,  "SET",  lc_op_put) \
+	X(0x4, LC_OP_SET,  "SET",  lc_op_set) \
 	X(0x5, LC_OP_DEL,  "DEL",  lc_op_del)
 #undef X
 

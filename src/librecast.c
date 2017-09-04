@@ -120,6 +120,14 @@ char *lc_db_sql(lc_db_sql_t code);
 int lc_db_exec(lc_ctx_db_t *db, char *sql);
 int lc_db_schema_create(lc_ctx_db_t *db);
 
+/* opcode handlers */
+void lc_op_data(lc_socket_call_t *sc, lc_message_t *msg);
+void lc_op_ping(lc_socket_call_t *sc, lc_message_t *msg);
+void lc_op_pong(lc_socket_call_t *sc, lc_message_t *msg);
+void lc_op_get(lc_socket_call_t *sc, lc_message_t *msg);
+void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg);
+void lc_op_del(lc_socket_call_t *sc, lc_message_t *msg);
+
 int lc_bridge_init()
 {
 	if (br_init()) {
@@ -718,7 +726,7 @@ void lc_op_get(lc_socket_call_t *sc, lc_message_t *msg)
 	/* TODO */
 }
 
-void lc_op_put(lc_socket_call_t *sc, lc_message_t *msg)
+void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 
