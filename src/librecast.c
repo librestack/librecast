@@ -630,6 +630,50 @@ void lc_ctx_free(lc_ctx_t *ctx)
 	}
 }
 
+void lc_op_data(lc_socket_call_t *sc, lc_message_t *msg)
+{
+	logmsg(LOG_TRACE, "%s", __func__);
+
+	/* callback to message handler */
+	if (sc->callback_msg)
+		sc->callback_msg(msg);
+}
+
+void lc_op_ping(lc_socket_call_t *sc, lc_message_t *msg)
+{
+	logmsg(LOG_TRACE, "%s", __func__);
+
+	/* TODO */
+}
+
+void lc_op_pong(lc_socket_call_t *sc, lc_message_t *msg)
+{
+	logmsg(LOG_TRACE, "%s", __func__);
+
+	/* TODO */
+}
+
+void lc_op_get(lc_socket_call_t *sc, lc_message_t *msg)
+{
+	logmsg(LOG_TRACE, "%s", __func__);
+
+	/* TODO */
+}
+
+void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
+{
+	logmsg(LOG_TRACE, "%s", __func__);
+
+	/* TODO */
+}
+
+void lc_op_del(lc_socket_call_t *sc, lc_message_t *msg)
+{
+	logmsg(LOG_TRACE, "%s", __func__);
+
+	/* TODO */
+}
+
 lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
@@ -694,50 +738,6 @@ int lc_socket_listen_cancel(lc_socket_t *sock)
 	}
 
 	return 0;
-}
-
-void lc_op_data(lc_socket_call_t *sc, lc_message_t *msg)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-
-	/* callback to message handler */
-	if (sc->callback_msg)
-		sc->callback_msg(msg);
-}
-
-void lc_op_ping(lc_socket_call_t *sc, lc_message_t *msg)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-
-	/* TODO */
-}
-
-void lc_op_pong(lc_socket_call_t *sc, lc_message_t *msg)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-
-	/* TODO */
-}
-
-void lc_op_get(lc_socket_call_t *sc, lc_message_t *msg)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-
-	/* TODO */
-}
-
-void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-
-	/* TODO */
-}
-
-void lc_op_del(lc_socket_call_t *sc, lc_message_t *msg)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-
-	/* TODO */
 }
 
 void *lc_socket_listen_thread(void *arg)
