@@ -22,7 +22,7 @@ typedef struct lc_msg_head_t lc_msg_head_t;
 typedef void *lc_free_fn_t(void *msg, void *hint);
 
 #define LC_OPCODES(X) \
-	X(0x0, LC_OP_NOOP, "NOOP", lc_op_noop) \
+	X(0x0, LC_OP_DATA, "DATA", lc_op_data) \
 	X(0x1, LC_OP_PING, "PING", lc_op_ping) \
 	X(0x2, LC_OP_PONG, "PONG", lc_op_pong) \
 	X(0x3, LC_OP_GET,  "GET",  lc_op_get) \
@@ -31,6 +31,7 @@ typedef void *lc_free_fn_t(void *msg, void *hint);
 #undef X
 
 #define LC_OPCODE_ENUM(code, name, text, f) name = code,
+#define LC_OPCODE_FUN(code, name, text, f) case code: f(sc, msg); break;
 
 typedef enum {
 	LC_OPCODES(LC_OPCODE_ENUM)

@@ -57,7 +57,8 @@
 	X(50, LC_ERROR_INVALID_PARAMS,     "Invalid arguments to function") \
 	X(51, LC_ERROR_MSG_ATTR_UNKNOWN,   "Unknown message attribute") \
 	X(52, LC_ERROR_THREAD_CANCEL,      "Failed to cancel thread") \
-	X(53, LC_ERROR_THREAD_JOIN,        "Failed to join thread")
+	X(53, LC_ERROR_THREAD_JOIN,        "Failed to join thread") \
+	X(54, LC_ERROR_INVALID_OPCODE,     "Invalid opcode")
 #undef X
 
 #define LC_ERROR_MSG(code, name, msg) case code: return msg;

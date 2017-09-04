@@ -688,6 +688,50 @@ int lc_socket_listen_cancel(lc_socket_t *sock)
 	return 0;
 }
 
+void lc_op_data(lc_socket_call_t *sc, lc_message_t *msg)
+{
+	logmsg(LOG_TRACE, "%s", __func__);
+
+	/* callback to message handler */
+	if (sc->callback_msg)
+		sc->callback_msg(msg);
+}
+
+void lc_op_ping(lc_socket_call_t *sc, lc_message_t *msg)
+{
+	logmsg(LOG_TRACE, "%s", __func__);
+
+	/* TODO */
+}
+
+void lc_op_pong(lc_socket_call_t *sc, lc_message_t *msg)
+{
+	logmsg(LOG_TRACE, "%s", __func__);
+
+	/* TODO */
+}
+
+void lc_op_get(lc_socket_call_t *sc, lc_message_t *msg)
+{
+	logmsg(LOG_TRACE, "%s", __func__);
+
+	/* TODO */
+}
+
+void lc_op_put(lc_socket_call_t *sc, lc_message_t *msg)
+{
+	logmsg(LOG_TRACE, "%s", __func__);
+
+	/* TODO */
+}
+
+void lc_op_del(lc_socket_call_t *sc, lc_message_t *msg)
+{
+	logmsg(LOG_TRACE, "%s", __func__);
+
+	/* TODO */
+}
+
 void *lc_socket_listen_thread(void *arg)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
@@ -725,8 +769,6 @@ void *lc_socket_listen_thread(void *arg)
 			head.rnd = be64toh(head.rnd);
 			head.len = be64toh(head.len);
 
-			logmsg(LOG_DEBUG, "OPCODE received: %lu", head.op);
-
 			/* read body */
 			msg->data = calloc(1, head.len);
 			body = buf + sizeof(lc_message_head_t);
@@ -749,9 +791,13 @@ void *lc_socket_listen_thread(void *arg)
 				lc_channel_logmsg(chan, msg); /* store in channel log */
 			}
 
-			/* callback to message handler */
-			if (sc->callback_msg)
-				sc->callback_msg(msg);
+			/* process opcode */
+			logmsg(LOG_DEBUG, "OPCODE received: %lu", head.op);
+			switch (head.op) {
+				LC_OPCODES(LC_OPCODE_FUN)
+			default:
+				lc_error_log(LOG_ERROR, LC_ERROR_INVALID_OPCODE);
+			}
 		}
 		if (len < 0) {
 			free(msg);
