@@ -31,6 +31,7 @@ typedef void *lc_free_fn_t(void *msg, void *hint);
 #undef X
 
 #define LC_OPCODE_ENUM(code, name, text, f) name = code,
+#define LC_OPCODE_TEXT(code, name, text, f) case code: return text;
 #define LC_OPCODE_FUN(code, name, text, f) case code: f(sc, msg); break;
 
 typedef enum {
@@ -52,6 +53,9 @@ typedef struct lc_message_t {
 	uint32_t sockid;
 	lc_opcode_t op;
 	lc_free_fn_t *free;
+	lc_channel_t *chan;
+	char *srcaddr;
+	char *dstaddr;
 	void *hint;
 	void *data;
 } lc_message_t;
@@ -74,6 +78,9 @@ int lc_msg_set(lc_message_t *msg, lc_msg_attr_t attr, void *value);
 
 /* return pointer to message payload */
 void *lc_msg_data(lc_message_t *msg);
+
+/* convert opcode to text */
+char *lc_opcode_text(lc_opcode_t op);
 
 /* return structure ids */
 uint32_t lc_ctx_get_id(lc_ctx_t *ctx);

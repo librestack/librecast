@@ -396,6 +396,10 @@ void lc_msg_free(lc_message_t *msg)
 		else
 			free(msg->data);
 	}
+	if (msg->srcaddr != NULL)
+		free(msg->srcaddr);
+	if (msg->dstaddr != NULL)
+		free(msg->dstaddr);
 	msg = NULL;
 }
 
@@ -630,6 +634,14 @@ void lc_ctx_free(lc_ctx_t *ctx)
 	}
 }
 
+char *lc_opcode_text(lc_opcode_t op)
+{
+	switch (op) {
+		LC_OPCODES(LC_OPCODE_TEXT)
+	}
+	return NULL;
+}
+
 void lc_op_data(lc_socket_call_t *sc, lc_message_t *msg)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
@@ -642,15 +654,26 @@ void lc_op_data(lc_socket_call_t *sc, lc_message_t *msg)
 void lc_op_ping(lc_socket_call_t *sc, lc_message_t *msg)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
+	int opt;
 
-	/* TODO */
+	/* received PING, echo PONG back to same channel */
+	opt = LC_OP_PONG;
+	lc_msg_set(msg, LC_ATTR_OPCODE, &opt);
+	lc_msg_send(msg->chan, msg);
+
+	/* TODO: send PONG reply to global scope solicited-node multicast address of src */
+
+	/* TODO: ff0e:: + low-order 24 bits of src address */
+
 }
 
 void lc_op_pong(lc_socket_call_t *sc, lc_message_t *msg)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 
-	/* TODO */
+	/* callback to message handler */
+	if (sc->callback_msg)
+		sc->callback_msg(msg);
 }
 
 void lc_op_get(lc_socket_call_t *sc, lc_message_t *msg)
@@ -752,8 +775,6 @@ void *lc_socket_listen_thread(void *arg)
 	char *body;
 	struct in6_addr dst;
 	struct in6_addr src;
-	char *dstaddr;
-	char *srcaddr;
 
 	while(1) {
 		/* about to call a blocking function, prep cleanup handlers */
@@ -763,12 +784,12 @@ void *lc_socket_listen_thread(void *arg)
 		pthread_cleanup_pop(0);
 		pthread_cleanup_pop(0);
 
-		dstaddr = calloc(1, INET6_ADDRSTRLEN);
-		srcaddr = calloc(1, INET6_ADDRSTRLEN);
-		inet_ntop(AF_INET6, &dst, dstaddr, INET6_ADDRSTRLEN);
-		inet_ntop(AF_INET6, &src, srcaddr, INET6_ADDRSTRLEN);
-		logmsg(LOG_DEBUG, "message destination %s", dstaddr);
-		logmsg(LOG_DEBUG, "message source      %s", srcaddr);
+		msg->dstaddr = calloc(1, INET6_ADDRSTRLEN);
+		msg->srcaddr = calloc(1, INET6_ADDRSTRLEN);
+		inet_ntop(AF_INET6, &dst, msg->dstaddr, INET6_ADDRSTRLEN);
+		inet_ntop(AF_INET6, &src, msg->srcaddr, INET6_ADDRSTRLEN);
+		logmsg(LOG_DEBUG, "message destination %s", msg->dstaddr);
+		logmsg(LOG_DEBUG, "message source      %s", msg->srcaddr);
 		logmsg(LOG_DEBUG, "got data %i bytes", (int)len);
 		if (len > 0) {
 			/* read header */
@@ -778,7 +799,8 @@ void *lc_socket_listen_thread(void *arg)
 			head.len = be64toh(head.len);
 
 			/* read body */
-			msg->data = calloc(1, head.len);
+			if (head.len > 0)
+				msg->data = calloc(1, head.len);
 			body = buf + sizeof(lc_message_head_t);
 			memcpy(msg->data, body, head.len);
 
@@ -791,7 +813,8 @@ void *lc_socket_listen_thread(void *arg)
 			msg->dst = dst;
 
 			/* update channel stats */
-			chan = lc_channel_by_address(dstaddr);
+			chan = lc_channel_by_address(msg->dstaddr);
+			msg->chan = chan;
 			if (chan) {
 				chan->seq = (head.seq > chan->seq) ? head.seq + 1 : chan->seq + 1;
 				chan->rnd = head.rnd;
@@ -813,8 +836,6 @@ void *lc_socket_listen_thread(void *arg)
 				sc->callback_err(len);
 		}
 		free(msg->data);
-		free(dstaddr);
-		free(srcaddr);
 		bzero(msg, sizeof(lc_message_t));
 	}
 	/* not reached */
