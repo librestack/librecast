@@ -769,62 +769,39 @@ void *lc_socket_listen_thread(void *arg)
 	ssize_t len;
 	lc_message_t *msg = calloc(1, sizeof(lc_message_t));
 	lc_socket_call_t *sc = arg;
-	lc_message_head_t head;
 	lc_channel_t *chan;
-	char *buf;
-	char *body;
-	struct in6_addr dst;
-	struct in6_addr src;
 
 	while(1) {
 		/* about to call a blocking function, prep cleanup handlers */
 		pthread_cleanup_push(free, arg);
 		pthread_cleanup_push(free, msg);
-		len = lc_msg_recv(sc->sock, &buf, &dst, &src);
+		len = lc_msg_recv(sc->sock, msg);
 		pthread_cleanup_pop(0);
 		pthread_cleanup_pop(0);
 
 		msg->dstaddr = calloc(1, INET6_ADDRSTRLEN);
 		msg->srcaddr = calloc(1, INET6_ADDRSTRLEN);
-		inet_ntop(AF_INET6, &dst, msg->dstaddr, INET6_ADDRSTRLEN);
-		inet_ntop(AF_INET6, &src, msg->srcaddr, INET6_ADDRSTRLEN);
+		inet_ntop(AF_INET6, &msg->dst, msg->dstaddr, INET6_ADDRSTRLEN);
+		inet_ntop(AF_INET6, &msg->src, msg->srcaddr, INET6_ADDRSTRLEN);
 		logmsg(LOG_DEBUG, "message destination %s", msg->dstaddr);
 		logmsg(LOG_DEBUG, "message source      %s", msg->srcaddr);
 		logmsg(LOG_DEBUG, "got data %i bytes", (int)len);
 		if (len > 0) {
-			/* read header */
-			memcpy(&head, buf, sizeof(lc_message_head_t));
-			head.seq = be64toh(head.seq);
-			head.rnd = be64toh(head.rnd);
-			head.len = be64toh(head.len);
-
-			/* read body */
-			if (head.len > 0)
-				msg->data = calloc(1, head.len);
-			body = buf + sizeof(lc_message_head_t);
-			memcpy(msg->data, body, head.len);
-
 			msg->sockid = sc->sock->id;
-			msg->len = head.len;
-			msg->seq = head.seq;
-			msg->rnd = head.rnd;
-			msg->op = head.op;
-			msg->src = src;
-			msg->dst = dst;
 
 			/* update channel stats */
 			chan = lc_channel_by_address(msg->dstaddr);
 			msg->chan = chan;
 			if (chan) {
-				chan->seq = (head.seq > chan->seq) ? head.seq + 1 : chan->seq + 1;
-				chan->rnd = head.rnd;
+				chan->seq = (msg->seq > chan->seq) ? msg->seq + 1 : chan->seq + 1;
+				chan->rnd = msg->rnd;
 				logmsg(LOG_DEBUG, "channel clock set to %u.%u", chan->seq, chan->rnd);
 				lc_channel_logmsg(chan, msg); /* store in channel log */
 			}
 
 			/* process opcode */
-			logmsg(LOG_DEBUG, "OPCODE received: %lu", head.op);
-			switch (head.op) {
+			logmsg(LOG_DEBUG, "OPCODE received: %lu", msg->op);
+			switch (msg->op) {
 				LC_OPCODES(LC_OPCODE_FUN)
 			default:
 				lc_error_log(LOG_ERROR, LC_ERROR_INVALID_OPCODE);
@@ -1056,26 +1033,28 @@ int lc_channel_free(lc_channel_t * channel)
 	return 0;
 }
 
-ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, struct in6_addr *dst, struct in6_addr *src)
+ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	int i, err;
 	struct iovec iov;
 	struct msghdr msgh;
+	char buf[BUFSIZE];
 	char cmsgbuf[BUFSIZE];
 	struct sockaddr_in from;
 	socklen_t fromlen = sizeof(from);
 	struct cmsghdr *cmsg;
 	struct in6_pktinfo *pi;
+	lc_message_head_t head;
 
 	assert(sock != NULL);
 
 	if (sock->thread != 0) /* if we're in a thread, prep cleanup handler */
-		pthread_cleanup_push(free, *msg);
-	*msg = calloc(1, BUFSIZE);
+		pthread_cleanup_push(free, msg->data);
+	msg->data = calloc(1, BUFSIZE);
 
 	memset(&msgh, 0, sizeof(struct msghdr));
-	iov.iov_base = *msg;
+	iov.iov_base = buf;
         iov.iov_len = BUFSIZE - 1;
         msgh.msg_control = cmsgbuf;
         msgh.msg_controllen = BUFSIZE - 1;
@@ -1094,6 +1073,18 @@ ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, struct in6_addr *dst, struct 
 		logmsg(LOG_DEBUG, "recvmsg ERROR: %s", strerror(err));
 	}
         if (i > 0) {
+	        /* read header */
+		memcpy(&head, buf, sizeof(lc_message_head_t));
+		msg->seq = be64toh(head.seq);
+		msg->rnd = be64toh(head.rnd);
+		msg->len = be64toh(head.len);
+		msg->op = head.op;
+		msg->data = NULL;
+		if (msg->len > 0) {
+			/* read body */
+			msg->data = malloc(msg->len);
+			memcpy(msg->data, buf + sizeof(lc_message_head_t), msg->len);
+		}
                 for (cmsg = CMSG_FIRSTHDR(&msgh);
                      cmsg != NULL;
                      cmsg = CMSG_NXTHDR(&msgh, cmsg))
@@ -1102,8 +1093,8 @@ ssize_t lc_msg_recv(lc_socket_t *sock, char **msg, struct in6_addr *dst, struct 
                           && (cmsg->cmsg_type == IPV6_PKTINFO))
                         {
                                 pi = (struct in6_pktinfo *) CMSG_DATA(cmsg);
-                                *dst = pi->ipi6_addr;
-                                *src = ((struct sockaddr_in6*)&from)->sin6_addr;
+                                msg->dst = pi->ipi6_addr;
+                                msg->src = ((struct sockaddr_in6*)&from)->sin6_addr;
                                 break;
                         }
                 }
