@@ -317,6 +317,12 @@ int lc_db_schema_create(lc_ctx_db_t *db)
 	return 0;
 }
 
+int lc_channel_getval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
+{
+	/* TODO */
+	return 0;
+}
+
 int lc_channel_setval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
@@ -687,7 +693,67 @@ void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 
-	/* TODO */
+	lc_ctx_db_t *db;
+	sqlite3_stmt *stmt;
+	int err;
+	char *sql;
+	char *seq;
+	char *rnd;
+	lc_len_t keylen;
+	lc_len_t vallen;
+	char *key;
+	char *val;
+	lc_channel_t *chan;
+
+	if (msg == NULL) {
+		lc_error_log(LOG_ERROR, LC_ERROR_MESSAGE_REQUIRED);
+		return;
+	}
+	if (msg->data == NULL) {
+		lc_error_log(LOG_ERROR, LC_ERROR_MESSAGE_EMPTY);
+		return;
+	}
+	chan = msg->chan;
+	if (chan == NULL) {
+		lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
+		return;
+	}
+	db = chan->ctx->db;
+	if (db == NULL) {
+		lc_error_log(LOG_ERROR, LC_ERROR_DB_REQUIRED);
+		return;
+	}
+	sql = lc_db_sql(SQL_CHANNEL_KEYVAL_INSERT);
+
+	asprintf(&seq, "%lu", msg->seq);
+	asprintf(&rnd, "%lu", msg->rnd);
+
+	/* extract key and data */
+	memcpy(&keylen, msg->data, sizeof(lc_len_t));
+	keylen = be64toh(keylen);
+	vallen = msg->len - keylen;
+	key = malloc(keylen);
+	val = malloc(vallen);
+	memcpy(key, msg->data + sizeof(lc_len_t), keylen);
+	memcpy(val, msg->data + sizeof(lc_len_t) + keylen, vallen);
+
+	err = 0;
+	E_OK(sqlite3_prepare_v2(db, sql, (int)strlen(sql), &stmt, NULL));
+	E_OK(sqlite3_bind_text(stmt, 1, msg->srcaddr, INET6_ADDRSTRLEN, NULL));
+	E_OK(sqlite3_bind_text(stmt, 2, seq, 8, NULL));
+	E_OK(sqlite3_bind_text(stmt, 3, rnd, 8, NULL));
+	E_OK(sqlite3_bind_text(stmt, 4, chan->uri, strlen(chan->uri), NULL));
+	E_OK(sqlite3_bind_text(stmt, 5, key, keylen, NULL));
+	E_OK(sqlite3_bind_text(stmt, 6, val, vallen, NULL));
+	E_DONE(sqlite3_step(stmt));
+	E_OK(sqlite3_finalize(stmt));
+
+	free(seq);
+	free(rnd);
+	free(key);
+	free(val);
+
+	logmsg(LOG_FULLTRACE, "%s exiting", __func__);
 }
 
 void lc_op_del(lc_socket_call_t *sc, lc_message_t *msg)
