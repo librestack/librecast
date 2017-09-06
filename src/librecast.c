@@ -86,9 +86,8 @@ lc_channel_t *chan_list = NULL;
 #define DEFAULT_PORT "4242"
 
 #define LC_SQL_SCHEMA(X) \
-	X(SQL_CREATE_TABLE_KEYVAL, "CREATE TABLE IF NOT EXISTS keyval (src UNSIGNED INTEGER, seq UNSIGNED INTEGER, rnd UNSIGNED INTEGER, k TEXT UNIQUE, v TEXT);") \
+	X(SQL_CREATE_TABLE_KEYVAL, "CREATE TABLE IF NOT EXISTS keyval (src UNSIGNED INTEGER, seq UNSIGNED INTEGER, rnd UNSIGNED INTEGER, k TEXT, v TEXT);") \
 	X(SQL_CREATE_TABLE_KEYVAL_CHANNEL, "CREATE TABLE IF NOT EXISTS keyval_channel (src UNSIGNED INTEGER, seq UNSIGNED INTEGER, rnd UNSIGNED INTEGER, channel TEXT, k TEXT, v TEXT);") \
-	X(SQL_CREATE_INDEX_KEYVAL_CHANNEL, "CREATE UNIQUE INDEX IF NOT EXISTS idx_keyval_channel_00 ON keyval_channel (channel, k);") \
 	X(SQL_CREATE_TABLE_MESSAGE, "CREATE TABLE IF NOT EXISTS message (id INTEGER PRIMARY KEY DESC, src TEXT, dst TEXT, seq TEXT, rnd TEXT, opcode INTEGER, channel TEXT, data TEXT);")
 #undef X
 
@@ -328,10 +327,14 @@ int lc_channel_setval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
 	logmsg(LOG_TRACE, "%s", __func__);
 	lc_message_t msg;
 	lc_len_t keylen;
+	lc_ctx_db_t *db;
 	void *pkt;
 	int err;
-	lc_ctx_db_t *db = chan->ctx->db;
 
+	if (chan == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
+
+	db = chan->ctx->db;
 	if (db == NULL) {
 		if ((err = lc_db_open(&db)) != 0)
 			return err;
@@ -731,7 +734,7 @@ void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
 	/* extract key and data */
 	memcpy(&keylen, msg->data, sizeof(lc_len_t));
 	keylen = be64toh(keylen);
-	vallen = msg->len - keylen;
+	vallen = msg->len - keylen - sizeof(lc_len_t);
 	key = malloc(keylen);
 	val = malloc(vallen);
 	memcpy(key, msg->data + sizeof(lc_len_t), keylen);
