@@ -11,11 +11,11 @@
 #include <pthread.h>
 #include <linux/if.h>
 #include <linux/if_tun.h>
+#include <lmdb.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <openssl/sha.h>
 #include <signal.h>
-#include <sqlite3.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,7 +30,7 @@
 #include <net/if.h>
 #endif
 
-typedef sqlite3 lc_ctx_db_t;
+typedef MDB_env lc_ctx_db_t;
 
 typedef struct lc_ctx_t {
 	lc_ctx_t *next;
@@ -85,39 +85,12 @@ lc_channel_t *chan_list = NULL;
 #define DEFAULT_ADDR "ff3e::"
 #define DEFAULT_PORT "4242"
 
-#define LC_SQL_SCHEMA(X) \
-	X(SQL_CREATE_TABLE_KEYVAL, "CREATE TABLE IF NOT EXISTS keyval (src UNSIGNED INTEGER, seq UNSIGNED INTEGER, rnd UNSIGNED INTEGER, k TEXT, v TEXT);") \
-	X(SQL_CREATE_TABLE_KEYVAL_CHANNEL, "CREATE TABLE IF NOT EXISTS keyval_channel (src UNSIGNED INTEGER, seq UNSIGNED INTEGER, rnd UNSIGNED INTEGER, channel TEXT, k TEXT, v TEXT);") \
-	X(SQL_CREATE_TABLE_MESSAGE, "CREATE TABLE IF NOT EXISTS message (id INTEGER PRIMARY KEY DESC, src TEXT, dst TEXT, seq TEXT, rnd TEXT, opcode INTEGER, channel TEXT, data TEXT);")
-#undef X
-
-#define LC_SQL_STMTS(X) \
-	X(SQL_CHANNEL_KEYVAL_INSERT, "INSERT INTO keyval_channel (src, seq, rnd, channel, k, v) VALUES (@src, @seq, @rnd, @channel, @k, @v);") \
-	X(SQL_CHANNEL_MESSAGE_INSERT, "INSERT INTO message (src, dst, seq, rnd, opcode, channel, data) VALUES (@src, @dst, @seq, @rnd, @opcode, @channel, @data);")
-#undef X
-
-#define LC_SQL_CREATE_TABLES(id, sql) if ((err = lc_db_exec(db, sql)) != 0) return err;
-#define LC_SQL_TEXT(id, sql) case id: return sql;
-#define LC_SQL_ENUM(id, sql) id,
-
-#define E_OK(expr) if (err == 0) TEST((err = (expr)) == SQLITE_OK, #expr)
-#define E_DONE(expr) if (err == 0) TEST((err = (expr)) == SQLITE_DONE, #expr)
-#define TEST(test, f) ((test) ? (void)0 : ((void)logmsg(LOG_DEBUG, "ERROR(%i): %s", err, #f), err=LC_ERROR_DB_EXEC))
-
-typedef enum {
-	LC_SQL_SCHEMA(LC_SQL_ENUM)
-	LC_SQL_STMTS(LC_SQL_ENUM)
-} lc_db_sql_t;
+//#define E_OK(expr) if (err == 0) TEST((err = (expr)) == SQLITE_OK, #expr)
+//#define E_DONE(expr) if (err == 0) TEST((err = (expr)) == SQLITE_DONE, #expr)
+//#define TEST(test, f) ((test) ? (void)0 : ((void)logmsg(LOG_DEBUG, "ERROR(%i): %s", err, #f), err=LC_ERROR_DB_EXEC))
 
 /* socket listener thread */
 void *lc_socket_listen_thread(void *sc);
-
-/* private database functions */
-int lc_db_open(lc_ctx_db_t **db);
-int lc_db_close(lc_ctx_db_t *db);
-char *lc_db_sql(lc_db_sql_t code);
-int lc_db_exec(lc_ctx_db_t *db, char *sql);
-int lc_db_schema_create(lc_ctx_db_t *db);
 
 /* opcode handlers */
 void lc_op_data(lc_socket_call_t *sc, lc_message_t *msg);
@@ -249,71 +222,6 @@ int lc_tap_create(char **ifname)
 	}
 
         return fd;
-}
-
-int lc_db_open(lc_ctx_db_t **db)
-{
-	int err;
-
-	if ((err = sqlite3_open(LC_DATABASE_FILE, db))) {
-		logmsg(LOG_ERROR, "Can't open database: %s", sqlite3_errmsg(*db));
-		sqlite3_close(*db);
-		return LC_ERROR_DB_OPEN;
-	}
-
-	return 0;
-}
-
-int lc_db_close(lc_ctx_db_t *db)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-	sqlite3_close(db);
-	db = NULL;
-
-	return 0;
-}
-
-char *lc_db_sql(lc_db_sql_t code)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-	switch (code) {
-		LC_SQL_STMTS(LC_SQL_TEXT)
-		LC_SQL_SCHEMA(LC_SQL_TEXT)
-	}
-	return NULL;
-}
-
-int lc_db_exec(lc_ctx_db_t *db, char *sql)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-	char *errmsg = 0;
-
-	if (db == NULL)
-		return lc_error_log(LOG_ERROR, LC_ERROR_DB_REQUIRED);
-	if (sql == NULL)
-		return lc_error_log(LOG_ERROR, LC_ERROR_INVALID_PARAMS);
-
-        sqlite3_exec(db, sql, NULL, 0, &errmsg);
-        if (errmsg != NULL) {
-                logmsg(LOG_ERROR, "%s", errmsg);
-                sqlite3_free(errmsg);
-		return LC_ERROR_DB_EXEC;
-        }
-
-	return 0;
-}
-
-int lc_db_schema_create(lc_ctx_db_t *db)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-	int err;
-
-	if (db == NULL)
-		return lc_error_log(LOG_ERROR, LC_ERROR_DB_REQUIRED);
-
-	LC_SQL_SCHEMA(LC_SQL_CREATE_TABLES)
-
-	return 0;
 }
 
 int lc_channel_getval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
@@ -460,9 +368,7 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	lc_ctx_db_t *db;
-	sqlite3_stmt *stmt;
 	int err;
-	char *sql;
 	char *dst;
 	char *src;
 	char *seq;
@@ -475,12 +381,6 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	if (db == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_DB_REQUIRED);
 
-	sql = lc_db_sql(SQL_CHANNEL_MESSAGE_INSERT);
-
-	/* Sqlite can't handle unsigned 64 or 128 bit values as integers.
-	 * We could store these as blobs, but that makes the database unreadable,
-	 * so storing these values as text for now. */
-
 	dst = calloc(1, INET6_ADDRSTRLEN);
 	src = calloc(1, INET6_ADDRSTRLEN);
 	inet_ntop(AF_INET6, &msg->dst, dst, INET6_ADDRSTRLEN);
@@ -490,16 +390,8 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	asprintf(&rnd, "%lu", msg->rnd);
 
 	err = 0;
-	E_OK(sqlite3_prepare_v2(db, sql, (int)strlen(sql), &stmt, NULL));
-	E_OK(sqlite3_bind_text(stmt, 1, src, INET6_ADDRSTRLEN, NULL));
-	E_OK(sqlite3_bind_text(stmt, 2, dst, INET6_ADDRSTRLEN, NULL));
-	E_OK(sqlite3_bind_text(stmt, 3, seq, 8, NULL));
-	E_OK(sqlite3_bind_text(stmt, 4, rnd, 8, NULL));
-	E_OK(sqlite3_bind_int(stmt, 5, msg->op));
-	E_OK(sqlite3_bind_text(stmt, 6, chan->uri, strlen(chan->uri), NULL));
-	E_OK(sqlite3_bind_blob(stmt, 7, msg->data, msg->len, NULL));
-	E_DONE(sqlite3_step(stmt));
-	E_OK(sqlite3_finalize(stmt));
+
+	/* TODO: log message to database */
 
 	free(seq);
 	free(rnd);
@@ -590,10 +482,7 @@ lc_ctx_t * lc_ctx_new()
 	ctx->fdtap = fdtap;
 
 	/* prepare database */
-	if (lc_db_open(&ctx->db) != 0)
-		goto ctx_err;
-	if (lc_db_schema_create(ctx->db) != 0)
-		goto ctx_err;
+	mdb_env_create(&ctx->db);
 
 	return ctx;
 ctx_err:
@@ -631,7 +520,8 @@ void lc_ctx_free(lc_ctx_t *ctx)
 		if (ctx->tapname)
 			free(ctx->tapname);
 		close(ctx->fdtap);
-		lc_db_close(ctx->db);
+		if (ctx->db)
+			mdb_env_close(ctx->db);
 		free(ctx);
 	}
 }
@@ -690,9 +580,6 @@ void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
 	logmsg(LOG_TRACE, "%s", __func__);
 
 	lc_ctx_db_t *db;
-	sqlite3_stmt *stmt;
-	int err;
-	char *sql;
 	char *seq;
 	char *rnd;
 	lc_len_t keylen;
@@ -719,7 +606,6 @@ void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
 		lc_error_log(LOG_ERROR, LC_ERROR_DB_REQUIRED);
 		return;
 	}
-	sql = lc_db_sql(SQL_CHANNEL_KEYVAL_INSERT);
 
 	asprintf(&seq, "%lu", msg->seq);
 	asprintf(&rnd, "%lu", msg->rnd);
@@ -733,16 +619,7 @@ void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
 	memcpy(key, msg->data + sizeof(lc_len_t), keylen);
 	memcpy(val, msg->data + sizeof(lc_len_t) + keylen, vallen);
 
-	err = 0;
-	E_OK(sqlite3_prepare_v2(db, sql, (int)strlen(sql), &stmt, NULL));
-	E_OK(sqlite3_bind_text(stmt, 1, msg->srcaddr, INET6_ADDRSTRLEN, NULL));
-	E_OK(sqlite3_bind_text(stmt, 2, seq, 8, NULL));
-	E_OK(sqlite3_bind_text(stmt, 3, rnd, 8, NULL));
-	E_OK(sqlite3_bind_text(stmt, 4, chan->uri, strlen(chan->uri), NULL));
-	E_OK(sqlite3_bind_text(stmt, 5, key, keylen, NULL));
-	E_OK(sqlite3_bind_text(stmt, 6, val, vallen, NULL));
-	E_DONE(sqlite3_step(stmt));
-	E_OK(sqlite3_finalize(stmt));
+	/* TODO: write to database */
 
 	free(seq);
 	free(rnd);
