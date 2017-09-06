@@ -85,12 +85,23 @@ lc_channel_t *chan_list = NULL;
 #define DEFAULT_ADDR "ff3e::"
 #define DEFAULT_PORT "4242"
 
-//#define E_OK(expr) if (err == 0) TEST((err = (expr)) == SQLITE_OK, #expr)
-//#define E_DONE(expr) if (err == 0) TEST((err = (expr)) == SQLITE_DONE, #expr)
-//#define TEST(test, f) ((test) ? (void)0 : ((void)logmsg(LOG_DEBUG, "ERROR(%i): %s", err, #f), err=LC_ERROR_DB_EXEC))
+#define E(expr) if (err == 0) TEST((err = (expr)) == MDB_SUCCESS, #expr)
+#define RET(expr) if (err == 0) TEST((err = (expr)) == MDB_SUCCESS, #expr); else return err
+#define TEST(test, f) ((test) ? (void)0 : ((void)logmsg(LOG_DEBUG, "ERROR(%i): %s", err, #f), err=LC_ERROR_DB_EXEC))
+
 
 /* socket listener thread */
 void *lc_socket_listen_thread(void *sc);
+
+
+/* private database functions */
+
+/* fetch a single key */
+int lc_db_get(lc_ctx_db_t *env, const char *db, char *key, size_t klen, char *val, size_t *vlen);
+
+/* set key/val in named database db */
+int lc_db_set(lc_ctx_db_t *env, const char *db, char *key, size_t klen, char *val, size_t vlen);
+
 
 /* opcode handlers */
 void lc_op_data(lc_socket_call_t *sc, lc_message_t *msg);
@@ -99,6 +110,7 @@ void lc_op_pong(lc_socket_call_t *sc, lc_message_t *msg);
 void lc_op_get(lc_socket_call_t *sc, lc_message_t *msg);
 void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg);
 void lc_op_del(lc_socket_call_t *sc, lc_message_t *msg);
+
 
 int lc_bridge_init()
 {
@@ -222,6 +234,48 @@ int lc_tap_create(char **ifname)
 	}
 
         return fd;
+}
+
+int lc_db_get(lc_ctx_db_t *env, const char *db, char *key, size_t klen, char *val, size_t *vlen)
+{
+	int err = 0;
+	MDB_txn *txn;
+	MDB_dbi dbi;
+	MDB_val k, v;
+	MDB_cursor *cursor;
+
+	k.mv_data = key;
+	k.mv_size = klen;
+
+	RET(mdb_txn_begin(env, NULL, 0, &txn));
+	RET(mdb_dbi_open(txn, db, MDB_CREATE, &dbi));
+	RET(mdb_cursor_open(txn, dbi, &cursor));
+	RET(mdb_cursor_get(cursor, &k, &v, MDB_FIRST));
+	val = v.mv_data;
+	*vlen = v.mv_size;
+	mdb_txn_abort(txn);
+
+	return 0;
+}
+
+int lc_db_set(lc_ctx_db_t *env, const char *db, char *key, size_t klen, char *val, size_t vlen)
+{
+	int err = 0;
+	MDB_txn *txn;
+	MDB_dbi dbi;
+	MDB_val k, v;
+
+	k.mv_data = key;
+	k.mv_size = klen;
+	v.mv_data = val;
+	v.mv_size = vlen;
+
+	RET(mdb_txn_begin(env, NULL, 0, &txn));
+	RET(mdb_dbi_open(txn, db, MDB_CREATE, &dbi));
+	RET(mdb_put(txn, dbi, &k, &v, 0));
+	RET(mdb_txn_commit(txn));
+
+	return 0;
 }
 
 int lc_channel_getval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
@@ -481,8 +535,11 @@ lc_ctx_t * lc_ctx_new()
 	ctx->tapname = tap;
 	ctx->fdtap = fdtap;
 
-	/* prepare database */
-	mdb_env_create(&ctx->db);
+	/* prepare databases */
+	int err = 0;
+	E(mdb_env_create(&ctx->db));
+	E(mdb_env_set_maxdbs(ctx->db, LC_DATABASE_COUNT));
+	E(mdb_env_open(ctx->db, LC_DATABASE_DIR, 0, 0600));
 
 	return ctx;
 ctx_err:
@@ -619,7 +676,8 @@ void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
 	memcpy(key, msg->data + sizeof(lc_len_t), keylen);
 	memcpy(val, msg->data + sizeof(lc_len_t) + keylen, vallen);
 
-	/* TODO: write to database */
+	/* write to database */
+	lc_db_set(db, chan->uri, key, keylen, val, vallen);
 
 	free(seq);
 	free(rnd);
