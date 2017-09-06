@@ -327,18 +327,11 @@ int lc_channel_setval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
 	logmsg(LOG_TRACE, "%s", __func__);
 	lc_message_t msg;
 	lc_len_t keylen;
-	lc_ctx_db_t *db;
 	void *pkt;
 	int err;
 
 	if (chan == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
-
-	db = chan->ctx->db;
-	if (db == NULL) {
-		if ((err = lc_db_open(&db)) != 0)
-			return err;
-	}
 
 	/* pack data: [keylen][key][data] */
 	keylen = htobe64(key->size);
@@ -356,7 +349,7 @@ int lc_channel_setval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
 	/* send */
 	err = lc_msg_send(chan, &msg);
 
-	return 0;
+	return err;
 }
 
 int lc_msg_init(lc_message_t *msg)
