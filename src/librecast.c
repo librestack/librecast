@@ -354,7 +354,7 @@ int lc_channel_setval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
 
 int lc_msg_init(lc_message_t *msg)
 {
-	bzero(msg, sizeof(lc_message_t));
+	memset(msg, 0, sizeof(lc_message_t));
 	return 0;
 }
 
@@ -875,7 +875,7 @@ void *lc_socket_listen_thread(void *arg)
 				sc->callback_err(len);
 		}
 		free(msg->data);
-		bzero(msg, sizeof(lc_message_t));
+		memset(msg, 0, sizeof(lc_message_t));
 	}
 	/* not reached */
 	free(sc);
