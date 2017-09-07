@@ -296,8 +296,9 @@ int lc_channel_getval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
 	if (chan == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
 
-	lc_msg_init_data(&msg, key->data, key->size, NULL, NULL);
+	lc_msg_init_size(&msg, key->size);
 	lc_msg_set(&msg, LC_ATTR_OPCODE, &i);
+	memcpy(lc_msg_data(&msg), key->data, key->size);
 	err = lc_msg_send(chan, &msg);
 
 	return err;
@@ -360,9 +361,7 @@ int lc_msg_init_data(lc_message_t *msg, void *data, size_t len, void *f, void *h
 		return err;
 
 	msg->len = len;
-	if ((msg->data = malloc(len)) == NULL)
-		return LC_ERROR_MALLOC;
-	memcpy(lc_msg_data(msg), data, len);
+	msg->data = data;
 	msg->free = f;
 	msg->hint = hint;
 
