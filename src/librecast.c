@@ -94,15 +94,6 @@ lc_channel_t *chan_list = NULL;
 void *lc_socket_listen_thread(void *sc);
 
 
-/* private database functions */
-
-/* fetch a single key */
-int lc_db_get(lc_ctx_db_t *env, const char *db, char *key, size_t klen, char *val, size_t *vlen);
-
-/* set key/val in named database db */
-int lc_db_set(lc_ctx_db_t *env, const char *db, char *key, size_t klen, char *val, size_t vlen);
-
-
 /* opcode handlers */
 void lc_op_data(lc_socket_call_t *sc, lc_message_t *msg);
 void lc_op_ping(lc_socket_call_t *sc, lc_message_t *msg);
@@ -236,13 +227,14 @@ int lc_tap_create(char **ifname)
         return fd;
 }
 
-int lc_db_get(lc_ctx_db_t *env, const char *db, char *key, size_t klen, char *val, size_t *vlen)
+int lc_db_get(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char **val, size_t *vlen)
 {
 	int err = 0;
 	MDB_txn *txn;
 	MDB_dbi dbi;
 	MDB_val k, v;
 	MDB_cursor *cursor;
+	lc_ctx_db_t *env = ctx->db;
 
 	k.mv_data = key;
 	k.mv_size = klen;
@@ -258,7 +250,8 @@ int lc_db_get(lc_ctx_db_t *env, const char *db, char *key, size_t klen, char *va
 			err = LC_ERROR_DB_EXEC;
 	}
 	else {
-		val = v.mv_data;
+		*val = malloc(v.mv_size);
+		memcpy(*val, v.mv_data, v.mv_size);
 		*vlen = v.mv_size;
 	}
 	mdb_txn_abort(txn);
@@ -266,12 +259,13 @@ int lc_db_get(lc_ctx_db_t *env, const char *db, char *key, size_t klen, char *va
 	return err;
 }
 
-int lc_db_set(lc_ctx_db_t *env, const char *db, char *key, size_t klen, char *val, size_t vlen)
+int lc_db_set(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char *val, size_t vlen)
 {
 	int err = 0;
 	MDB_txn *txn;
 	MDB_dbi dbi;
 	MDB_val k, v;
+	lc_ctx_db_t *env = ctx->db;
 
 	k.mv_data = key;
 	k.mv_size = klen;
@@ -679,7 +673,7 @@ void lc_op_get(lc_socket_call_t *sc, lc_message_t *msg)
 	key[msg->len + 1] = '\0';
 
 	/* read requested value from database */
-	if ((err = lc_db_get(db, chan->uri, key, msg->len, val, &vlen)) != 0) {
+	if ((err = lc_db_get(chan->ctx, chan->uri, key, msg->len, &val, &vlen)) != 0) {
 		lc_error_log(LOG_DEBUG, err);
 		goto errexit;
 	}
@@ -752,7 +746,7 @@ void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
 	memcpy(val, msg->data + sizeof(lc_len_t) + klen, vlen);
 
 	/* write to database */
-	lc_db_set(db, chan->uri, key, klen, val, vlen);
+	lc_db_set(chan->ctx, chan->uri, key, klen, val, vlen);
 
 	free(seq);
 	free(rnd);

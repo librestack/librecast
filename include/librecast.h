@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <stdint.h>
+#include <lmdb.h>
 
 #define LIBRECASTD_NOT_RUNNING 0
 #define LIBRECASTD_RUNNING 1
@@ -21,6 +22,7 @@ typedef struct lc_socket_t lc_socket_t;
 typedef struct lc_channel_t lc_channel_t;
 typedef struct lc_msg_head_t lc_msg_head_t;
 typedef void *lc_free_fn_t(void *msg, void *hint);
+typedef MDB_env lc_ctx_db_t;
 
 #define LC_OPCODES(X) \
 	X(0x0, LC_OP_DATA, "DATA", lc_op_data) \
@@ -80,6 +82,12 @@ int lc_msg_set(lc_message_t *msg, lc_msg_attr_t attr, void *value);
 
 /* return pointer to message payload */
 void *lc_msg_data(lc_message_t *msg);
+
+/* fetch a single key */
+int lc_db_get(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char **val, size_t *vlen);
+
+/* set key/val in named database db */
+int lc_db_set(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char *val, size_t vlen);
 
 /* convert opcode to text */
 char *lc_opcode_text(lc_opcode_t op);
