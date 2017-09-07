@@ -246,16 +246,24 @@ int lc_db_get(lc_ctx_db_t *env, const char *db, char *key, size_t klen, char *va
 
 	k.mv_data = key;
 	k.mv_size = klen;
+	memset(&v, 0, sizeof(MDB_val));
 
 	RET(mdb_txn_begin(env, NULL, 0, &txn));
 	RET(mdb_dbi_open(txn, db, MDB_CREATE, &dbi));
 	RET(mdb_cursor_open(txn, dbi, &cursor));
-	RET(mdb_cursor_get(cursor, &k, &v, MDB_FIRST));
-	val = v.mv_data;
-	*vlen = v.mv_size;
+	if ((err = mdb_cursor_get(cursor, &k, &v, MDB_FIRST)) != 0) {
+		if (err == MDB_NOTFOUND)
+			err = LC_ERROR_DB_KEYNOTFOUND;
+		else
+			err = LC_ERROR_DB_EXEC;
+	}
+	else {
+		val = v.mv_data;
+		*vlen = v.mv_size;
+	}
 	mdb_txn_abort(txn);
 
-	return 0;
+	return err;
 }
 
 int lc_db_set(lc_ctx_db_t *env, const char *db, char *key, size_t klen, char *val, size_t vlen)
@@ -345,7 +353,6 @@ int lc_msg_init_data(lc_message_t *msg, void *data, size_t len, void *f, void *h
 	if ((msg->data = malloc(len)) == NULL)
 		return LC_ERROR_MALLOC;
 	memcpy(lc_msg_data(msg), data, len);
-
 	msg->free = f;
 	msg->hint = hint;
 
@@ -629,7 +636,66 @@ void lc_op_get(lc_socket_call_t *sc, lc_message_t *msg)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 
-	/* TODO */
+	lc_channel_t *chan;
+	lc_ctx_db_t *db;
+	lc_len_t vlen;
+	lc_opcode_t opcode = LC_OP_RET;
+	int err = 0;
+	char *key;
+	char *val = NULL;
+	char *pkt;
+
+	if (msg == NULL) {
+		lc_error_log(LOG_ERROR, LC_ERROR_MESSAGE_REQUIRED);
+		return;
+	}
+	if (msg->data == NULL) {
+		lc_error_log(LOG_ERROR, LC_ERROR_MESSAGE_EMPTY);
+		return;
+	}
+	chan = msg->chan;
+	if (chan == NULL) {
+		lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
+		return;
+	}
+	db = chan->ctx->db;
+	if (db == NULL) {
+		lc_error_log(LOG_ERROR, LC_ERROR_DB_REQUIRED);
+		return;
+	}
+
+	/* key */
+	key = malloc(msg->len + 1);
+	memcpy(key, msg->data, msg->len);
+	key[msg->len + 1] = '\0';
+
+	/* read requested value from database */
+	if ((err = lc_db_get(db, chan->uri, key, msg->len, val, &vlen)) != 0) {
+		lc_error_log(LOG_DEBUG, err);
+		goto errexit;
+	}
+
+	/* send response with data (opcode: RET) */
+	/* [seq][rnd][data] */
+	pkt = malloc(vlen + sizeof(lc_seq_t) + sizeof(lc_rnd_t));
+	memcpy(pkt, &msg->seq, sizeof(lc_seq_t));
+	memcpy(pkt + sizeof(lc_seq_t), &msg->rnd, sizeof(lc_rnd_t));
+	memcpy(pkt + sizeof(lc_seq_t) + sizeof(lc_rnd_t), val, vlen);
+	lc_msg_init_data(msg, pkt, vlen + sizeof(lc_seq_t) + sizeof(lc_rnd_t), NULL, NULL);
+	lc_msg_set(msg, LC_ATTR_OPCODE, &opcode);
+	lc_msg_send(chan, msg);
+
+	free(val);
+errexit:
+	free(key);
+	logmsg(LOG_FULLTRACE, "%s exiting", __func__);
+}
+
+void lc_op_ret(lc_socket_call_t *sc, lc_message_t *msg)
+{
+	logmsg(LOG_TRACE, "%s", __func__);
+
+	/* TODO: handle data returned in response to GET */
 }
 
 void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
@@ -639,8 +705,8 @@ void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
 	lc_ctx_db_t *db;
 	char *seq;
 	char *rnd;
-	lc_len_t keylen;
-	lc_len_t vallen;
+	lc_len_t klen;
+	lc_len_t vlen;
 	char *key;
 	char *val;
 	lc_channel_t *chan;
@@ -668,16 +734,16 @@ void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
 	asprintf(&rnd, "%lu", msg->rnd);
 
 	/* extract key and data */
-	memcpy(&keylen, msg->data, sizeof(lc_len_t));
-	keylen = be64toh(keylen);
-	vallen = msg->len - keylen - sizeof(lc_len_t);
-	key = malloc(keylen);
-	val = malloc(vallen);
-	memcpy(key, msg->data + sizeof(lc_len_t), keylen);
-	memcpy(val, msg->data + sizeof(lc_len_t) + keylen, vallen);
+	memcpy(&klen, msg->data, sizeof(lc_len_t));
+	klen = be64toh(klen);
+	vlen = msg->len - klen - sizeof(lc_len_t);
+	key = malloc(klen);
+	val = malloc(vlen);
+	memcpy(key, msg->data + sizeof(lc_len_t), klen);
+	memcpy(val, msg->data + sizeof(lc_len_t) + klen, vlen);
 
 	/* write to database */
-	lc_db_set(db, chan->uri, key, keylen, val, vallen);
+	lc_db_set(db, chan->uri, key, klen, val, vlen);
 
 	free(seq);
 	free(rnd);
@@ -1033,7 +1099,7 @@ int lc_channel_free(lc_channel_t * channel)
 ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
-	int i, err;
+	int i = 0, err = 0;
 	struct iovec iov;
 	struct msghdr msgh;
 	char buf[BUFSIZE];

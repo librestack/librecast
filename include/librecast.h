@@ -28,7 +28,8 @@ typedef void *lc_free_fn_t(void *msg, void *hint);
 	X(0x2, LC_OP_PONG, "PONG", lc_op_pong) \
 	X(0x3, LC_OP_GET,  "GET",  lc_op_get) \
 	X(0x4, LC_OP_SET,  "SET",  lc_op_set) \
-	X(0x5, LC_OP_DEL,  "DEL",  lc_op_del)
+	X(0x5, LC_OP_DEL,  "DEL",  lc_op_del) \
+	X(0x6, LC_OP_RET,  "RET",  lc_op_ret)
 #undef X
 
 #define LC_OPCODE_ENUM(code, name, text, f) name = code,

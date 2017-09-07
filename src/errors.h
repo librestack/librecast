@@ -52,15 +52,16 @@
 	X(45, LC_ERROR_DB_OPEN,            "Unable to open database") \
 	X(46, LC_ERROR_DB_EXEC,            "Error executing database operation") \
 	X(47, LC_ERROR_DB_REQUIRED,        "Database required") \
-	X(48, LC_ERROR_SOCKET_REQUIRED,    "Librecast socket required for this operation") \
-	X(49, LC_ERROR_CHANNEL_REQUIRED,   "Librecast channel required for this operation") \
-	X(50, LC_ERROR_MESSAGE_REQUIRED,   "Librecast message required for this operation") \
-	X(51, LC_ERROR_MESSAGE_EMPTY,      "message has no payload") \
-	X(52, LC_ERROR_INVALID_PARAMS,     "Invalid arguments to function") \
-	X(53, LC_ERROR_MSG_ATTR_UNKNOWN,   "Unknown message attribute") \
-	X(54, LC_ERROR_THREAD_CANCEL,      "Failed to cancel thread") \
-	X(55, LC_ERROR_THREAD_JOIN,        "Failed to join thread") \
-	X(56, LC_ERROR_INVALID_OPCODE,     "Invalid opcode")
+	X(48, LC_ERROR_DB_KEYNOTFOUND,     "Requested key not found in database") \
+	X(49, LC_ERROR_SOCKET_REQUIRED,    "Librecast socket required for this operation") \
+	X(50, LC_ERROR_CHANNEL_REQUIRED,   "Librecast channel required for this operation") \
+	X(51, LC_ERROR_MESSAGE_REQUIRED,   "Librecast message required for this operation") \
+	X(52, LC_ERROR_MESSAGE_EMPTY,      "message has no payload") \
+	X(53, LC_ERROR_INVALID_PARAMS,     "Invalid arguments to function") \
+	X(54, LC_ERROR_MSG_ATTR_UNKNOWN,   "Unknown message attribute") \
+	X(55, LC_ERROR_THREAD_CANCEL,      "Failed to cancel thread") \
+	X(56, LC_ERROR_THREAD_JOIN,        "Failed to join thread") \
+	X(57, LC_ERROR_INVALID_OPCODE,     "Invalid opcode")
 #undef X
 
 #define LC_ERROR_MSG(code, name, msg) case code: return msg;
