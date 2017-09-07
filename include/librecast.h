@@ -34,7 +34,7 @@ typedef void *lc_free_fn_t(void *msg, void *hint);
 
 #define LC_OPCODE_ENUM(code, name, text, f) name = code,
 #define LC_OPCODE_TEXT(code, name, text, f) case code: return text;
-#define LC_OPCODE_FUN(code, name, text, f) case code: f(sc, msg); break;
+#define LC_OPCODE_FUN(code, name, text, f) case code: f(sc, &msg); break;
 
 typedef enum {
 	LC_OPCODES(LC_OPCODE_ENUM)

@@ -833,53 +833,53 @@ void *lc_socket_listen_thread(void *arg)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	ssize_t len;
-	lc_message_t *msg = calloc(1, sizeof(lc_message_t));
+	lc_message_t msg;
 	lc_socket_call_t *sc = arg;
 	lc_channel_t *chan;
 
+	lc_msg_init(&msg);
 	while(1) {
 		/* about to call a blocking function, prep cleanup handlers */
 		pthread_cleanup_push(free, arg);
-		pthread_cleanup_push(free, msg);
-		len = lc_msg_recv(sc->sock, msg);
+		pthread_cleanup_push(lc_msg_free, &msg);
+		len = lc_msg_recv(sc->sock, &msg);
 		pthread_cleanup_pop(0);
 		pthread_cleanup_pop(0);
 
-		msg->dstaddr = calloc(1, INET6_ADDRSTRLEN);
-		msg->srcaddr = calloc(1, INET6_ADDRSTRLEN);
-		inet_ntop(AF_INET6, &msg->dst, msg->dstaddr, INET6_ADDRSTRLEN);
-		inet_ntop(AF_INET6, &msg->src, msg->srcaddr, INET6_ADDRSTRLEN);
-		logmsg(LOG_DEBUG, "message destination %s", msg->dstaddr);
-		logmsg(LOG_DEBUG, "message source      %s", msg->srcaddr);
+		msg.dstaddr = calloc(1, INET6_ADDRSTRLEN);
+		msg.srcaddr = calloc(1, INET6_ADDRSTRLEN);
+		inet_ntop(AF_INET6, &msg.dst, msg.dstaddr, INET6_ADDRSTRLEN);
+		inet_ntop(AF_INET6, &msg.src, msg.srcaddr, INET6_ADDRSTRLEN);
+		logmsg(LOG_DEBUG, "message destination %s", msg.dstaddr);
+		logmsg(LOG_DEBUG, "message source      %s", msg.srcaddr);
 		logmsg(LOG_DEBUG, "got data %i bytes", (int)len);
 		if (len > 0) {
-			msg->sockid = sc->sock->id;
+			msg.sockid = sc->sock->id;
 
 			/* update channel stats */
-			chan = lc_channel_by_address(msg->dstaddr);
-			msg->chan = chan;
+			chan = lc_channel_by_address(msg.dstaddr);
+			msg.chan = chan;
 			if (chan) {
-				chan->seq = (msg->seq > chan->seq) ? msg->seq + 1 : chan->seq + 1;
-				chan->rnd = msg->rnd;
+				chan->seq = (msg.seq > chan->seq) ? msg.seq + 1 : chan->seq + 1;
+				chan->rnd = msg.rnd;
 				logmsg(LOG_DEBUG, "channel clock set to %u.%u", chan->seq, chan->rnd);
-				lc_channel_logmsg(chan, msg); /* store in channel log */
+				lc_channel_logmsg(chan, &msg); /* store in channel log */
 			}
 
 			/* process opcode */
-			logmsg(LOG_DEBUG, "OPCODE received: %lu", msg->op);
-			switch (msg->op) {
+			logmsg(LOG_DEBUG, "OPCODE received: %lu", msg.op);
+			switch (msg.op) {
 				LC_OPCODES(LC_OPCODE_FUN)
 			default:
 				lc_error_log(LOG_ERROR, LC_ERROR_INVALID_OPCODE);
 			}
 		}
 		if (len < 0) {
-			free(msg);
+			lc_msg_free(&msg);
 			if (sc->callback_err)
 				sc->callback_err(len);
 		}
-		free(msg->data);
-		memset(msg, 0, sizeof(lc_message_t));
+		lc_msg_free(&msg);
 	}
 	/* not reached */
 	free(sc);
@@ -1115,10 +1115,6 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 
 	assert(sock != NULL);
 
-	if (sock->thread != 0) /* if we're in a thread, prep cleanup handler */
-		pthread_cleanup_push(free, msg->data);
-	msg->data = calloc(1, BUFSIZE);
-
 	memset(&msgh, 0, sizeof(struct msghdr));
 	iov.iov_base = buf;
         iov.iov_len = BUFSIZE - 1;
@@ -1133,8 +1129,6 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 	logmsg(LOG_DEBUG, "recvmsg on sock = %i", sock->socket);
 	i = recvmsg(sock->socket, &msgh, 0);
 	err = errno;
-	if (sock->thread != 0) /* release thread cleanup handler before next block */
-		pthread_cleanup_pop(0);
 	if (i == -1) {
 		logmsg(LOG_DEBUG, "recvmsg ERROR: %s", strerror(err));
 	}
@@ -1145,7 +1139,6 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 		msg->rnd = be64toh(head.rnd);
 		msg->len = be64toh(head.len);
 		msg->op = head.op;
-		msg->data = NULL;
 		if (msg->len > 0) {
 			/* read body */
 			msg->data = malloc(msg->len);
