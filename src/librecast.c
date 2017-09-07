@@ -288,8 +288,19 @@ int lc_db_set(lc_ctx_db_t *env, const char *db, char *key, size_t klen, char *va
 
 int lc_channel_getval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
 {
-	/* TODO */
-	return 0;
+	logmsg(LOG_TRACE, "%s", __func__);
+	lc_message_t msg;
+	int err = 0;
+	int i = LC_OP_GET;
+
+	if (chan == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
+
+	lc_msg_init_data(&msg, key->data, key->size, NULL, NULL);
+	lc_msg_set(&msg, LC_ATTR_OPCODE, &i);
+	err = lc_msg_send(chan, &msg);
+
+	return err;
 }
 
 int lc_channel_setval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
@@ -314,7 +325,6 @@ int lc_channel_setval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
 	lc_msg_init_data(&msg, pkt, sizeof(lc_len_t) + key->size + val->size, NULL, NULL);
 	int i = LC_OP_SET;
 	lc_msg_set(&msg, LC_ATTR_OPCODE, &i);
-	lc_msg_set(&msg, LC_ATTR_DATA, pkt);
 
 	/* send */
 	err = lc_msg_send(chan, &msg);
