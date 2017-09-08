@@ -838,13 +838,10 @@ void *lc_socket_listen_thread(void *arg)
 	lc_channel_t *chan;
 
 	lc_msg_init(&msg);
+	pthread_cleanup_push(free, arg);
+	pthread_cleanup_push(lc_msg_free, &msg);
 	while(1) {
-		/* about to call a blocking function, prep cleanup handlers */
-		pthread_cleanup_push(free, arg);
-		pthread_cleanup_push(lc_msg_free, &msg);
 		len = lc_msg_recv(sc->sock, &msg);
-		pthread_cleanup_pop(0);
-		pthread_cleanup_pop(0);
 
 		msg.dstaddr = calloc(1, INET6_ADDRSTRLEN);
 		msg.srcaddr = calloc(1, INET6_ADDRSTRLEN);
@@ -879,9 +876,10 @@ void *lc_socket_listen_thread(void *arg)
 			if (sc->callback_err)
 				sc->callback_err(len);
 		}
-		lc_msg_free(&msg);
 	}
 	/* not reached */
+	pthread_cleanup_pop(0);
+	pthread_cleanup_pop(0);
 	free(sc);
 	return NULL;
 }
