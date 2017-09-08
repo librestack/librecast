@@ -993,6 +993,11 @@ lc_channel_t * lc_channel_by_address(char addr[INET6_ADDRSTRLEN])
 	return p;
 }
 
+lc_ctx_t *lc_channel_ctx(lc_channel_t *chan)
+{
+	return chan->ctx;
+}
+
 char *lc_channel_uri(lc_channel_t *chan)
 {
 	return chan->uri;

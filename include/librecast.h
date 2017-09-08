@@ -136,6 +136,12 @@ int lc_channel_bind(lc_socket_t *sock, lc_channel_t * channel);
 /* find channel from address */
 lc_channel_t * lc_channel_by_address(char addr[INET6_ADDRSTRLEN]);
 
+/* return librecast context for channel */
+lc_ctx_t *lc_channel_ctx(lc_channel_t *chan);
+
+/* return channel URI */
+char *lc_channel_uri(lc_channel_t *chan);
+
 /* unbind channel from socket */
 int lc_channel_unbind(lc_channel_t * channel);
 
