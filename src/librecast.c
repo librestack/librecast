@@ -229,13 +229,18 @@ int lc_tap_create(char **ifname)
 
 int lc_db_get(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char **val, size_t *vlen)
 {
+	logmsg(LOG_TRACE, "%s", __func__);
 	int err = 0;
 	MDB_txn *txn;
 	MDB_dbi dbi;
 	MDB_val k, v;
 	MDB_cursor *cursor;
-	lc_ctx_db_t *env = ctx->db;
+	lc_ctx_db_t *env;
 
+	if (ctx->db == NULL)
+		return lc_error_log(LOG_DEBUG, LC_ERROR_DB_REQUIRED);
+
+	env = ctx->db;
 	k.mv_data = key;
 	k.mv_size = klen;
 	memset(&v, 0, sizeof(MDB_val));
@@ -550,6 +555,10 @@ lc_ctx_t * lc_ctx_new()
 	E(mdb_env_create(&ctx->db));
 	E(mdb_env_set_maxdbs(ctx->db, LC_DATABASE_COUNT));
 	E(mdb_env_open(ctx->db, LC_DATABASE_DIR, 0, 0600));
+	if (err != 0) {
+		mdb_env_close(ctx->db);
+		ctx->db = NULL;
+	}
 
 	return ctx;
 ctx_err:
