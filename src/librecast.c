@@ -243,7 +243,7 @@ int lc_db_get(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char **val,
 	RET(mdb_txn_begin(env, NULL, 0, &txn));
 	RET(mdb_dbi_open(txn, db, MDB_CREATE, &dbi));
 	RET(mdb_cursor_open(txn, dbi, &cursor));
-	if ((err = mdb_cursor_get(cursor, &k, &v, MDB_FIRST)) != 0) {
+	if ((err = mdb_cursor_get(cursor, &k, &v, MDB_LAST)) != 0) {
 		if (err == MDB_NOTFOUND)
 			err = LC_ERROR_DB_KEYNOTFOUND;
 		else
