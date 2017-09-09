@@ -698,7 +698,9 @@ void lc_op_ret(lc_socket_call_t *sc, lc_message_t *msg)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 
-	/* TODO: handle data returned in response to GET */
+	/* callback to message handler */
+	if (sc->callback_msg)
+		sc->callback_msg(msg);
 }
 
 void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
