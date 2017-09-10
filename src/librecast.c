@@ -313,6 +313,12 @@ int lc_channel_setval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
 
 	if (chan == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
+	if (key == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_INVALID_PARAMS);
+	if (key->size == 0)
+		return lc_error_log(LOG_ERROR, LC_ERROR_INVALID_PARAMS);
+	if (key->data == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_INVALID_PARAMS);
 
 	/* pack data: [keylen][key][data] */
 	keylen = htobe64(key->size);
