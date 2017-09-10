@@ -270,8 +270,15 @@ int lc_db_set(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char *val, 
 	MDB_txn *txn;
 	MDB_dbi dbi;
 	MDB_val k, v;
-	lc_ctx_db_t *env = ctx->db;
+	lc_ctx_db_t *env;
 
+
+	if (ctx == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_CTX_REQUIRED);
+	if (ctx->db == NULL)
+		return lc_error_log(LOG_DEBUG, LC_ERROR_DB_REQUIRED);
+
+	env = ctx->db;
 	k.mv_data = key;
 	k.mv_size = klen;
 	v.mv_data = val;
@@ -282,7 +289,7 @@ int lc_db_set(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char *val, 
 	RET(mdb_put(txn, dbi, &k, &v, 0));
 	RET(mdb_txn_commit(txn));
 
-	return 0;
+	return err;
 }
 
 int lc_channel_getval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
