@@ -770,6 +770,10 @@ void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
 	free(key);
 	free(val);
 
+	/* callback to message handler */
+	if (sc->callback_msg)
+		sc->callback_msg(msg);
+
 	logmsg(LOG_FULLTRACE, "%s exiting", __func__);
 }
 
