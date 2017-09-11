@@ -1042,14 +1042,19 @@ int lc_channel_join(lc_channel_t * channel)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 
-	if (!channel)
-		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
-
 	struct ipv6_mreq req;
 	struct ifaddrs *ifaddr, *ifa;
-	int sock = channel->socket->socket;
-	struct addrinfo *addr = channel->address;
+	int sock;
+	struct addrinfo *addr;
 	int joins = 0;
+
+	if (channel == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
+	if (channel->socket == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_SOCKET_REQUIRED);
+
+	sock = channel->socket->socket;
+	addr = channel->address;
 
 	memcpy(&req.ipv6mr_multiaddr,
 		&((struct sockaddr_in6*)(addr->ai_addr))->sin6_addr,
@@ -1202,8 +1207,16 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 int lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
-	if (!channel)
+	if (channel == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
+	if (channel->address == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_INVALID_PARAMS);
+	if (channel->socket == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_INVALID_PARAMS);
+	if (msg == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_MESSAGE_REQUIRED);
+	if (msg->len > 0 && msg->data == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_MESSAGE_EMPTY);
 
 	struct addrinfo *addr = channel->address;
 	int sock = channel->socket->socket;
