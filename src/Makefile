@@ -21,7 +21,7 @@ NODEWATCH_OBJECTS=${COMMON_OBJECTS} nodewatch.o commands.o controller.o handler.
 all: ${DAEMON} ${CLIENT} ${NODEWATCH} ${LIBRARY}
 
 ${LIBRARY}: ${LIBRARY_OBJECTS}
-	${CC} ${CCOPTS} ${LIBS} -shared -o ${LIBRARY} ${LIBRARY_OBJECTS}
+	${CC} ${CCOPTS} -shared -o ${LIBRARY} ${LIBRARY_OBJECTS} ${LIBS} 
 
 ${DAEMON}: ${DAEMON_OBJECTS}
 	${CC} ${CCOPTS} -o ${DAEMON} ${DAEMON_OBJECTS} ${LIBS}
