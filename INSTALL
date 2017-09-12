@@ -16,8 +16,11 @@ Prerequisites:
  git clone https://github.com/brettsheffield/bridge-utils
  cd bridge-utils
  autoconf
- /configure --prefix=/ --libdir=/usr/lib64 --includedir=/usr/include --with-linux-headers=/usr/include
+ /configure --prefix=/ --libdir=/usr/lib6 --includedir=/usr/include --with-linux-headers=/usr/include
  cd libbridge
  make
  make install
+
+Ubuntu 16.04 LTS:
+ apt-get install libncurses5-dev
 
