@@ -10,6 +10,7 @@ LIBNAME=librecast
 LIBDIR=/usr/local/lib
 LIBFILE=lib${LIBNAME}.so
 INCLUDEDIR=/usr/local/include
+DBDIR=/var/cache/librecast
 LIBS=-pthread -lpthread -lncurses -lbridge -lcrypto -llmdb
 COMMON_OBJECTS=args.o config.o errors.o log.o misc.o pid.o socket.o
 DAEMON_OBJECTS=${COMMON_OBJECTS} daemon.o commands.o controller.o handler.o net.o signals.o
@@ -87,6 +88,7 @@ install: ${DAEMON} ${CLIENT} ${NODEWATCH} ${LIBRARY}
 	cp ../include/* ${INCLUDEDIR}
 	cp lctl ${INSTALLDIR}
 	cp nodewatch ${INSTALLDIR}
+	[ -d ${DBDIR} ] || mkdir ${DBDIR}
 
 .PHONY: clean leakcheck
 
