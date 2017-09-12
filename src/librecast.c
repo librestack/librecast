@@ -237,8 +237,14 @@ int lc_db_get(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char **val,
 	MDB_cursor *cursor;
 	lc_ctx_db_t *env;
 
+	if (ctx == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_CTX_REQUIRED);
 	if (ctx->db == NULL)
 		return lc_error_log(LOG_DEBUG, LC_ERROR_DB_REQUIRED);
+	if (db == NULL)
+		return lc_error_log(LOG_DEBUG, LC_ERROR_DB_REQUIRED);
+	if (key == NULL || klen < 1)
+		return lc_error_log(LOG_DEBUG, LC_ERROR_INVALID_PARAMS);
 
 	env = ctx->db;
 	k.mv_data = key;
@@ -246,8 +252,12 @@ int lc_db_get(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char **val,
 	memset(&v, 0, sizeof(MDB_val));
 
 	RET(mdb_txn_begin(env, NULL, 0, &txn));
-	RET(mdb_dbi_open(txn, db, MDB_CREATE, &dbi));
-	RET(mdb_cursor_open(txn, dbi, &cursor));
+	E(mdb_dbi_open(txn, db, MDB_CREATE, &dbi));
+	if (err != 0)
+		goto aborttxn;
+	E(mdb_cursor_open(txn, dbi, &cursor));
+	if (err != 0)
+		goto aborttxn;
 	if ((err = mdb_cursor_get(cursor, &k, &v, MDB_LAST)) != 0) {
 		if (err == MDB_NOTFOUND)
 			err = LC_ERROR_DB_KEYNOTFOUND;
@@ -259,6 +269,7 @@ int lc_db_get(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char **val,
 		memcpy(*val, v.mv_data, v.mv_size);
 		*vlen = v.mv_size;
 	}
+aborttxn:
 	mdb_txn_abort(txn);
 
 	return err;
@@ -272,11 +283,14 @@ int lc_db_set(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char *val, 
 	MDB_val k, v;
 	lc_ctx_db_t *env;
 
-
 	if (ctx == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_CTX_REQUIRED);
 	if (ctx->db == NULL)
 		return lc_error_log(LOG_DEBUG, LC_ERROR_DB_REQUIRED);
+	if (db == NULL)
+		return lc_error_log(LOG_DEBUG, LC_ERROR_DB_REQUIRED);
+	if (key == NULL || klen < 1)
+		return lc_error_log(LOG_DEBUG, LC_ERROR_INVALID_PARAMS);
 
 	env = ctx->db;
 	k.mv_data = key;
@@ -285,10 +299,17 @@ int lc_db_set(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char *val, 
 	v.mv_size = vlen;
 
 	RET(mdb_txn_begin(env, NULL, 0, &txn));
-	RET(mdb_dbi_open(txn, db, MDB_CREATE, &dbi));
-	RET(mdb_put(txn, dbi, &k, &v, 0));
+	E(mdb_dbi_open(txn, db, MDB_CREATE, &dbi));
+	if (err != 0)
+		goto aborttxn;
+	E(mdb_put(txn, dbi, &k, &v, 0));
+	if (err != 0)
+		goto aborttxn;
 	RET(mdb_txn_commit(txn));
 
+	return err;
+aborttxn:
+	mdb_txn_abort(txn);
 	return err;
 }
 
