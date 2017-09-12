@@ -401,8 +401,9 @@ int lc_msg_init_data(lc_message_t *msg, void *data, size_t len, void *f, void *h
 	return 0;
 }
 
-void lc_msg_free(lc_message_t *msg)
+void lc_msg_free(void *ptr)
 {
+	lc_message_t *msg = (lc_message_t *)ptr;
 	if (msg->data != NULL) {
 		if (*msg->free != NULL)
 			msg->free(msg, msg->hint);
