@@ -11,7 +11,7 @@
 #define LIBRECASTD_RUNNING 1
 #define LC_BRIDGE_NAME "lc0"
 #define LC_DATABASE_DIR "/var/cache/librecast"
-#define LC_DATABASE_COUNT 1
+#define LC_DATABASE_COUNT 32
 
 typedef uint64_t lc_seq_t;
 typedef uint64_t lc_rnd_t;

@@ -87,7 +87,7 @@ lc_channel_t *chan_list = NULL;
 
 #define E(expr) if (err == 0) TEST((err = (expr)) == MDB_SUCCESS, #expr)
 #define RET(expr) if (err == 0) TEST((err = (expr)) == MDB_SUCCESS, #expr); else return err
-#define TEST(test, f) ((test) ? (void)0 : ((void)logmsg(LOG_DEBUG, "ERROR(%i): %s", err, #f), err=LC_ERROR_DB_EXEC))
+#define TEST(test, f) ((test) ? (void)0 : ((void)logmsg(LOG_DEBUG, "ERROR(%i): %s: %s", err, #f, mdb_strerror(err)), err=LC_ERROR_DB_EXEC))
 
 
 /* socket listener thread */
@@ -472,11 +472,11 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	lc_ctx_db_t *db;
-	int err;
+	int err = 0;
 	char *dst;
 	char *src;
-	char *seq;
-	char *rnd;
+	char *key;
+	char *dbi;
 
 	if (chan == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
@@ -490,15 +490,19 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	inet_ntop(AF_INET6, &msg->dst, dst, INET6_ADDRSTRLEN);
 	inet_ntop(AF_INET6, &msg->src, src, INET6_ADDRSTRLEN);
 
-	asprintf(&seq, "%lu", msg->seq);
-	asprintf(&rnd, "%lu", msg->rnd);
+	/* log message to database */
+	asprintf(&key, "%lu.%lu", msg->seq, msg->rnd);
+	E(lc_db_set(chan->ctx, chan->uri, key, strlen(key), msg->data, msg->len));
 
-	err = 0;
+	/* write some indexes */
+	asprintf(&dbi, "%s_src_idx", chan->uri);
+	E(lc_db_set(chan->ctx, chan->uri, src, INET6_ADDRSTRLEN, key, strlen(key)));
+	free(dbi);
+	asprintf(&dbi, "%s_dst_idx", chan->uri);
+	E(lc_db_set(chan->ctx, chan->uri, dst, INET6_ADDRSTRLEN, key, strlen(key)));
+	free(dbi);
 
-	/* TODO: log message to database */
-
-	free(seq);
-	free(rnd);
+	free(key);
 	free(dst);
 	free(src);
 
@@ -712,9 +716,9 @@ void lc_op_get(lc_socket_call_t *sc, lc_message_t *msg)
 	}
 
 	/* key */
-	key = malloc(msg->len + 1);
+	key = malloc(msg->len);
 	memcpy(key, msg->data, msg->len);
-	key[msg->len + 1] = '\0';
+	key[msg->len] = '\0';
 
 	/* read requested value from database */
 	if ((err = lc_db_get(chan->ctx, chan->uri, key, msg->len, &val, &vlen)) != 0) {
@@ -731,6 +735,14 @@ void lc_op_get(lc_socket_call_t *sc, lc_message_t *msg)
 	lc_msg_init_data(msg, pkt, vlen + sizeof(lc_seq_t) + sizeof(lc_rnd_t), NULL, NULL);
 	lc_msg_set(msg, LC_ATTR_OPCODE, &opcode);
 	lc_msg_send(chan, msg);
+
+	/* DEBUG logging */
+	char *strkey, *strval;
+	strkey = strndup(key, msg->len);
+	strval = strndup(val, vlen);
+	logmsg(LOG_DEBUG, "getting key '%s' on channel '%s' == '%s'", strkey, chan->uri, strval);
+	free(strkey);
+	free(strval);
 
 	free(val);
 errexit:
@@ -790,6 +802,14 @@ void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
 	val = malloc(vlen);
 	memcpy(key, msg->data + sizeof(lc_len_t), klen);
 	memcpy(val, msg->data + sizeof(lc_len_t) + klen, vlen);
+
+	/* DEBUG logging */
+	char *strkey, *strval;
+	strkey = strndup(key, klen);
+	strval = strndup(val, vlen);
+	logmsg(LOG_DEBUG, "setting key '%s' on channel '%s' to '%s'", strkey, chan->uri, strval);
+	free(strkey);
+	free(strval);
 
 	/* write to database */
 	lc_db_set(chan->ctx, chan->uri, key, klen, val, vlen);
