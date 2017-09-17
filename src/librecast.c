@@ -313,6 +313,89 @@ aborttxn:
 	return err;
 }
 
+int lc_db_set_mode(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char *val, size_t vlen, int mode)
+{
+	int err = 0;
+	MDB_txn *txn;
+	MDB_dbi dbi;
+	MDB_val k, v;
+	lc_ctx_db_t *env;
+	int flags;
+
+	if (ctx == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_CTX_REQUIRED);
+	if (ctx->db == NULL)
+		return lc_error_log(LOG_DEBUG, LC_ERROR_DB_REQUIRED);
+	if (db == NULL)
+		return lc_error_log(LOG_DEBUG, LC_ERROR_DB_REQUIRED);
+	if (key == NULL || klen < 1)
+		return lc_error_log(LOG_DEBUG, LC_ERROR_INVALID_PARAMS);
+
+	env = ctx->db;
+
+	flags = MDB_CREATE;
+	if ((mode & LC_DB_MODE_DUP) == LC_DB_MODE_DUP)
+		flags |= MDB_DUPSORT;
+	if ((mode & LC_DB_MODE_INT) == LC_DB_MODE_INT)
+		flags |= MDB_INTEGERKEY;
+
+	k.mv_data = key;
+	k.mv_size = klen;
+	v.mv_data = val;
+	v.mv_size = vlen;
+
+	RET(mdb_txn_begin(env, NULL, 0, &txn));
+	E(mdb_dbi_open(txn, db, flags, &dbi));
+	if (err != 0)
+		goto aborttxn;
+	E(mdb_put(txn, dbi, &k, &v, 0));
+	if (err != 0)
+		goto aborttxn;
+	RET(mdb_txn_commit(txn));
+
+	return err;
+aborttxn:
+	mdb_txn_abort(txn);
+	return err;
+}
+
+int lc_db_idx(lc_ctx_t *ctx, const char *left, const char *right, char *key, size_t klen, char *val, size_t vlen, int mode)
+{
+	int err = 0;
+	char *db;
+
+	if (ctx == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_CTX_REQUIRED);
+	if (ctx->db == NULL)
+		return lc_error_log(LOG_DEBUG, LC_ERROR_DB_REQUIRED);
+	if (left == NULL)
+		return lc_error_log(LOG_DEBUG, LC_ERROR_INVALID_PARAMS);
+	if (key == NULL || klen < 1)
+		return lc_error_log(LOG_DEBUG, LC_ERROR_INVALID_PARAMS);
+
+	if ((mode & LC_DB_MODE_LEFT) == LC_DB_MODE_LEFT) {
+		if (right == NULL)
+			db = strdup(left);
+		else
+			asprintf(&db, "%s_%s", left, right);
+
+		err = lc_db_set_mode(ctx, db, key, klen, val, vlen, mode);
+		free(db);
+	}
+
+	if ((mode & LC_DB_MODE_RIGHT) == LC_DB_MODE_RIGHT) {
+		if (right == NULL)
+			db = strdup(left);
+		else
+			asprintf(&db, "%s_%s", right, left);
+
+		err = lc_db_set_mode(ctx, db, val, vlen, key, klen, mode);
+		free(db);
+	}
+
+	return err;
+}
+
 int lc_channel_getval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
@@ -472,39 +555,59 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	lc_ctx_db_t *db;
+	lc_ctx_t *ctx;
 	int err = 0;
+	int mode;
 	char *dst;
 	char *src;
 	char *key;
-	char *dbi;
+	char *val;
+	size_t klen, vlen;
 
 	if (chan == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
 
-	db = chan->ctx->db;
-	if (db == NULL)
+	ctx = chan->ctx;
+	if ((db = ctx->db) == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_DB_REQUIRED);
 
-	dst = calloc(1, INET6_ADDRSTRLEN);
-	src = calloc(1, INET6_ADDRSTRLEN);
+	if ((dst = calloc(1, INET6_ADDRSTRLEN)) == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
+
+	if ((src = calloc(1, INET6_ADDRSTRLEN)) == NULL) {
+		free(dst);
+		return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
+	}
+
 	inet_ntop(AF_INET6, &msg->dst, dst, INET6_ADDRSTRLEN);
 	inet_ntop(AF_INET6, &msg->src, src, INET6_ADDRSTRLEN);
 
 	/* log message to database */
-	asprintf(&key, "%lu.%lu", msg->seq, msg->rnd);
-	E(lc_db_set(chan->ctx, chan->uri, key, strlen(key), msg->data, msg->len));
+	if ((klen = asprintf(&key, "%lu.%lu", msg->seq, msg->rnd)) == -1) {
+		free(src);
+		free(dst);
+		return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
+	}
 
-	/* write some indexes */
-	asprintf(&dbi, "%s_src_idx", chan->uri);
-	E(lc_db_set(chan->ctx, chan->uri, src, INET6_ADDRSTRLEN, key, strlen(key)));
-	free(dbi);
-	asprintf(&dbi, "%s_dst_idx", chan->uri);
-	E(lc_db_set(chan->ctx, chan->uri, dst, INET6_ADDRSTRLEN, key, strlen(key)));
-	free(dbi);
+	E(lc_db_set(ctx, "message", key, klen, msg->data, msg->len));
 
+	/* metadata indexes */
+
+	mode = LC_DB_MODE_DUP | LC_DB_MODE_BOTH;
+	E(lc_db_idx(ctx, "message", "channel", key, klen, chan->uri, strlen(chan->uri), mode));
+	E(lc_db_idx(ctx, "message", "src", key, klen, src, INET6_ADDRSTRLEN, mode));
+	E(lc_db_idx(ctx, "message", "dst", key, klen, dst, INET6_ADDRSTRLEN, mode));
+
+	vlen = asprintf(&val, "%u", (unsigned int)time(NULL));
+	mode = LC_DB_MODE_DUP | LC_DB_MODE_LEFT ;
+	E(lc_db_idx(ctx, "message", "timestamp", key, klen, val, vlen, mode));
+	mode = LC_DB_MODE_DUP | LC_DB_MODE_RIGHT | LC_DB_MODE_INT;
+	E(lc_db_idx(ctx, "message", "timestamp", key, klen, val, vlen, mode));
+
+	free(val);
 	free(key);
-	free(dst);
 	free(src);
+	free(dst);
 
 	logmsg(LOG_FULLTRACE, "%s exiting", __func__);
 	return err;

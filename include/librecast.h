@@ -41,6 +41,14 @@ typedef enum {
 } lc_opcode_t;
 
 typedef enum {
+	LC_DB_MODE_DUP = 1,
+	LC_DB_MODE_LEFT = 2,
+	LC_DB_MODE_RIGHT = 4,
+	LC_DB_MODE_BOTH = 6,
+	LC_DB_MODE_INT = 8,
+} lc_db_mode_t;
+
+typedef enum {
 	LC_ATTR_DATA,
 	LC_ATTR_LEN,
 	LC_ATTR_OPCODE,
@@ -86,6 +94,12 @@ int lc_db_get(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char **val,
 
 /* set key/val in named database db */
 int lc_db_set(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char *val, size_t vlen);
+
+/* as lc_db_set(), respecting database modes  */
+int lc_db_set_mode(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char *val, size_t vlen, int mode);
+
+/* set key/val index */
+int lc_db_idx(lc_ctx_t *ctx, const char *left, const char *right, char *key, size_t klen, char *val, size_t vlen, int mode);
 
 /* convert opcode to text */
 char *lc_opcode_text(lc_opcode_t op);
