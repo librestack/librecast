@@ -96,10 +96,10 @@ int lc_db_get(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void **val,
 int lc_db_set(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void *val, size_t vlen);
 
 /* as lc_db_set(), respecting database modes  */
-int lc_db_set_mode(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char *val, size_t vlen, int mode);
+int lc_db_set_mode(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void *val, size_t vlen, int mode);
 
 /* set key/val index */
-int lc_db_idx(lc_ctx_t *ctx, const char *left, const char *right, char *key, size_t klen, char *val, size_t vlen, int mode);
+int lc_db_idx(lc_ctx_t *ctx, const char *left, const char *right, void *key, size_t klen, void *val, size_t vlen, int mode);
 
 /* convert opcode to text */
 char *lc_opcode_text(lc_opcode_t op);

@@ -313,7 +313,7 @@ aborttxn:
 	return err;
 }
 
-int lc_db_set_mode(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char *val, size_t vlen, int mode)
+int lc_db_set_mode(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void *val, size_t vlen, int mode)
 {
 	int err = 0;
 	MDB_txn *txn;
@@ -359,7 +359,7 @@ aborttxn:
 	return err;
 }
 
-int lc_db_idx(lc_ctx_t *ctx, const char *left, const char *right, char *key, size_t klen, char *val, size_t vlen, int mode)
+int lc_db_idx(lc_ctx_t *ctx, const char *left, const char *right, void *key, size_t klen, void *val, size_t vlen, int mode)
 {
 	int err = 0;
 	char *db;
