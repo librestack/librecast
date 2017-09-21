@@ -227,7 +227,7 @@ int lc_tap_create(char **ifname)
         return fd;
 }
 
-int lc_db_get(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char **val, size_t *vlen)
+int lc_db_get(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void **val, size_t *vlen)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	int err = 0;
@@ -275,7 +275,7 @@ aborttxn:
 	return err;
 }
 
-int lc_db_set(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char *val, size_t vlen)
+int lc_db_set(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void *val, size_t vlen)
 {
 	int err = 0;
 	MDB_txn *txn;
@@ -824,7 +824,7 @@ void lc_op_get(lc_socket_call_t *sc, lc_message_t *msg)
 	key[msg->len] = '\0';
 
 	/* read requested value from database */
-	if ((err = lc_db_get(chan->ctx, chan->uri, key, msg->len, &val, &vlen)) != 0) {
+	if ((err = lc_db_get(chan->ctx, chan->uri, key, msg->len, (void *)&val, &vlen)) != 0) {
 		lc_error_log(LOG_DEBUG, err);
 		goto errexit;
 	}

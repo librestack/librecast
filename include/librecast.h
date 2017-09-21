@@ -90,10 +90,10 @@ int lc_msg_set(lc_message_t *msg, lc_msg_attr_t attr, void *value);
 void *lc_msg_data(lc_message_t *msg);
 
 /* fetch a single key */
-int lc_db_get(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char **val, size_t *vlen);
+int lc_db_get(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void **val, size_t *vlen);
 
 /* set key/val in named database db */
-int lc_db_set(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char *val, size_t vlen);
+int lc_db_set(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void *val, size_t vlen);
 
 /* as lc_db_set(), respecting database modes  */
 int lc_db_set_mode(lc_ctx_t *ctx, const char *db, char *key, size_t klen, char *val, size_t vlen, int mode);
