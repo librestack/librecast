@@ -558,8 +558,6 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	lc_ctx_t *ctx;
 	int err = 0;
 	int mode;
-	char *dst;
-	char *src;
 	char *key;
 	char *val;
 	size_t klen, vlen;
@@ -571,23 +569,9 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	if ((db = ctx->db) == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_DB_REQUIRED);
 
-	if ((dst = calloc(1, INET6_ADDRSTRLEN)) == NULL)
-		return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
-
-	if ((src = calloc(1, INET6_ADDRSTRLEN)) == NULL) {
-		free(dst);
-		return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
-	}
-
-	inet_ntop(AF_INET6, &msg->dst, dst, INET6_ADDRSTRLEN);
-	inet_ntop(AF_INET6, &msg->src, src, INET6_ADDRSTRLEN);
-
 	/* log message to database */
-	if ((klen = asprintf(&key, "%lu.%lu", msg->seq, msg->rnd)) == -1) {
-		free(src);
-		free(dst);
+	if ((klen = asprintf(&key, "%lu.%lu", msg->seq, msg->rnd)) == -1)
 		return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
-	}
 
 	E(lc_db_set(ctx, "message", key, klen, msg->data, msg->len));
 
@@ -595,8 +579,8 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 
 	mode = LC_DB_MODE_DUP | LC_DB_MODE_BOTH;
 	E(lc_db_idx(ctx, "message", "channel", key, klen, chan->uri, strlen(chan->uri), mode));
-	E(lc_db_idx(ctx, "message", "src", key, klen, src, INET6_ADDRSTRLEN, mode));
-	E(lc_db_idx(ctx, "message", "dst", key, klen, dst, INET6_ADDRSTRLEN, mode));
+	E(lc_db_idx(ctx, "message", "src", key, klen, msg->srcaddr, INET6_ADDRSTRLEN, mode));
+	E(lc_db_idx(ctx, "message", "dst", key, klen, msg->dstaddr, INET6_ADDRSTRLEN, mode));
 
 	vlen = asprintf(&val, "%u", (unsigned int)time(NULL));
 	mode = LC_DB_MODE_DUP | LC_DB_MODE_LEFT ;
@@ -606,8 +590,6 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 
 	free(val);
 	free(key);
-	free(src);
-	free(dst);
 
 	logmsg(LOG_FULLTRACE, "%s exiting", __func__);
 	return err;
