@@ -551,7 +551,7 @@ int lc_msg_set(lc_message_t *msg, lc_msg_attr_t attr, void *value)
 	return 0;
 }
 
-int lc_msg_id(lc_message_t *msg, unsigned char *id[SHA_DIGEST_LENGTH])
+int lc_msg_id(lc_message_t *msg, unsigned char id[SHA_DIGEST_LENGTH])
 {
         int err = 0;
 
@@ -568,7 +568,7 @@ int lc_msg_id(lc_message_t *msg, unsigned char *id[SHA_DIGEST_LENGTH])
                 err = lc_error_log(LOG_ERROR, LC_ERROR_HASH_UPDATE);
         }
 	/* TODO: timestamp */
-        else if (!SHA1_Final(*id, c)) {
+        else if (!SHA1_Final(id, c)) {
                 err = lc_error_log(LOG_ERROR, LC_ERROR_HASH_FINAL);
         }
         free(c);
@@ -594,7 +594,7 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	if ((db = ctx->db) == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_DB_REQUIRED);
 
-	if ((err = lc_msg_id(msg, (unsigned char **)&key)) != 0)
+	if ((err = lc_msg_id(msg, (unsigned char *)key)) != 0)
 		return err;
 
 	klen = SHA_DIGEST_LENGTH;
