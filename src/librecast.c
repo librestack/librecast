@@ -551,6 +551,31 @@ int lc_msg_set(lc_message_t *msg, lc_msg_attr_t attr, void *value)
 	return 0;
 }
 
+int lc_msg_id(lc_message_t *msg, unsigned char *id[SHA_DIGEST_LENGTH])
+{
+        int err = 0;
+
+        /* create hash from msg + src + timestamp */
+        SHA_CTX *c = NULL;
+        c = malloc(sizeof(SHA_CTX));
+        if (!SHA1_Init(c)) {
+                err = lc_error_log(LOG_ERROR, LC_ERROR_HASH_INIT);
+        }
+        else if (!SHA1_Update(c, msg->data, msg->len)) {
+                err = lc_error_log(LOG_ERROR, LC_ERROR_HASH_UPDATE);
+        }
+        else if (!SHA1_Update(c, msg->srcaddr, sizeof(struct in6_addr))) {
+                err = lc_error_log(LOG_ERROR, LC_ERROR_HASH_UPDATE);
+        }
+	/* TODO: timestamp */
+        else if (!SHA1_Final(*id, c)) {
+                err = lc_error_log(LOG_ERROR, LC_ERROR_HASH_FINAL);
+        }
+        free(c);
+
+        return err;
+}
+
 int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
@@ -558,9 +583,9 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	lc_ctx_t *ctx;
 	int err = 0;
 	int mode;
-	char *key;
 	char *val;
 	size_t klen, vlen;
+	unsigned char key[SHA_DIGEST_LENGTH];
 
 	if (chan == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
@@ -569,10 +594,12 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	if ((db = ctx->db) == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_DB_REQUIRED);
 
-	/* log message to database */
-	if ((klen = asprintf(&key, "%lu.%lu", msg->seq, msg->rnd)) == -1)
-		return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
+	if ((err = lc_msg_id(msg, (unsigned char **)&key)) != 0)
+		return err;
 
+	klen = SHA_DIGEST_LENGTH;
+
+	/* log message to database */
 	E(lc_db_set(ctx, "message", key, klen, msg->data, msg->len));
 
 	/* metadata indexes */
@@ -589,7 +616,6 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	E(lc_db_idx(ctx, "message", "timestamp", key, klen, val, vlen, mode));
 
 	free(val);
-	free(key);
 
 	logmsg(LOG_FULLTRACE, "%s exiting", __func__);
 	return err;
