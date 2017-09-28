@@ -1297,10 +1297,10 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	int i = 0, err = 0;
-	struct iovec iov;
+	struct iovec iov[2];
 	struct msghdr msgh;
-	char buf[BUFSIZE];
-	char cmsgbuf[BUFSIZE];
+	char buf[sizeof(lc_message_head_t)];
+	char cmsgbuf[sizeof(lc_message_head_t)];
 	struct sockaddr_in from;
 	socklen_t fromlen = sizeof(from);
 	struct cmsghdr *cmsg;
@@ -1309,18 +1309,28 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 
 	assert(sock != NULL);
 
+	logmsg(LOG_DEBUG, "recvmsg on sock = %i", sock->socket);
+	i = recv(sock->socket, NULL, 0, MSG_PEEK | MSG_TRUNC);
+	logmsg(LOG_DEBUG, "%i bytes waiting to be read", i);
+
+	if (i > sizeof(lc_message_head_t)) {
+		msg->len = i - sizeof(lc_message_head_t);
+		msg->data = calloc(1, msg->len);
+	}
+
 	memset(&msgh, 0, sizeof(struct msghdr));
-	iov.iov_base = buf;
-        iov.iov_len = BUFSIZE - 1;
+	iov[0].iov_base = buf;
+        iov[0].iov_len = sizeof(lc_message_head_t);
+	iov[1].iov_base = msg->data;
+        iov[1].iov_len = msg->len;
         msgh.msg_control = cmsgbuf;
-        msgh.msg_controllen = BUFSIZE - 1;
+        msgh.msg_controllen = sizeof(lc_message_head_t);
         msgh.msg_name = &from;
         msgh.msg_namelen = fromlen;
-        msgh.msg_iov = &iov;
-        msgh.msg_iovlen = 1;
+        msgh.msg_iov = iov;
+        msgh.msg_iovlen = 2;
         msgh.msg_flags = 0;
 
-	logmsg(LOG_DEBUG, "recvmsg on sock = %i", sock->socket);
 	i = recvmsg(sock->socket, &msgh, 0);
 	err = errno;
 	if (i == -1) {
@@ -1333,11 +1343,6 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 		msg->rnd = be64toh(head.rnd);
 		msg->len = be64toh(head.len);
 		msg->op = head.op;
-		if (msg->len > 0) {
-			/* read body */
-			msg->data = malloc(msg->len);
-			memcpy(msg->data, buf + sizeof(lc_message_head_t), msg->len);
-		}
                 for (cmsg = CMSG_FIRSTHDR(&msgh);
                      cmsg != NULL;
                      cmsg = CMSG_NXTHDR(&msgh, cmsg))
