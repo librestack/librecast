@@ -1316,6 +1316,10 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 	if (i > sizeof(lc_message_head_t)) {
 		msg->len = i - sizeof(lc_message_head_t);
 		msg->data = calloc(1, msg->len);
+                if (msg->data == NULL) {
+			lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
+			return 0;
+		}
 	}
 
 	memset(&msgh, 0, sizeof(struct msghdr));
