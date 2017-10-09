@@ -1300,7 +1300,7 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 	struct iovec iov[2];
 	struct msghdr msgh;
 	char buf[sizeof(lc_message_head_t)];
-	char cmsgbuf[sizeof(lc_message_head_t)];
+	char cmsgbuf[BUFSIZE];
 	struct sockaddr_in from;
 	socklen_t fromlen = sizeof(from);
 	struct cmsghdr *cmsg;
@@ -1324,7 +1324,7 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 	iov[1].iov_base = msg->data;
         iov[1].iov_len = msg->len;
         msgh.msg_control = cmsgbuf;
-        msgh.msg_controllen = sizeof(lc_message_head_t);
+        msgh.msg_controllen = BUFSIZE;
         msgh.msg_name = &from;
         msgh.msg_namelen = fromlen;
         msgh.msg_iov = iov;
