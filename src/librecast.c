@@ -708,6 +708,7 @@ lc_ctx_t * lc_ctx_new()
 	if (err != 0) {
 		mdb_env_close(ctx->db);
 		ctx->db = NULL;
+		logmsg(LOG_DEBUG, "Continuing with no database");
 	}
 
 	return ctx;
