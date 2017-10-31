@@ -337,7 +337,7 @@ int lc_db_set_mode(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void *
 	if ((mode & LC_DB_MODE_DUP) == LC_DB_MODE_DUP)
 		flags |= MDB_DUPSORT;
 	if ((mode & LC_DB_MODE_INT) == LC_DB_MODE_INT)
-		flags |= MDB_INTEGERKEY;
+		flags |= MDB_INTEGERDUP;
 
 	k.mv_data = key;
 	k.mv_size = klen;
