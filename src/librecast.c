@@ -689,18 +689,19 @@ lc_ctx_t * lc_ctx_new()
 	int fdtap;
 	if ((fdtap = lc_tap_create(&tap)) == -1) {
 		lc_error_log(LOG_ERROR, LC_ERROR_TAP_ADD_FAIL);
-		free(ctx);
-		return NULL;
+		logmsg(LOG_DEBUG, "continuing without tap/bridge");
 	}
-        logmsg(LOG_DEBUG, "bridging interface %s to bridge %s", tap, LC_BRIDGE_NAME);
-	/* plug TAP into bridge */
-	if ((lc_bridge_add_interface(LC_BRIDGE_NAME, tap)) == -1) {
-		lc_error_log(LOG_ERROR, LC_ERROR_IF_BRIDGE_FAIL);
-		goto ctx_err;
-	}
+	else {
+		logmsg(LOG_DEBUG, "bridging interface %s to bridge %s", tap, LC_BRIDGE_NAME);
+		/* plug TAP into bridge */
+		if ((lc_bridge_add_interface(LC_BRIDGE_NAME, tap)) == -1) {
+			lc_error_log(LOG_ERROR, LC_ERROR_IF_BRIDGE_FAIL);
+			goto ctx_err;
+		}
 
-	ctx->tapname = tap;
-	ctx->fdtap = fdtap;
+		ctx->tapname = tap;
+		ctx->fdtap = fdtap;
+	}
 
 	/* prepare databases */
 	int err = 0;
@@ -1407,7 +1408,9 @@ int lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 
 	/* set loopback */
 	setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &opt,sizeof(opt));
-	opt = if_nametoindex(channel->ctx->tapname);
+
+	/* use tap iface if available */
+	opt = (channel->ctx->tapname) ? if_nametoindex(channel->ctx->tapname) : 0;
 	if (setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &opt,
 			sizeof(opt) == 0))
 	{
