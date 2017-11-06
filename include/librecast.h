@@ -20,6 +20,8 @@ typedef struct lc_ctx_t lc_ctx_t;
 typedef struct lc_socket_t lc_socket_t;
 typedef struct lc_channel_t lc_channel_t;
 typedef struct lc_msg_head_t lc_msg_head_t;
+typedef struct lc_query_t lc_query_t;
+typedef struct lc_query_param_t lc_query_param_t;
 typedef void *lc_free_fn_t(void *msg, void *hint);
 
 #define LC_OPCODES(X) \
@@ -49,6 +51,21 @@ typedef enum {
 } lc_db_mode_t;
 
 typedef enum {
+	LC_QUERY_NOOP = 0,
+	LC_QUERY_EQ = 1,
+	LC_QUERY_NE = 2,
+	LC_QUERY_LT = 4,
+	LC_QUERY_GT = 8,
+	LC_QUERY_TIME = 16,
+	LC_QUERY_SRC = 32,
+	LC_QUERY_DST = 64,
+	LC_QUERY_CHANNEL = 128,
+	LC_QUERY_KEYWORD = 256,
+	LC_QUERY_MIN = 512,
+	LC_QUERY_MAX = 1024,
+} lc_query_op_t;
+
+typedef enum {
 	LC_ATTR_DATA,
 	LC_ATTR_LEN,
 	LC_ATTR_OPCODE,
@@ -70,6 +87,13 @@ typedef struct lc_message_t {
 	void *data;
 } lc_message_t;
 
+typedef struct lc_messagelist_t {
+	char *hash;
+	char *timestamp;
+	void *data;
+	struct lc_messagelist_t *next;
+} lc_messagelist_t;
+
 typedef struct {
 	lc_len_t size;
 	void    *data;
@@ -86,6 +110,8 @@ void lc_msg_free(void *msg);
 int lc_msg_get(lc_message_t *msg, lc_msg_attr_t attr, void *value);
 int lc_msg_set(lc_message_t *msg, lc_msg_attr_t attr, void *value);
 
+void lc_msglist_free(lc_messagelist_t *msg);
+
 /* return pointer to message payload */
 void *lc_msg_data(lc_message_t *msg);
 
@@ -100,6 +126,12 @@ int lc_db_set_mode(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void *
 
 /* set key/val index */
 int lc_db_idx(lc_ctx_t *ctx, const char *left, const char *right, void *key, size_t klen, void *val, size_t vlen, int mode);
+
+/* query functions */
+int lc_query_new(lc_ctx_t *ctx, lc_query_t **q);
+void lc_query_free(lc_query_t *q);
+int lc_query_push(lc_query_t *q, lc_query_op_t op, void *data);
+int lc_query_exec(lc_query_t *q, lc_messagelist_t **msg);
 
 /* convert opcode to text */
 char *lc_opcode_text(lc_opcode_t op);

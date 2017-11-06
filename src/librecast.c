@@ -66,6 +66,17 @@ typedef struct lc_message_head_t {
 	lc_len_t len;
 } __attribute__((__packed__)) lc_message_head_t;
 
+typedef struct lc_query_param_t {
+	lc_query_op_t op;
+	void *data;
+	lc_query_param_t *next;
+} lc_query_param_t;
+
+typedef struct lc_query_t {
+	lc_ctx_t *ctx;
+	lc_query_param_t *param;
+} lc_query_t;
+
 /* structure to pass to socket listening thread */
 typedef struct lc_socket_call_t {
 	lc_socket_t *sock;
@@ -396,6 +407,164 @@ int lc_db_idx(lc_ctx_t *ctx, const char *left, const char *right, void *key, siz
 	}
 
 	return err;
+}
+
+int lc_query_new(lc_ctx_t *ctx, lc_query_t **q)
+{
+	if (ctx == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_CTX_REQUIRED);
+
+	if ((*q = calloc(1, sizeof(lc_query_t))) == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
+
+	(*q)->ctx = ctx;
+
+	return 0;
+}
+
+void lc_query_free(lc_query_t *q)
+{
+	lc_query_param_t *p, *tmp;
+
+	for (p = q->param; p != NULL; free(tmp)) {
+		tmp = p;
+		p = p->next;
+	}
+	free(q);
+}
+
+int lc_query_push(lc_query_t *q, lc_query_op_t op, void *data)
+{
+	lc_query_param_t *new, *p;
+
+	if (q == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_INVALID_PARAMS);
+
+	if ((new = calloc(1, sizeof(lc_query_param_t))) == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
+
+	new->op = op;
+	new->data = data;
+
+	/* append new query to end of linked list */
+	if (q->param == NULL)
+		q->param = new;
+	else {
+		for(p = q->param; p->next != NULL; p = p->next);
+		p->next = new;
+	}
+
+	return 0;
+}
+
+int lc_msg_filter(MDB_txn *txn, MDB_val msgid, char *database, char *filter)
+{
+        int rc = 0;
+        int err = 0;
+        MDB_dbi dbi;
+        MDB_val data;
+
+        if (filter == NULL)
+                return 1;
+
+        E(mdb_dbi_open(txn, database, MDB_DUPSORT, &dbi));
+        rc = mdb_get(txn, dbi, &msgid, &data);
+        if (rc == 0)
+                rc = strncmp(data.mv_data, filter, data.mv_size);
+
+        return (rc == 0) ? 1 : 0;
+}
+
+int lc_query_filter(MDB_txn *txn, MDB_val msgid, lc_query_t *q)
+{
+	lc_query_param_t *p;
+	for (p = q->param; p != NULL; p = p->next) {
+		if ((p->op & LC_QUERY_CHANNEL) == LC_QUERY_CHANNEL) {
+			if (!(lc_msg_filter(txn, msgid, "message_channel", p->data)))
+				return 0;
+		}
+		else {
+			continue;
+		}
+	}
+	return 1;
+}
+
+int lc_query_exec(lc_query_t *q, lc_messagelist_t **msglist)
+{
+	int err = 0;
+	int msgs = 0;
+	int rc;
+	MDB_txn *txn;
+	MDB_dbi dbi_msg, dbi_idx_t;
+	MDB_cursor *cursor;
+	MDB_val key, data, data_msg;
+	MDB_cursor_op op;
+	char *kval = "";
+	lc_messagelist_t *msg, *lastmsg = NULL;
+
+	E(mdb_txn_begin(q->ctx->db, NULL, MDB_RDONLY, &txn));
+	E(mdb_dbi_open(txn, "timestamp_message", MDB_INTEGERDUP, &dbi_idx_t));
+	E(mdb_dbi_open(txn, "message", MDB_DUPSORT, &dbi_msg));
+	E(mdb_cursor_open(txn, dbi_idx_t, &cursor));
+
+	key.mv_data = &kval;
+	key.mv_size = strlen(key.mv_data);
+
+	/* fetch messages in timestamp order */
+	for (op = MDB_FIRST; (rc = mdb_cursor_get(cursor, &key, &data, op)) == 0; op = MDB_NEXT) {
+		if (rc != 0) {
+			logmsg(LOG_DEBUG, "%s", mdb_strerror(rc));
+			continue;
+		}
+
+		/* filter msgs */
+		if (!(lc_query_filter(txn, data, q)))
+			continue;
+
+		/* retreive message data by id */
+		rc = mdb_get(txn, dbi_msg, &data, &data_msg);
+		if (rc != 0) {
+			logmsg(LOG_DEBUG, "%s", mdb_strerror(rc));
+			continue;
+		}
+
+		/* copy message */
+		msg = calloc(1, sizeof(lc_messagelist_t));
+		msg->hash = malloc(data.mv_size);
+		memcpy(msg->hash, data.mv_data, data.mv_size);
+		msg->timestamp = strndup(key.mv_data, key.mv_size);
+		msg->data = strndup(data_msg.mv_data, data_msg.mv_size);
+
+		/* append message to result list */
+		if (*msglist == NULL)
+			*msglist = msg;
+		else {
+			lastmsg->next = msg;
+		}
+		lastmsg = msg;
+
+		msgs++;
+	}
+	mdb_cursor_close(cursor);
+	mdb_txn_abort(txn);
+
+	return msgs;
+}
+
+void lc_msglist_free(lc_messagelist_t *msg)
+{
+	lc_messagelist_t *tmp;
+
+	while (msg != NULL) {
+		free(msg->hash);
+		free(msg->timestamp);
+		free(msg->data);
+		tmp = msg;
+		msg = msg->next;
+		free(tmp);
+	}
+	free(msg);
 }
 
 int lc_channel_getval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
