@@ -1583,7 +1583,10 @@ int lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 	if (setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &opt,
 			sizeof(opt) == 0))
 	{
-		logmsg(LOG_DEBUG, "Sending on interface %s", channel->ctx->tapname);
+		if (channel->ctx->tapname)
+			logmsg(LOG_DEBUG, "Sending on interface %s", channel->ctx->tapname);
+		else
+			logmsg(LOG_DEBUG, "Sending on default interface");
 		bytes = sendto(sock, buf, len, 0, addr->ai_addr, addr->ai_addrlen);
 		logmsg(LOG_DEBUG, "Sent %i bytes", (int)bytes);
 	}
