@@ -72,6 +72,7 @@ typedef enum {
 } lc_msg_attr_t;
 
 typedef struct lc_message_t {
+	uint64_t timestamp;
 	struct in6_addr dst;
 	struct in6_addr src;
 	lc_seq_t seq;

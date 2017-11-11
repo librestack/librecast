@@ -60,6 +60,7 @@ typedef struct lc_channel_t {
 } lc_channel_t;
 
 typedef struct lc_message_head_t {
+	uint64_t timestamp; /* nanosecond timestamp */
 	lc_seq_t seq; /* sequence number */
 	lc_rnd_t rnd; /* nonce */
 	uint8_t op;
@@ -780,7 +781,7 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	E(lc_db_idx(ctx, "message", "src", key, klen, msg->srcaddr, INET6_ADDRSTRLEN, mode));
 	E(lc_db_idx(ctx, "message", "dst", key, klen, msg->dstaddr, INET6_ADDRSTRLEN, mode));
 
-	vlen = asprintf(&val, "%u", (unsigned int)time(NULL));
+	vlen = asprintf(&val, "%"PRIu64"", msg->timestamp);
 	mode = LC_DB_MODE_DUP | LC_DB_MODE_LEFT ;
 	E(lc_db_idx(ctx, "message", "timestamp", key, klen, val, vlen, mode));
 	mode = LC_DB_MODE_DUP | LC_DB_MODE_RIGHT | LC_DB_MODE_INT;
@@ -1519,6 +1520,7 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 		msg->seq = be64toh(head.seq);
 		msg->rnd = be64toh(head.rnd);
 		msg->len = be64toh(head.len);
+		msg->timestamp = be64toh(head.timestamp);
 		msg->op = head.op;
                 for (cmsg = CMSG_FIRSTHDR(&msgh);
                      cmsg != NULL;
@@ -1559,8 +1561,13 @@ int lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 	lc_message_head_t *head;
 	char *buf;
 	size_t len, bytes;
+	struct timespec t;
 
 	head = calloc(1, sizeof(lc_message_head_t));
+	if (clock_gettime(CLOCK_REALTIME, &t) == 0) {
+		head->timestamp = htobe64(t.tv_sec * 1000000000 + t.tv_nsec);
+		logmsg(LOG_DEBUG, "nanostamp: %"PRIu64"", be64toh(head->timestamp));
+	}
 	head->seq = htobe64(++channel->seq);
 	lc_getrandom(&head->rnd, sizeof(lc_rnd_t), 0);
 	head->len = htobe64(msg->len);
