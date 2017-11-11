@@ -1,10 +1,13 @@
-README
+# Librecast - Distributed Applications with IPv6 Multicast
+
+![Librecast Logo](https://secure.gravatar.com/avatar/52295d18e59ef41aeac21f3745250288?s=250)
+
+## README
 
 [![Build Status](https://travis-ci.org/brettsheffield/librecast.svg?branch=master)](https://travis-ci.org/brettsheffield/librecast)
 
-Librecast is an *experimental* communication daemon intending to to provide
-fast, efficient and scalable communication between servers by leveraging IPv6
-multicast.
+Librecast is an *experimental* project to provide fast, efficient and scalable
+communication between servers by leveraging IPv6 multicast.
 
 NB: this is a WORK IN PROGRESS and is INCOMPLETE.
 
