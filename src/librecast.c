@@ -508,6 +508,8 @@ int lc_query_exec(lc_query_t *q, lc_messagelist_t **msglist)
 	E(mdb_dbi_open(txn, "timestamp_message", MDB_INTEGERDUP, &dbi_idx_t));
 	E(mdb_dbi_open(txn, "message", MDB_DUPSORT, &dbi_msg));
 	E(mdb_cursor_open(txn, dbi_idx_t, &cursor));
+	if (err != 0)
+		goto cleanup;
 
 	key.mv_data = &kval;
 	key.mv_size = strlen(key.mv_data);
@@ -547,6 +549,7 @@ int lc_query_exec(lc_query_t *q, lc_messagelist_t **msglist)
 
 		msgs++;
 	}
+cleanup:
 	mdb_cursor_close(cursor);
 	mdb_txn_abort(txn);
 
