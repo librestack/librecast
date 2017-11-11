@@ -4,7 +4,7 @@
 
 ## README
 
-[![Build Status](https://travis-ci.org/brettsheffield/librecast.svg?branch=master)](https://travis-ci.org/brettsheffield/librecast)
+[![Build Status](https://travis-ci.org/brettsheffield/librecast.svg?branch=master)](https://travis-ci.org/librestack/librecast)
 
 Librecast is an *experimental* project to provide fast, efficient and scalable
 communication between servers by leveraging IPv6 multicast.
