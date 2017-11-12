@@ -536,7 +536,7 @@ int lc_query_exec(lc_query_t *q, lc_messagelist_t **msglist)
 		msg = calloc(1, sizeof(lc_messagelist_t));
 		msg->hash = malloc(data.mv_size);
 		memcpy(msg->hash, data.mv_data, data.mv_size);
-		msg->timestamp = strndup(key.mv_data, key.mv_size);
+		msg->timestamp = strtoumax(key.mv_data, NULL, 10);
 		msg->data = strndup(data_msg.mv_data, data_msg.mv_size);
 
 		/* append message to result list */
@@ -562,7 +562,6 @@ void lc_msglist_free(lc_messagelist_t *msg)
 
 	while (msg != NULL) {
 		free(msg->hash);
-		free(msg->timestamp);
 		free(msg->data);
 		tmp = msg;
 		msg = msg->next;
@@ -1567,10 +1566,13 @@ int lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 	struct timespec t;
 
 	head = calloc(1, sizeof(lc_message_head_t));
-	if (clock_gettime(CLOCK_REALTIME, &t) == 0) {
-		head->timestamp = htobe64(t.tv_sec * 1000000000 + t.tv_nsec);
-		logmsg(LOG_DEBUG, "nanostamp: %"PRIu64"", be64toh(head->timestamp));
+	if (msg->timestamp != 0){
+		head->timestamp = htobe64(msg->timestamp);
 	}
+	else if (clock_gettime(CLOCK_REALTIME, &t) == 0) {
+		head->timestamp = htobe64(t.tv_sec * 1000000000 + t.tv_nsec);
+	}
+	logmsg(LOG_DEBUG, "nanostamp: %"PRIu64"", be64toh(head->timestamp));
 	head->seq = htobe64(++channel->seq);
 	lc_getrandom(&head->rnd, sizeof(lc_rnd_t), 0);
 	head->len = htobe64(msg->len);

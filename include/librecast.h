@@ -90,7 +90,7 @@ typedef struct lc_message_t {
 
 typedef struct lc_messagelist_t {
 	char *hash;
-	char *timestamp;
+	uint64_t timestamp;
 	void *data;
 	struct lc_messagelist_t *next;
 } lc_messagelist_t;
