@@ -764,6 +764,10 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	if (chan == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
 
+	/* only log data messages */
+	if (msg->op != LC_OP_DATA)
+		return 0;
+
 	ctx = chan->ctx;
 	if ((db = ctx->db) == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_DB_REQUIRED);
