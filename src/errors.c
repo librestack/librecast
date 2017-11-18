@@ -7,8 +7,8 @@
 
 int lc_error_log(int level, int e)
 {
-        logmsg(level, "%s", lc_error_msg(e));
-        return e;
+	logmsg(level, "%s", lc_error_msg(e));
+	return e;
 }
 
 char *lc_error_msg(int e)

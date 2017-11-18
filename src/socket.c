@@ -116,14 +116,14 @@ int socket_send(char *buf, size_t len)
 char *getsockfilename()
 {
 	char *sockfile;
-        if (geteuid() == 0) {
+	if (geteuid() == 0) {
 		/* we are root, put lockfile in /var/run */
 		asprintf(&sockfile, "/var/run/%s.sock", PROGRAM_NAME);
 	}
-        else {
+	else {
 		/* not root, put pidfile in user home */
 		asprintf(&sockfile, "%s/.%s.sock",
 		getenv("HOME"), PROGRAM_NAME);
 	}
-        return sockfile;
+	return sockfile;
 }

@@ -18,7 +18,7 @@ char *getlockfilename()
 		/* we are root, put lockfile in /var/run */
 		asprintf(&lockfile, "/var/run/%s.pid", PROGRAM_NAME);
 	}
-        else {
+	else {
 		/* not root, put pidfile in user home */
 	        asprintf(&lockfile, "%s/.%s.pid", getenv("HOME"), PROGRAM_NAME);
 	}
@@ -28,11 +28,11 @@ char *getlockfilename()
 
 int obtain_lockfile(int flags)
 {
-        char *lockfile;
+	char *lockfile;
 	int fd;
 
-        lockfile = getlockfilename();
-        fd = open(lockfile, flags, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP |
+	lockfile = getlockfilename();
+	fd = open(lockfile, flags, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP |
 			S_IROTH);
 	free(lockfile);
 

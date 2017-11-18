@@ -29,11 +29,11 @@ int net_multicast_getaddrinfo(const char *node, const char *service,
 		struct addrinfo **res)
 {
 	struct addrinfo hints = { 0 };
-        hints.ai_family = AF_UNSPEC;
-        hints.ai_socktype = SOCK_DGRAM;
-        hints.ai_flags = AI_NUMERICHOST;
-        logmsg(LOG_DEBUG, "resolving multicast address");
-        return getaddrinfo(node, service, &hints, res);
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_DGRAM;
+	hints.ai_flags = AI_NUMERICHOST;
+	logmsg(LOG_DEBUG, "resolving multicast address");
+	return getaddrinfo(node, service, &hints, res);
 }
 
 int net_multicast_init()
@@ -44,21 +44,21 @@ int net_multicast_init()
 	int publicsrc = config_get_num("publicsrc");
 	int value;
 
-        logmsg(LOG_DEBUG, "initializing multicast on %s", addr);
+	logmsg(LOG_DEBUG, "initializing multicast on %s", addr);
 
 	/* resolve destination address */
 	if (net_multicast_getaddrinfo(addr, port, &castaddr) != 0) {
-                goto net_multicast_init_fail;
-        }
+		goto net_multicast_init_fail;
+	}
 
-        /* create socket */
-        logmsg(LOG_DEBUG, "creating datagram socket");
-        sock = socket(castaddr->ai_family, castaddr->ai_socktype, 0);
-        if (sock == -1) {
-                goto net_multicast_init_fail;
-        }
+	/* create socket */
+	logmsg(LOG_DEBUG, "creating datagram socket");
+	sock = socket(castaddr->ai_family, castaddr->ai_socktype, 0);
+	if (sock == -1) {
+		goto net_multicast_init_fail;
+	}
 
-        if (publicsrc == 1) {
+	if (publicsrc == 1) {
 		/* request public source address, avoiding privacy extensions */
 		value = IPV6_PREFER_SRC_PUBLIC;
 		setsockopt(sock, IPPROTO_IPV6, IPV6_ADDR_PREFERENCES, &value,
@@ -88,8 +88,8 @@ void *net_multicast_listen()
 	struct ipv6_mreq req;
 
 	if (net_multicast_getaddrinfo(addr, port, &res) != 0) {
-                goto net_multicast_listen_fail;
-        }
+		goto net_multicast_listen_fail;
+	}
 
 	hints.ai_family = res->ai_family;
 	hints.ai_socktype = SOCK_DGRAM;
@@ -97,20 +97,20 @@ void *net_multicast_listen()
 
 	/* find local address to bind to */
 	if (getaddrinfo(NULL, port, &hints, &localaddr) != 0) {
-                goto net_multicast_listen_fail;
+		goto net_multicast_listen_fail;
 	}
 
 	/* create datagram socket */
 	sock = socket(localaddr->ai_family, localaddr->ai_socktype, 0);
 	if (sock == -1) {
-                goto net_multicast_listen_fail;
+		goto net_multicast_listen_fail;
 	}
 
 	net_multicast_setoptions();
 
 	/* bind to multicast port */
 	if (bind(sock, localaddr->ai_addr, localaddr->ai_addrlen) != 0) {
-                goto net_multicast_listen_fail;
+		goto net_multicast_listen_fail;
 	}
 
 	memcpy(&req.ipv6mr_multiaddr,
@@ -124,7 +124,7 @@ void *net_multicast_listen()
 	if (setsockopt(sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char *)&req,
 				sizeof(req)) != 0)
 	{
-                goto net_multicast_listen_fail;
+		goto net_multicast_listen_fail;
 	}
 
 	freeaddrinfo(localaddr);
@@ -163,22 +163,22 @@ net_multicast_listen_fail:
 int net_multicast_setoptions()
 {
 	int e = 0;
-        int loop = (int)config_get_num("loop");
-        int ttl = (int)config_get_num("ttl");
+	int loop = (int)config_get_num("loop");
+	int ttl = (int)config_get_num("ttl");
 
-        logmsg(LOG_DEBUG, "setting multicast TTL=%i", ttl);
-        if (setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &ttl,
-                                sizeof(ttl)) != 0)
-        {
-                e = LC_ERROR_NET_SOCKOPT;
-        }
+	logmsg(LOG_DEBUG, "setting multicast TTL=%i", ttl);
+	if (setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &ttl,
+				sizeof(ttl)) != 0)
+	{
+		e = LC_ERROR_NET_SOCKOPT;
+	}
 
-        logmsg(LOG_DEBUG, "setting multicast loopback=%i", loop);
-        if (setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &loop,
-                                sizeof(loop)) != 0)
-        {
-                e = LC_ERROR_NET_SOCKOPT;
-        }
+	logmsg(LOG_DEBUG, "setting multicast loopback=%i", loop);
+	if (setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &loop,
+				sizeof(loop)) != 0)
+	{
+		e = LC_ERROR_NET_SOCKOPT;
+	}
 
 	return e;
 }

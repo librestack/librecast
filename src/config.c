@@ -54,12 +54,12 @@ char * config_filename()
 		/* we are root */
 		snprintf(filename, sizeof(filename), "/etc/%s.conf", PROGRAM_NAME);
 	}
-        else {
+	else {
 		/* not root, use config in user home */
 	        snprintf(filename, sizeof(filename), "%s/.%s.conf", getenv("HOME"), PROGRAM_NAME);
 	}
 
-        return filename;
+	return filename;
 }
 
 void config_free()

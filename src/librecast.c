@@ -126,61 +126,61 @@ int lc_bridge_init()
 
 int lc_bridge_new(char *brname)
 {
-        int err;
+	int err;
 
-        switch (err = br_add_bridge(brname)) {
-        case 0:
-                break;
-        case EEXIST:
+	switch (err = br_add_bridge(brname)) {
+	case 0:
+		break;
+	case EEXIST:
 		return lc_error_log(LOG_DEBUG, LC_ERROR_BRIDGE_EXISTS);
-        default:
+	default:
 		logmsg(LOG_ERROR, "%s", strerror(err));
 		return lc_error_log(LOG_ERROR, LC_ERROR_BRIDGE_ADD_FAIL);
-        }
-        logmsg(LOG_DEBUG, "(librecast) bridge %s created", brname);
+	}
+	logmsg(LOG_DEBUG, "(librecast) bridge %s created", brname);
 
 	/* bring up bridge */
-        logmsg(LOG_DEBUG, "(librecast) bringing up bridge %s", brname);
+	logmsg(LOG_DEBUG, "(librecast) bringing up bridge %s", brname);
 	if ((err = lc_link_set(brname, IFF_UP)) != 0) {
 		return lc_error_log(LOG_ERROR, err);
 	}
 
-        return 0;
+	return 0;
 }
 
 int lc_bridge_add_interface(const char *brname, const char *ifname) {
-        int err;
+	int err;
 
 	logmsg(LOG_DEBUG, "bridging %s to %s", ifname, brname);
-        err = br_add_interface(brname, ifname);
-        switch(err) {
-        case 0:
-                return 0;
-        case ENODEV:
-                if (if_nametoindex(ifname) == 0)
+	err = br_add_interface(brname, ifname);
+	switch(err) {
+	case 0:
+		return 0;
+	case ENODEV:
+		if (if_nametoindex(ifname) == 0)
 			lc_error_log(LOG_ERROR, LC_ERROR_IF_NODEV);
-                else
+		else
 			lc_error_log(LOG_ERROR, LC_ERROR_BRIDGE_NODEV);
-                break;
-        case EBUSY:
+		break;
+	case EBUSY:
 		lc_error_log(LOG_ERROR, LC_ERROR_IF_BUSY);
-                break;
-        case ELOOP:
+		break;
+	case ELOOP:
 		lc_error_log(LOG_ERROR, LC_ERROR_IF_LOOP);
-                break;
-        case EOPNOTSUPP:
+		break;
+	case EOPNOTSUPP:
 		lc_error_log(LOG_ERROR, LC_ERROR_IF_OPNOTSUPP);
-                break;
-        default:
+		break;
+	default:
 		lc_error_log(LOG_ERROR, LC_ERROR_IF_BRIDGE_FAIL);
-        }
+	}
 
-        return -1;
+	return -1;
 }
 
 int lc_link_set(char *ifname, int flags)
 {
-        struct ifreq ifr;
+	struct ifreq ifr;
 	int fd, err = 0;
 
 	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
@@ -188,13 +188,13 @@ int lc_link_set(char *ifname, int flags)
 		logmsg(LOG_ERROR, "failed to create ioctl socket: %s", strerror(err));
 		return LC_ERROR_SOCK_IOCTL;
 	}
-        memset(&ifr, 0, sizeof(ifr));
-        memcpy(ifr.ifr_name, ifname, strlen(ifname));
-        logmsg(LOG_DEBUG, "fetching flags for interface %s", ifr.ifr_name);
+	memset(&ifr, 0, sizeof(ifr));
+	memcpy(ifr.ifr_name, ifname, strlen(ifname));
+	logmsg(LOG_DEBUG, "fetching flags for interface %s", ifr.ifr_name);
 	if ((err = ioctl(fd, SIOCGIFFLAGS, &ifr)) == -1) {
 	}
-        logmsg(LOG_DEBUG, "setting flags for interface %s", ifr.ifr_name);
-        ifr.ifr_flags |= flags;
+	logmsg(LOG_DEBUG, "setting flags for interface %s", ifr.ifr_name);
+	ifr.ifr_flags |= flags;
 	if ((err = ioctl(fd, SIOCSIFFLAGS, &ifr)) == -1) {
 		err = errno;
 		logmsg(LOG_ERROR, "ioctl failed: %s", strerror(err));
@@ -207,28 +207,28 @@ int lc_link_set(char *ifname, int flags)
 
 int lc_tap_create(char **ifname)
 {
-        struct ifreq ifr;
-        int fd, err;
+	struct ifreq ifr;
+	int fd, err;
 
 	/* create tap interface */
-        if ((fd = open("/dev/net/tun", O_RDWR)) == -1) {
+	if ((fd = open("/dev/net/tun", O_RDWR)) == -1) {
 		err = errno;
 		logmsg(LOG_ERROR, "open tun failed: %s", strerror(err));
-                return -1;
-        }
-        memset(&ifr, 0, sizeof(ifr));
-        ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
-        if (ioctl(fd, TUNSETIFF, (void *) &ifr) == -1) {
+		return -1;
+	}
+	memset(&ifr, 0, sizeof(ifr));
+	ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
+	if (ioctl(fd, TUNSETIFF, (void *) &ifr) == -1) {
 		err = errno;
 		logmsg(LOG_ERROR, "ioctl (TUNSETIFF) failed: %s", strerror(err));
-                close(fd);
-                return -1;
-        }
-        logmsg(LOG_DEBUG, "created tap interface %s", ifr.ifr_name);
-        *ifname = strdup(ifr.ifr_name);
+		close(fd);
+		return -1;
+	}
+	logmsg(LOG_DEBUG, "created tap interface %s", ifr.ifr_name);
+	*ifname = strdup(ifr.ifr_name);
 
 	/* bring interface up */
-        logmsg(LOG_DEBUG, "(librecast) bringing up interface %s", ifr.ifr_name);
+	logmsg(LOG_DEBUG, "(librecast) bringing up interface %s", ifr.ifr_name);
 	if ((err = lc_link_set(ifr.ifr_name, IFF_UP)) != 0) {
 		close(fd);
 		free(*ifname);
@@ -236,7 +236,7 @@ int lc_tap_create(char **ifname)
 		return -1;
 	}
 
-        return fd;
+	return fd;
 }
 
 int lc_db_get(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void **val, size_t *vlen)
@@ -460,20 +460,20 @@ int lc_query_push(lc_query_t *q, lc_query_op_t op, void *data)
 
 int lc_msg_filter(MDB_txn *txn, MDB_val msgid, char *database, char *filter)
 {
-        int rc = 0;
-        int err = 0;
-        MDB_dbi dbi;
-        MDB_val data;
+	int rc = 0;
+	int err = 0;
+	MDB_dbi dbi;
+	MDB_val data;
 
-        if (filter == NULL)
-                return 1;
+	if (filter == NULL)
+		return 1;
 
-        E(mdb_dbi_open(txn, database, MDB_DUPSORT, &dbi));
-        rc = mdb_get(txn, dbi, &msgid, &data);
-        if (rc == 0)
-                rc = strncmp(data.mv_data, filter, data.mv_size);
+	E(mdb_dbi_open(txn, database, MDB_DUPSORT, &dbi));
+	rc = mdb_get(txn, dbi, &msgid, &data);
+	if (rc == 0)
+		rc = strncmp(data.mv_data, filter, data.mv_size);
 
-        return (rc == 0) ? 1 : 0;
+	return (rc == 0) ? 1 : 0;
 }
 
 int lc_query_filter(MDB_txn *txn, MDB_val msgid, lc_query_t *q)
@@ -727,27 +727,27 @@ int lc_msg_set(lc_message_t *msg, lc_msg_attr_t attr, void *value)
 
 int lc_msg_id(lc_message_t *msg, unsigned char id[SHA_DIGEST_LENGTH])
 {
-        int err = 0;
+	int err = 0;
 
-        /* create hash from msg + src + timestamp */
-        SHA_CTX *c = NULL;
-        c = malloc(sizeof(SHA_CTX));
-        if (!SHA1_Init(c)) {
-                err = lc_error_log(LOG_ERROR, LC_ERROR_HASH_INIT);
-        }
-        else if (!SHA1_Update(c, msg->data, msg->len)) {
-                err = lc_error_log(LOG_ERROR, LC_ERROR_HASH_UPDATE);
-        }
-        else if (!SHA1_Update(c, msg->srcaddr, sizeof(struct in6_addr))) {
-                err = lc_error_log(LOG_ERROR, LC_ERROR_HASH_UPDATE);
-        }
+	/* create hash from msg + src + timestamp */
+	SHA_CTX *c = NULL;
+	c = malloc(sizeof(SHA_CTX));
+	if (!SHA1_Init(c)) {
+		err = lc_error_log(LOG_ERROR, LC_ERROR_HASH_INIT);
+	}
+	else if (!SHA1_Update(c, msg->data, msg->len)) {
+		err = lc_error_log(LOG_ERROR, LC_ERROR_HASH_UPDATE);
+	}
+	else if (!SHA1_Update(c, msg->srcaddr, sizeof(struct in6_addr))) {
+		err = lc_error_log(LOG_ERROR, LC_ERROR_HASH_UPDATE);
+	}
 	/* TODO: timestamp */
-        else if (!SHA1_Final(id, c)) {
-                err = lc_error_log(LOG_ERROR, LC_ERROR_HASH_FINAL);
-        }
-        free(c);
+	else if (!SHA1_Final(id, c)) {
+		err = lc_error_log(LOG_ERROR, LC_ERROR_HASH_FINAL);
+	}
+	free(c);
 
-        return err;
+	return err;
 }
 
 int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
@@ -802,41 +802,41 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 int lc_hashgroup(char *baseaddr, char *groupname, char *hashaddr, unsigned int flags)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
-        int i;
-        unsigned char hashgrp[SHA_DIGEST_LENGTH];
-        unsigned char binaddr[16];
-        SHA_CTX *c = NULL;
+	int i;
+	unsigned char hashgrp[SHA_DIGEST_LENGTH];
+	unsigned char binaddr[16];
+	SHA_CTX *c = NULL;
 
-        if (groupname) {
+	if (groupname) {
 		c = malloc(sizeof(SHA_CTX));
-	        if (!SHA1_Init(c))
-		        return lc_error_log(LOG_ERROR, LC_ERROR_HASH_INIT);
-	        if (!SHA1_Update(c, (unsigned char *)groupname, strlen(groupname)))
-		        return lc_error_log(LOG_ERROR, LC_ERROR_HASH_UPDATE);
-	        if (!SHA1_Update(c, &flags, sizeof(flags)))
-		        return lc_error_log(LOG_ERROR, LC_ERROR_HASH_UPDATE);
-	        if (!SHA1_Final(hashgrp, c))
-		        return lc_error_log(LOG_ERROR, LC_ERROR_HASH_FINAL);
-	        free(c);
+		if (!SHA1_Init(c))
+			return lc_error_log(LOG_ERROR, LC_ERROR_HASH_INIT);
+		if (!SHA1_Update(c, (unsigned char *)groupname, strlen(groupname)))
+			return lc_error_log(LOG_ERROR, LC_ERROR_HASH_UPDATE);
+		if (!SHA1_Update(c, &flags, sizeof(flags)))
+			return lc_error_log(LOG_ERROR, LC_ERROR_HASH_UPDATE);
+		if (!SHA1_Final(hashgrp, c))
+			return lc_error_log(LOG_ERROR, LC_ERROR_HASH_FINAL);
+		free(c);
 
-                if (inet_pton(AF_INET6, baseaddr, &binaddr) != 1)
-                        return lc_error_log(LOG_ERROR, LC_ERROR_INVALID_BASEADDR);
+		if (inet_pton(AF_INET6, baseaddr, &binaddr) != 1)
+			return lc_error_log(LOG_ERROR, LC_ERROR_INVALID_BASEADDR);
 
-                /* we have 112 bits (14 bytes) available for the group address
-                 * XOR the hashed group with the base multicast address */
-                for (i = 0; i < 14; i++) {
-                        binaddr[i+2] ^= hashgrp[i];
-                }
+		/* we have 112 bits (14 bytes) available for the group address
+		 * XOR the hashed group with the base multicast address */
+		for (i = 0; i < 14; i++) {
+			binaddr[i+2] ^= hashgrp[i];
+		}
 
 		if (inet_ntop(AF_INET6, binaddr, hashaddr, INET6_ADDRSTRLEN) == NULL) {
 			i = errno;
 			logmsg(LOG_ERROR, "%s (inet_ntop) %s", __func__, strerror(i));
 			return LC_ERROR_FAILURE;
 		}
-        }
+	}
 	logmsg(LOG_FULLTRACE, "%s exiting", __func__);
 
-        return 0;
+	return 0;
 }
 
 lc_ctx_t * lc_ctx_new()
@@ -1153,7 +1153,7 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 }
 
 int lc_socket_listen(lc_socket_t *sock, void (*callback_msg)(lc_message_t*),
-                                        void (*callback_err)(int))
+					void (*callback_err)(int))
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	pthread_attr_t attr = {};
@@ -1496,7 +1496,7 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 	if (i > sizeof(lc_message_head_t)) {
 		msg->len = i - sizeof(lc_message_head_t);
 		msg->data = calloc(1, msg->len);
-                if (msg->data == NULL) {
+		if (msg->data == NULL) {
 			lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
 			return 0;
 		}
@@ -1504,23 +1504,23 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 
 	memset(&msgh, 0, sizeof(struct msghdr));
 	iov[0].iov_base = buf;
-        iov[0].iov_len = sizeof(lc_message_head_t);
+	iov[0].iov_len = sizeof(lc_message_head_t);
 	iov[1].iov_base = msg->data;
-        iov[1].iov_len = msg->len;
-        msgh.msg_control = cmsgbuf;
-        msgh.msg_controllen = BUFSIZE;
-        msgh.msg_name = &from;
-        msgh.msg_namelen = fromlen;
-        msgh.msg_iov = iov;
-        msgh.msg_iovlen = 2;
-        msgh.msg_flags = 0;
+	iov[1].iov_len = msg->len;
+	msgh.msg_control = cmsgbuf;
+	msgh.msg_controllen = BUFSIZE;
+	msgh.msg_name = &from;
+	msgh.msg_namelen = fromlen;
+	msgh.msg_iov = iov;
+	msgh.msg_iovlen = 2;
+	msgh.msg_flags = 0;
 
 	i = recvmsg(sock->socket, &msgh, 0);
 	err = errno;
 	if (i == -1) {
 		logmsg(LOG_DEBUG, "recvmsg ERROR: %s", strerror(err));
 	}
-        if (i > 0) {
+	if (i > 0) {
 	        /* read header */
 		memcpy(&head, buf, sizeof(lc_message_head_t));
 		msg->seq = be64toh(head.seq);
@@ -1528,20 +1528,20 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 		msg->len = be64toh(head.len);
 		msg->timestamp = be64toh(head.timestamp);
 		msg->op = head.op;
-                for (cmsg = CMSG_FIRSTHDR(&msgh);
-                     cmsg != NULL;
-                     cmsg = CMSG_NXTHDR(&msgh, cmsg))
-                {
-                        if ((cmsg->cmsg_level == IPPROTO_IPV6)
-                          && (cmsg->cmsg_type == IPV6_PKTINFO))
-                        {
-                                pi = (struct in6_pktinfo *) CMSG_DATA(cmsg);
-                                msg->dst = pi->ipi6_addr;
-                                msg->src = ((struct sockaddr_in6*)&from)->sin6_addr;
-                                break;
-                        }
-                }
-        }
+		for (cmsg = CMSG_FIRSTHDR(&msgh);
+		     cmsg != NULL;
+		     cmsg = CMSG_NXTHDR(&msgh, cmsg))
+		{
+			if ((cmsg->cmsg_level == IPPROTO_IPV6)
+			&& (cmsg->cmsg_type == IPV6_PKTINFO))
+			{
+				pi = (struct in6_pktinfo *) CMSG_DATA(cmsg);
+				msg->dst = pi->ipi6_addr;
+				msg->src = ((struct sockaddr_in6*)&from)->sin6_addr;
+				break;
+			}
+		}
+	}
 
 	logmsg(LOG_FULLTRACE, "%s exiting", __func__);
 	return i;

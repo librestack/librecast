@@ -14,18 +14,18 @@
 
 int signal_daemon (int signal, int lockfd)
 {
-        char buf[sizeof(long)] = "";
-        long pid;
+	char buf[sizeof(long)] = "";
+	long pid;
 
-        if (pread(lockfd, &buf, sizeof(buf), 1) == -1) {
-                return LC_ERROR_PID_READFAIL;
-        }
-        if (sscanf(buf, "%li", &pid) == 1) {
-                return kill(pid, signal);
-        }
-        else {
-                return LC_ERROR_PID_INVALID;
-        }
+	if (pread(lockfd, &buf, sizeof(buf), 1) == -1) {
+		return LC_ERROR_PID_READFAIL;
+	}
+	if (sscanf(buf, "%li", &pid) == 1) {
+		return kill(pid, signal);
+	}
+	else {
+		return LC_ERROR_PID_INVALID;
+	}
 }
 
 int main(int argc, char **argv)
