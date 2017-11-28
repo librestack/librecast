@@ -60,9 +60,10 @@ typedef enum {
 	LC_QUERY_SRC = 32,
 	LC_QUERY_DST = 64,
 	LC_QUERY_CHANNEL = 128,
-	LC_QUERY_KEYWORD = 256,
-	LC_QUERY_MIN = 512,
-	LC_QUERY_MAX = 1024,
+	LC_QUERY_DB = 256,
+	LC_QUERY_KEY = 512,
+	LC_QUERY_MIN = 1024,
+	LC_QUERY_MAX = 2048,
 } lc_query_op_t;
 
 typedef enum {

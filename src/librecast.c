@@ -506,6 +506,12 @@ int lc_query_filter(MDB_txn *txn, MDB_val timestamp, MDB_val msgid, lc_query_t *
 			if (!(lc_msg_filter_time(timestamp, p)))
 				return 0;
 		}
+		if ((p->op & LC_QUERY_DB) == LC_QUERY_DB) {
+			char *db = p->data;
+			p = p->next;
+			if (!(lc_msg_filter(txn, msgid, db, p->data)))
+				return 0;
+		}
 		else {
 			continue;
 		}
