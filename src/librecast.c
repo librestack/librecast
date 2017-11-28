@@ -476,12 +476,34 @@ int lc_msg_filter(MDB_txn *txn, MDB_val msgid, char *database, char *filter)
 	return (rc == 0) ? 1 : 0;
 }
 
-int lc_query_filter(MDB_txn *txn, MDB_val msgid, lc_query_t *q)
+int lc_msg_filter_time(MDB_val timestamp, lc_query_param_t *p)
+{
+	int rc = 0;
+	uint64_t t = *(uint64_t *)(p->data);
+	uint64_t v = strtoumax(timestamp.mv_data, NULL, 10);
+
+	if ((p->op & LC_QUERY_EQ) == LC_QUERY_EQ) {
+		return (t == v) ? 1 : 0;
+	}
+	else if ((p->op & LC_QUERY_LT) == LC_QUERY_LT) {
+		return (t < v) ? 1 : 0;
+	}
+	else if ((p->op & LC_QUERY_GT) == LC_QUERY_GT) {
+		return (t > v) ? 1 : 0;
+	}
+	return (rc == 0) ? 1 : 0;
+}
+
+int lc_query_filter(MDB_txn *txn, MDB_val timestamp, MDB_val msgid, lc_query_t *q)
 {
 	lc_query_param_t *p;
 	for (p = q->param; p != NULL; p = p->next) {
 		if ((p->op & LC_QUERY_CHANNEL) == LC_QUERY_CHANNEL) {
 			if (!(lc_msg_filter(txn, msgid, "message_channel", p->data)))
+				return 0;
+		}
+		if ((p->op & LC_QUERY_TIME) == LC_QUERY_TIME) {
+			if (!(lc_msg_filter_time(timestamp, p)))
 				return 0;
 		}
 		else {
@@ -523,7 +545,7 @@ int lc_query_exec(lc_query_t *q, lc_messagelist_t **msglist)
 		}
 
 		/* filter msgs */
-		if (!(lc_query_filter(txn, data, q)))
+		if (!(lc_query_filter(txn, key, data, q)))
 			continue;
 
 		/* retreive message data by id */
