@@ -496,7 +496,7 @@ int lc_query_exec(lc_query_t *q, lc_messagelist_t **msglist)
 	int err = 0;
 	int msgs = 0;
 	int rc;
-	MDB_txn *txn;
+	MDB_txn *txn = NULL;
 	MDB_dbi dbi_msg, dbi_idx_t;
 	MDB_cursor *cursor;
 	MDB_val key, data, data_msg;
@@ -504,6 +504,7 @@ int lc_query_exec(lc_query_t *q, lc_messagelist_t **msglist)
 	char *kval = "";
 	lc_messagelist_t *msg, *lastmsg = NULL;
 
+	assert(q->ctx->db != NULL);
 	E(mdb_txn_begin(q->ctx->db, NULL, MDB_RDONLY, &txn));
 	E(mdb_dbi_open(txn, "timestamp_message", MDB_INTEGERDUP, &dbi_idx_t));
 	E(mdb_dbi_open(txn, "message", MDB_DUPSORT, &dbi_msg));
