@@ -432,6 +432,7 @@ void lc_query_free(lc_query_t *q)
 		p = p->next;
 	}
 	free(q);
+	q = NULL;
 }
 
 int lc_query_push(lc_query_t *q, lc_query_op_t op, void *data)
