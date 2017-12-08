@@ -465,14 +465,18 @@ int lc_msg_filter(MDB_txn *txn, MDB_val msgid, char *database, char *filter)
 	int err = 0;
 	MDB_dbi dbi;
 	MDB_val data;
+	MDB_cursor *cursor;
 
 	if (filter == NULL)
 		return 1;
 
 	E(mdb_dbi_open(txn, database, MDB_DUPSORT, &dbi));
-	rc = mdb_get(txn, dbi, &msgid, &data);
-	if (rc == 0)
-		rc = strncmp(data.mv_data, filter, data.mv_size);
+	if (mdb_cursor_open(txn, dbi, &cursor) == 0) {
+		data.mv_data = filter;
+		data.mv_size = strlen(filter);
+		rc = mdb_cursor_get(cursor, &msgid, &data, MDB_GET_BOTH);
+	}
+	mdb_cursor_close(cursor);
 
 	return (rc == 0) ? 1 : 0;
 }
