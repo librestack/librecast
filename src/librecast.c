@@ -471,14 +471,16 @@ int lc_msg_filter(MDB_txn *txn, MDB_val msgid, char *database, char *filter)
 		return 1;
 
 	E(mdb_dbi_open(txn, database, MDB_DUPSORT, &dbi));
-	if (mdb_cursor_open(txn, dbi, &cursor) == 0) {
-		data.mv_data = filter;
-		data.mv_size = strlen(filter);
-		rc = mdb_cursor_get(cursor, &msgid, &data, MDB_GET_BOTH);
+	if (err == 0) {
+		if (mdb_cursor_open(txn, dbi, &cursor) == 0) {
+			data.mv_data = filter;
+			data.mv_size = strlen(filter);
+			rc = mdb_cursor_get(cursor, &msgid, &data, MDB_GET_BOTH);
+		}
+		mdb_cursor_close(cursor);
 	}
-	mdb_cursor_close(cursor);
 
-	return (rc == 0) ? 1 : 0;
+	return (rc == 0 && err == 0) ? 1 : 0;
 }
 
 int lc_msg_filter_time(MDB_val timestamp, lc_query_param_t *p)
