@@ -270,7 +270,7 @@ int lc_db_get(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void **val,
 	E(mdb_cursor_open(txn, dbi, &cursor));
 	if (err != 0)
 		goto aborttxn;
-	if ((err = mdb_cursor_get(cursor, &k, &v, MDB_LAST)) != 0) {
+	if ((err = mdb_cursor_get(cursor, &k, &v, MDB_SET_KEY)) != 0) {
 		if (err == MDB_NOTFOUND)
 			err = LC_ERROR_DB_KEYNOTFOUND;
 		else
