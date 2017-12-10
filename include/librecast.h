@@ -117,6 +117,9 @@ void lc_msglist_free(lc_messagelist_t *msg);
 /* return pointer to message payload */
 void *lc_msg_data(lc_message_t *msg);
 
+/* open database */
+int lc_db_open(lc_ctx_t *ctx, char *dbpath);
+
 /* fetch a single key */
 int lc_db_get(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void **val, size_t *vlen);
 
