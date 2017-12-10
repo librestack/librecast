@@ -539,7 +539,7 @@ int lc_query_exec(lc_query_t *q, lc_messagelist_t **msglist)
 	char *kval = "";
 	lc_messagelist_t *msg, *lastmsg = NULL;
 
-	assert(q->ctx->db != NULL);
+	if (q->ctx->db == NULL) return -1;
 	E(mdb_txn_begin(q->ctx->db, NULL, MDB_RDONLY, &txn));
 	E(mdb_dbi_open(txn, "timestamp_message", MDB_INTEGERDUP, &dbi_idx_t));
 	E(mdb_dbi_open(txn, "message", MDB_DUPSORT, &dbi_msg));
