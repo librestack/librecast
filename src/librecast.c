@@ -485,20 +485,19 @@ int lc_msg_filter(MDB_txn *txn, MDB_val msgid, char *database, char *filter)
 
 int lc_msg_filter_time(MDB_val timestamp, lc_query_param_t *p)
 {
-	int rc = 0;
 	uint64_t t = *(uint64_t *)(p->data);
 	uint64_t v = strtoumax(timestamp.mv_data, NULL, 10);
 
 	if ((p->op & LC_QUERY_EQ) == LC_QUERY_EQ) {
-		return (v == t) ? 1 : 0;
+		if (v == t) return 1;
 	}
 	else if ((p->op & LC_QUERY_LT) == LC_QUERY_LT) {
-		return (v < t) ? 1 : 0;
+		if (v < t) return 1; 
 	}
 	else if ((p->op & LC_QUERY_GT) == LC_QUERY_GT) {
-		return (v > t) ? 1 : 0;
+		if (v > t) return 1;
 	}
-	return (rc == 0) ? 1 : 0;
+	return 0;
 }
 
 int lc_query_filter(MDB_txn *txn, MDB_val timestamp, MDB_val msgid, lc_query_t *q)
@@ -604,6 +603,7 @@ void lc_msglist_free(lc_messagelist_t *msg)
 		free(tmp);
 	}
 	free(msg);
+	msg = NULL;
 }
 
 int lc_channel_getval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
