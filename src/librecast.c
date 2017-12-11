@@ -972,6 +972,7 @@ void lc_ctx_free(lc_ctx_t *ctx)
 			mdb_env_close(ctx->db);
 		free(ctx);
 	}
+	ctx = NULL;
 }
 
 char *lc_opcode_text(lc_opcode_t op)
