@@ -942,9 +942,10 @@ uint32_t lc_ctx_get_id(lc_ctx_t *ctx)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 
-	if (ctx == NULL)
+	if (ctx == NULL) {
 		lc_error_log(LOG_ERROR, LC_ERROR_CTX_REQUIRED);
 		return 0;
+	}
 
 	return ctx->id;
 }
