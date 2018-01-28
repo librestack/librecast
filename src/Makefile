@@ -89,6 +89,7 @@ install: ${DAEMON} ${CLIENT} ${NODEWATCH} ${LIBRARY}
 	cp lctl ${INSTALLDIR}
 	cp nodewatch ${INSTALLDIR}
 	[ -d ${DBDIR} ] || mkdir ${DBDIR}
+	ldconfig
 
 .PHONY: clean leakcheck
 
