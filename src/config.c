@@ -67,7 +67,7 @@ void config_free()
 	config_lock();
 	keyval_t *c = config;
 	keyval_t *n;
-	while (c != '\0') {
+	while (c != NULL) {
 		n = c;
 		c = c->next;
 		free (n->key);
@@ -82,7 +82,7 @@ void * config_get(char *key)
 {
 	config_lock();
 	keyval_t *c = config;
-	while (c != '\0') {
+	while (c != NULL) {
 		if (strcmp(key, c->key) == 0) {
 			config_unlock();
 			return c->val;
@@ -137,7 +137,7 @@ int config_numeric(char * key)
 void config_print(int fd)
 {
 	keyval_t *c = config;
-	while (c != '\0') {
+	while (c != NULL) {
 		dprintf(fd, "%s %s\n", c->key, c->val);
 		c = c->next;
 	}
@@ -257,14 +257,14 @@ int config_set(char *key, void *val)
 	/* set value */
 	config_unset(key);
 	config_lock();
-	while (c != '\0') {
+	while (c != NULL) {
 		p = c;
 		c = c->next;
 	}
 	n = calloc(sizeof(keyval_t), 1);
 	n->key = strdup(key);
 	n->val = strdup(val);
-	if (config == '\0')
+	if (config == NULL)
 		config = n;
 	else
 		p->next = n;
@@ -308,7 +308,7 @@ int config_unset(char *key)
 	keyval_t *c = config;
 	keyval_t *p = c;
 	config_lock();
-	while (c != '\0') {
+	while (c != NULL) {
 		if (strcmp(c->key, key) == 0) {
 			i++;
 			p->next = c->next;
