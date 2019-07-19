@@ -32,8 +32,6 @@ install: $(LIBFILE)
 	ln -sf $(LIBDIR)/$(LIBFILE).1.0 $(LIBDIR)/$(LIBFILE).1
 	ln -sf $(LIBDIR)/$(LIBFILE).1 $(LIBDIR)/$(LIBFILE)
 	cp ../include/* $(INCLUDEDIR)
-	cp lctl $(INSTALLDIR)
-	cp nodewatch $(INSTALLDIR)
 	ldconfig
 
 .PHONY: clean
