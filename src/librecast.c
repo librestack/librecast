@@ -1,7 +1,6 @@
 #define _GNU_SOURCE
 #include "../include/librecast.h"
 #include <libbridge.h>
-#include "pid.h"
 #include "errors.h"
 #include "log.h"
 #include <assert.h>
@@ -1655,28 +1654,6 @@ int lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 	lc_msg_free(msg);
 
 	return 0;
-}
-
-int lc_librecast_running()
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-	int lockfd = 0;
-	int ret = 0;
-	long pid = 0;
-	char buf[sizeof(long)] = "";
-
-	if ((lockfd = obtain_lockfile(O_RDONLY)) == -1) {
-		return LIBRECASTD_NOT_RUNNING;
-	}
-	if (pread(lockfd, &buf, sizeof(buf), 1) == -1) {
-		return LIBRECASTD_NOT_RUNNING;
-	}
-	if (sscanf(buf, "%li", &pid) != 1) {
-		return LIBRECASTD_NOT_RUNNING;
-	}
-	ret = kill(pid, 0);
-
-	return (ret == 0) ? LIBRECASTD_RUNNING : LIBRECASTD_NOT_RUNNING;
 }
 
 int lc_getrandom(void *buf, size_t buflen, unsigned int flags)

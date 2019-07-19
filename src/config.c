@@ -8,7 +8,6 @@
 #include "config.h"
 #include "errors.h"
 #include "log.h"
-#include "main.h"
 
 typedef struct keyval_t {
 	char *key;

@@ -1,6 +1,8 @@
 #ifndef __LIBRECAST_CONFIG_H__
 #define __LIBRECAST_CONFIG_H__ 1
 
+#define PROGRAM_NAME "librecast"
+
 #include <pthread.h>
 pthread_mutex_t config_mutex;
 
