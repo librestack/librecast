@@ -532,7 +532,7 @@ int lc_query_exec(lc_query_t *q, lc_messagelist_t **msglist)
 	int rc;
 	MDB_txn *txn = NULL;
 	MDB_dbi dbi_msg, dbi_idx_t;
-	MDB_cursor *cursor;
+	MDB_cursor *cursor = NULL;
 	MDB_val key, data, data_msg;
 	MDB_cursor_op op;
 	char *kval = "";
