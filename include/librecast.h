@@ -179,7 +179,7 @@ int lc_socket_listen_cancel(lc_socket_t *sock);
 void lc_socket_close(lc_socket_t *sock);
 
 /* create new channel from group address */
-lc_channel_t * lc_channel_init(lc_ctx_t *ctx, char * grpaddr);
+lc_channel_t * lc_channel_init(lc_ctx_t *ctx, char * grpaddr, char * service);
 
 /* create a new channel handle from url */
 lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * url);

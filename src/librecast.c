@@ -1298,7 +1298,7 @@ void lc_socket_close(lc_socket_t *sock)
 	free(sock);
 }
 
-lc_channel_t * lc_channel_init(lc_ctx_t *ctx, char * grpaddr)
+lc_channel_t * lc_channel_init(lc_ctx_t *ctx, char * grpaddr, char * service)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	lc_channel_t *channel, *p;
@@ -1314,7 +1314,7 @@ lc_channel_t * lc_channel_init(lc_ctx_t *ctx, char * grpaddr)
 	hints.ai_socktype = SOCK_DGRAM;
 	hints.ai_flags = AI_NUMERICHOST;
 
-	if (getaddrinfo(grpaddr, DEFAULT_PORT, &hints, &addr) != 0)
+	if (getaddrinfo(grpaddr, service, &hints, &addr) != 0)
 		return NULL;
 
 	channel = calloc(1, sizeof(lc_channel_t));
@@ -1358,7 +1358,7 @@ lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * uri)
 
 	logmsg(LOG_DEBUG, "channel group address: %s", hashaddr);
 
-	channel = lc_channel_init(ctx, hashaddr);
+	channel = lc_channel_init(ctx, hashaddr, DEFAULT_PORT);
 	channel->uri = uri;
 
 	return channel;
