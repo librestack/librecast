@@ -101,7 +101,6 @@ lc_channel_t *chan_list = NULL;
 #define RET(expr) if (err == 0) TEST((err = (expr)) == MDB_SUCCESS, #expr); else return err
 #define TEST(test, f) ((test) ? (void)0 : ((void)logmsg(LOG_DEBUG, "ERROR(%i): %s: %s", err, #f, mdb_strerror(err)), err=LC_ERROR_DB_EXEC))
 
-
 /* socket listener thread */
 void *lc_socket_listen_thread(void *sc);
 
@@ -1299,13 +1298,12 @@ void lc_socket_close(lc_socket_t *sock)
 	free(sock);
 }
 
-lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * uri)
+lc_channel_t * lc_channel_init(lc_ctx_t *ctx, char * grpaddr)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	lc_channel_t *channel, *p;
 	struct addrinfo *addr = NULL;
 	struct addrinfo hints = {0};
-	char hashaddr[INET6_ADDRSTRLEN];
 
 	if (!ctx) {
 		lc_error_log(LOG_ERROR, LC_ERROR_CTX_REQUIRED);
@@ -1316,16 +1314,11 @@ lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * uri)
 	hints.ai_socktype = SOCK_DGRAM;
 	hints.ai_flags = AI_NUMERICHOST;
 
-	/* TODO: process url, extract port and address */
-
-	if ((lc_hashgroup(DEFAULT_ADDR, uri, hashaddr, 0)) != 0)
-		return NULL;
-	logmsg(LOG_DEBUG, "channel group address: %s", hashaddr);
-	if (getaddrinfo(hashaddr, DEFAULT_PORT, &hints, &addr) != 0)
+	if (getaddrinfo(grpaddr, DEFAULT_PORT, &hints, &addr) != 0)
 		return NULL;
 
 	channel = calloc(1, sizeof(lc_channel_t));
-	channel->uri = uri;
+	channel->uri = NULL;
 	channel->ctx = ctx;
 	channel->id = ++chan_id;
 	channel->seq = 0;
@@ -1343,6 +1336,30 @@ lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * uri)
 			}
 		}
 	}
+
+	return channel;
+}
+
+lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * uri)
+{
+	logmsg(LOG_TRACE, "%s", __func__);
+	lc_channel_t *channel;
+	char hashaddr[INET6_ADDRSTRLEN];
+
+	if (!ctx) {
+		lc_error_log(LOG_ERROR, LC_ERROR_CTX_REQUIRED);
+		return NULL;
+	}
+
+	/* TODO: process url, extract port and address */
+
+	if ((lc_hashgroup(DEFAULT_ADDR, uri, hashaddr, 0)) != 0)
+		return NULL;
+
+	logmsg(LOG_DEBUG, "channel group address: %s", hashaddr);
+
+	channel = lc_channel_init(ctx, hashaddr);
+	channel->uri = uri;
 
 	return channel;
 }
@@ -1607,9 +1624,10 @@ int lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 	struct addrinfo *addr = channel->address;
 	int sock = channel->socket->socket;
 	int opt = 1;
-	lc_message_head_t *head;
-	char *buf;
-	size_t len, bytes;
+	lc_message_head_t *head = NULL;
+	char *buf = NULL;
+	size_t len = 0;
+	size_t bytes = 0;
 	struct timespec t;
 
 	head = calloc(1, sizeof(lc_message_head_t));
@@ -1651,7 +1669,6 @@ int lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 	}
 	free(head);
 	free(buf);
-	lc_msg_free(msg);
 
 	return 0;
 }

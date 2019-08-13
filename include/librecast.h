@@ -178,7 +178,10 @@ int lc_socket_listen_cancel(lc_socket_t *sock);
 /* close socket */
 void lc_socket_close(lc_socket_t *sock);
 
-/* create a new channel handle */
+/* create new channel from group address */
+lc_channel_t * lc_channel_init(lc_ctx_t *ctx, char * grpaddr);
+
+/* create a new channel handle from url */
 lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * url);
 
 /* bind channel to socket */
