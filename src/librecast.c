@@ -1304,6 +1304,7 @@ lc_channel_t * lc_channel_init(lc_ctx_t *ctx, char * grpaddr, char * service)
 	lc_channel_t *channel, *p;
 	struct addrinfo *addr = NULL;
 	struct addrinfo hints = {0};
+	int err = 0;
 
 	if (!ctx) {
 		lc_error_log(LOG_ERROR, LC_ERROR_CTX_REQUIRED);
@@ -1314,8 +1315,11 @@ lc_channel_t * lc_channel_init(lc_ctx_t *ctx, char * grpaddr, char * service)
 	hints.ai_socktype = SOCK_DGRAM;
 	hints.ai_flags = AI_NUMERICHOST;
 
-	if (getaddrinfo(grpaddr, service, &hints, &addr) != 0)
+	if (getaddrinfo(grpaddr, service, &hints, &addr) != 0) {
+		err = errno;
+		logmsg(LOG_ERROR, "getaddrinfo() failed: %s", strerror(err));
 		return NULL;
+	}
 
 	channel = calloc(1, sizeof(lc_channel_t));
 	channel->uri = NULL;
@@ -1463,13 +1467,11 @@ int lc_channel_join(lc_channel_t * channel)
 	}
 
 	for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
+		if (ifa->ifa_addr->sa_family != AF_INET6) continue; /* only ipv6 */
 		req.ipv6mr_interface = if_nametoindex(ifa->ifa_name);
 		if (setsockopt(sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &req,
-					sizeof(req)) != 0)
+					sizeof(req)) == 0)
 		{
-			logmsg(LOG_ERROR, "Multicast join failed on %s", ifa->ifa_name);
-		}
-		else {
 			logmsg(LOG_DEBUG, "Multicast join succeeded on %s", ifa->ifa_name);
 			joins++;
 		}
