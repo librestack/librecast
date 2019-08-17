@@ -1097,8 +1097,6 @@ void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
 	logmsg(LOG_TRACE, "%s", __func__);
 
 	lc_ctx_db_t *db;
-	char *seq;
-	char *rnd;
 	lc_len_t klen;
 	lc_len_t vlen;
 	char *key;
@@ -1124,9 +1122,6 @@ void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
 		return;
 	}
 
-	asprintf(&seq, "%lu", msg->seq);
-	asprintf(&rnd, "%lu", msg->rnd);
-
 	/* extract key and data */
 	memcpy(&klen, msg->data, sizeof(lc_len_t));
 	klen = be64toh(klen);
@@ -1147,8 +1142,6 @@ void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
 	/* write to database */
 	lc_db_set(chan->ctx, chan->uri, key, klen, val, vlen);
 
-	free(seq);
-	free(rnd);
 	free(key);
 	free(val);
 
