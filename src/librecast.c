@@ -1022,7 +1022,7 @@ void lc_op_get(lc_socket_call_t *sc, lc_message_t *msg)
 
 	lc_channel_t *chan;
 	lc_ctx_db_t *db;
-	lc_len_t vlen;
+	size_t vlen;
 	lc_opcode_t opcode = LC_OP_RET;
 	int err = 0;
 	char *key;
