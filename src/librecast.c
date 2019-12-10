@@ -1536,7 +1536,7 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 	struct msghdr msgh;
 	char buf[sizeof(lc_message_head_t)];
 	char cmsgbuf[BUFSIZE];
-	struct sockaddr_in from;
+	struct sockaddr_in6 from;
 	socklen_t fromlen = sizeof(from);
 	struct cmsghdr *cmsg;
 	struct in6_pktinfo *pi;
@@ -1592,7 +1592,7 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 			{
 				pi = (struct in6_pktinfo *) CMSG_DATA(cmsg);
 				msg->dst = pi->ipi6_addr;
-				msg->src = ((struct sockaddr_in6*)&from)->sin6_addr;
+				msg->src = (&from)->sin6_addr;
 				break;
 			}
 		}
