@@ -2,6 +2,8 @@
 
 ![Librecast Logo](https://secure.gravatar.com/avatar/52295d18e59ef41aeac21f3745250288?s=250)
 
+<a href="https://opensource.org"><img height="150" align="left" src="https://opensource.org/files/OSIApprovedCropped.png" alt="Open Source Initiative Approved License logo"></a>
+
 ## README
 
 Librecast is an *experimental* project to provide fast, efficient and scalable
