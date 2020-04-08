@@ -1,8 +1,8 @@
 # Librecast - Distributed Applications with IPv6 Multicast
 
-![Librecast Logo](https://secure.gravatar.com/avatar/52295d18e59ef41aeac21f3745250288?s=250)
+<a href="https://opensource.org"><img height="150" align="right" src="https://opensource.org/files/OSIApprovedCropped.png" alt="Open Source Initiative Approved License logo"></a>
 
-<a href="https://opensource.org"><img height="150" align="left" src="https://opensource.org/files/OSIApprovedCropped.png" alt="Open Source Initiative Approved License logo"></a>
+![Librecast Logo](https://secure.gravatar.com/avatar/52295d18e59ef41aeac21f3745250288?s=250)
 
 ## README
 
@@ -47,5 +47,3 @@ anyone else finds it useful.  Comments, questions, suggestions, bug reports,
 and patches all welcome.
 
 Brett Sheffield `<brett@gladserv.com>`
-
-2016-11-21
