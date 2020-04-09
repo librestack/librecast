@@ -3,12 +3,6 @@ The usual:
  make
  make install
 
-If you want to skip running the tests, which require docker, do the above directly in the src/ directory. ie.
-
- cd src
- make
- make install
-
 Prerequisites:
  libbridge from bridge-utils
 
