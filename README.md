@@ -4,7 +4,7 @@
 
 ## README
 
-Librecast is an *experimental* project to provide fast, efficient and scalable
+Librecast is a project to provide fast, efficient and scalable
 communication between servers by leveraging IPv6 multicast.
 
 NB: this is a WORK IN PROGRESS and is INCOMPLETE.
