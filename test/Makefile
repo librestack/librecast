@@ -9,6 +9,7 @@ test: clean $(shell echo *.c | sed 's/\.c/\.test/g') result
 	@$(CC) -o $@ $^ $(LIBS)
 	@echo -n $* " "
 	@$(MEMCHECK) ./$@ 2> /dev/null && echo " PASS" || echo " FAIL"
+#	@./$@ && echo " PASS" || echo " FAIL"
 	@$(eval tests_run=$(shell echo $$(($(tests_run)+1))))
 
 result:
