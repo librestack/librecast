@@ -3,7 +3,7 @@ MEMCHECK = valgrind -q --leak-check=full --error-exitcode=2 --errors-for-leak-ki
 
 .PHONY: test clean result
 
-test: clean $(shell echo *.c | sed 's/\.c/\.test/g') result
+test: clean $(shell echo ????-????.c | sed 's/\.c/\.test/g') result
 
 %.test: %.c test.h
 	@$(CC) -o $@ $^ $(LIBS)
