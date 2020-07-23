@@ -15,6 +15,7 @@ src:
 	cd src && $(MAKE)
 clean:
 	cd src && $(MAKE) $@
+	cd test && $(MAKE) $@
 memcheck:
 	cd test && $(MAKE) $@
 test:
