@@ -951,13 +951,21 @@ uint32_t lc_ctx_get_id(lc_ctx_t *ctx)
 uint32_t lc_socket_get_id(lc_socket_t *sock)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
-	return (sock) ? sock->id : 0;
+	if (sock == NULL) {
+		lc_error_log(LOG_ERROR, LC_ERROR_SOCKET_REQUIRED);
+		return 0;
+	}
+	return sock->id;
 }
 
 uint32_t lc_channel_get_id(lc_channel_t *chan)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
-	return (chan) ? chan->id : 0;
+	if (chan == NULL) {
+		lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
+		return 0;
+	}
+	return chan->id;
 }
 
 void lc_ctx_free(lc_ctx_t *ctx)
