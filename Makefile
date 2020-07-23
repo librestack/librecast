@@ -7,13 +7,15 @@ INCLUDEDIR=/usr/local/include
 all: src
 
 install: all
-	cd src && $(MAKE) install
+	cd src && $(MAKE) $@
 
 .PHONY: clean src test
 
 src:
 	cd src && $(MAKE)
 clean:
-	cd src && $(MAKE) clean
+	cd src && $(MAKE) $@
+memcheck:
+	cd test && $(MAKE) $@
 test:
-	cd test && $(MAKE) test
+	cd test && $(MAKE) $@
