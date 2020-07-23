@@ -2,7 +2,6 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "config.h"
 #include "log.h"
 #include "misc.h"
 
@@ -12,7 +11,7 @@ void logmsg(int level, char *msg, ...)
 	char *b;
 	int loglevel;
 
-	loglevel = (int) config_get_num("loglevel");
+	loglevel = 127;
 	if ((loglevel & level) != level)
 		return;
 

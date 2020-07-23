@@ -5,7 +5,7 @@ LIBDIR = /usr/local/lib
 LIBFILE = lib$(LIBNAME).so
 INCLUDEDIR = /usr/local/include
 LIBS = -pthread -lpthread -lbridge -lcrypto -llmdb
-OBJECTS = $(LIBNAME).o config.o errors.o log.o misc.o
+OBJECTS = $(LIBNAME).o errors.o log.o misc.o
 
 all: $(LIBFILE)
 
@@ -14,9 +14,6 @@ $(LIBFILE): $(OBJECTS)
 
 $(LIBNAME).o: ../include/$(LIBNAME).h $(LIBNAME).c
 	$(CC) $(CFLAGS) -fPIC -c $(LIBNAME).c $(LIBS)
-
-config.o: config.h config.c
-	$(CC) $(CFLAGS) -fPIC -c config.c $(LIBS)
 
 errors.o: errors.h errors.c
 	$(CC) $(CFLAGS) -fPIC -c errors.c $(LIBS)
@@ -31,7 +28,7 @@ install: $(LIBFILE)
 	cp $(LIBFILE) $(LIBDIR)/$(LIBFILE).1.0
 	ln -sf $(LIBDIR)/$(LIBFILE).1.0 $(LIBDIR)/$(LIBFILE).1
 	ln -sf $(LIBDIR)/$(LIBFILE).1 $(LIBDIR)/$(LIBFILE)
-	cp ../include/* $(INCLUDEDIR)
+	cp -r ../include/* $(INCLUDEDIR)
 	ldconfig
 
 .PHONY: clean
