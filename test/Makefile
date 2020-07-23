@@ -11,14 +11,16 @@ memcheck: test
 
 test: clean $(shell echo ????-????.c | sed 's/\.c/\.test/g') result
 
-%.test: %.c test.h
+%.test: %.c test.o
 	@$(CC) -o $@ $^ $(LIBS)
 	@echo -ne "\e[2m" $* " "
 	@$(MEMCHECK) ./$@ 2> /dev/null && echo -e " $(PASS)OK\e[0m" || echo -e " $(FAIL)FAIL\e[0m"
 	@$(eval tests_run=$(shell echo $$(($(tests_run)+1))))
 
+test.o: test.h
+
 result:
 	@echo $(tests_run) tests run
 
 clean:
-	rm -f *.test
+	rm -f *.test *.o
