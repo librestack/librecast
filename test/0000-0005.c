@@ -7,5 +7,5 @@ int main()
 	lc_message_t msg;
 	lc_msg_init_data(&msg, "some data", 10, NULL, NULL);
 
-	return 0;
+	return fails;
 }

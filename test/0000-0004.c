@@ -8,5 +8,5 @@ int main()
 	lc_msg_init_size(&msg, 1024);
 	lc_msg_free(&msg);
 
-	return 0;
+	return fails;
 }

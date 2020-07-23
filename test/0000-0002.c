@@ -13,5 +13,5 @@ int main()
 	lc_channel_free(chan);
 	lc_ctx_free(lctx);
 
-	return 0;
+	return fails;
 }

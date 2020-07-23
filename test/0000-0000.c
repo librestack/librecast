@@ -8,5 +8,5 @@ int main()
 	lctx = lc_ctx_new();
 	lc_ctx_free(lctx);
 
-	return 0;
+	return fails;
 }

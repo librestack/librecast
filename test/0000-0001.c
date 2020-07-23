@@ -13,5 +13,5 @@ int main()
 	lc_socket_close(sock);
 	lc_ctx_free(lctx);
 
-	return 0;
+	return fails;
 }
