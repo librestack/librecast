@@ -3,7 +3,7 @@
 
 int main()
 {
-	result("lc_channel_bind()");
+	result("lc_channel_bind() / lc_channel_unbind()");
 	lc_ctx_t *lctx = NULL;
 	lc_socket_t *sock = NULL; 
 	lc_channel_t *chan = NULL;
@@ -20,6 +20,15 @@ int main()
 
 	test_assert(lc_channel_bind(sock, chan) == 0,
 			"lc_channel_bind returns 0 on success");
+
+	test_assert(lc_channel_socket(chan) == sock,
+			"lc_channel_bind() binds channel to socket");
+
+	test_assert(lc_channel_unbind(chan) == 0,
+			"lc_channel_unbind() returns 0 on success");
+
+	test_assert(lc_channel_socket(chan) == NULL,
+			"lc_channel_unbind() sets chan->socket to NULL");
 
 	lc_channel_free(chan);
 	lc_socket_close(sock);
