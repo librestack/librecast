@@ -17,8 +17,7 @@ build:
 %.test: %.c test.o
 	@$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 	@echo -ne "\e[2m" $* " "
-	@LD_LIBRARY_PATH=../src
-	@$(MEMCHECK) ./$@ 2> /dev/null && echo -e " $(PASS)OK\e[0m" || echo -e " $(FAIL)FAIL\e[0m"
+	@LD_LIBRARY_PATH=../src $(MEMCHECK) ./$@ 2> /dev/null && echo -e " $(PASS)OK\e[0m" || echo -e " $(FAIL)FAIL\e[0m"
 	@$(eval tests_run=$(shell echo $$(($(tests_run)+1))))
 
 test.o: test.h
