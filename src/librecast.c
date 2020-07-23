@@ -951,7 +951,7 @@ uint32_t lc_ctx_get_id(lc_ctx_t *ctx)
 uint32_t lc_socket_get_id(lc_socket_t *sock)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
-	return sock->id;
+	return (sock) ? sock->id : 0;
 }
 
 uint32_t lc_channel_get_id(lc_channel_t *chan)
