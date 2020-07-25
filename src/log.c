@@ -5,16 +5,14 @@
 #include "log.h"
 #include "misc.h"
 
+unsigned int LOG_LEVEL = 127;
+
 void logmsg(int level, char *msg, ...)
 {
 	va_list argp;
 	char *b;
-	int loglevel;
 
-	loglevel = 127;
-	if ((loglevel & level) != level)
-		return;
-
+	if ((LOG_LEVEL & level) != level) return;
 	va_start(argp, msg);
 	b = malloc(_vscprintf(msg, argp) + 1);
 	assert(b != NULL);

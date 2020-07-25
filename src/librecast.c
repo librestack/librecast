@@ -1202,16 +1202,15 @@ int lc_socket_listen(lc_socket_t *sock, void (*callback_msg)(lc_message_t*),
 	pthread_attr_t attr = {};
 	lc_socket_call_t *sc;
 
-	if (sock == NULL) return lc_error_log(LOG_DEBUG, LC_ERROR_SOCKET_REQUIRED);
+	if (sock == NULL)
+		return lc_error_log(LOG_DEBUG, LC_ERROR_SOCKET_REQUIRED);
+	if (sock->thread != 0)
+		return lc_error_log(LOG_DEBUG, LC_ERROR_SOCKET_LISTENING);
 
 	sc = calloc(1, sizeof(lc_socket_call_t));
 	sc->sock = sock;
 	sc->callback_msg = callback_msg;
 	sc->callback_err = callback_err;
-
-	/* existing listener on socket */
-	if (sock->thread != 0)
-		return lc_error_log(LOG_DEBUG, LC_ERROR_SOCKET_LISTENING);
 
 	pthread_attr_init(&attr);
 	pthread_create(&(sock->thread), &attr, lc_socket_listen_thread, sc);
