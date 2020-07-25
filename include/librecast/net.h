@@ -4,6 +4,7 @@
  */
 
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
 #include <stdint.h>
 
@@ -12,6 +13,8 @@
 #define LC_BRIDGE_NAME "lc0"
 #define LC_DATABASE_DIR "/var/cache/librecast"
 #define LC_DATABASE_COUNT 32
+#define DEFAULT_MULTICAST_LOOP 0
+#define DEFAULT_MULTICAST_HOPS 255
 
 typedef uint64_t lc_seq_t;
 typedef uint64_t lc_rnd_t;
@@ -167,6 +170,10 @@ void lc_ctx_free(lc_ctx_t *ctx);
 
 /* create librecast socket */
 lc_socket_t *lc_socket_new(lc_ctx_t *ctx);
+
+/* get/set socket options */
+int lc_socket_getopt(lc_socket_t *sock, int optname, void *optval, socklen_t *optlen);
+int lc_socket_setopt(lc_socket_t *sock, int optname, const void *optval, socklen_t optlen);
 
 /* non-blocking socket listener, with callbacks */
 int lc_socket_listen(lc_socket_t *sock, void (*callback_msg)(lc_message_t*),

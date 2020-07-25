@@ -1191,8 +1191,23 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 	/* request ancilliary control data */
 	i = 1;
 	setsockopt(s, IPPROTO_IPV6, IPV6_RECVPKTINFO, &i, sizeof(i));
-
+	i = DEFAULT_MULTICAST_LOOP;
+	setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &i, sizeof(i));
+	i = DEFAULT_MULTICAST_HOPS;
+	setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &i, sizeof(i));
 	return sock;
+}
+
+int lc_socket_getopt(lc_socket_t *sock, int optname, void *optval, socklen_t *optlen)
+{
+	if (sock == NULL) return lc_error_log(LOG_DEBUG, LC_ERROR_SOCKET_REQUIRED);
+	return getsockopt(sock->socket, IPPROTO_IPV6, optname, optval, optlen);
+}
+
+int lc_socket_setopt(lc_socket_t *sock, int optname, const void *optval, socklen_t optlen)
+{
+	if (sock == NULL) return lc_error_log(LOG_DEBUG, LC_ERROR_SOCKET_REQUIRED);
+	return setsockopt(sock->socket, IPPROTO_IPV6, optname, optval, optlen);
 }
 
 int lc_socket_listen(lc_socket_t *sock, void (*callback_msg)(lc_message_t*),
@@ -1655,9 +1670,6 @@ int lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 	memcpy(buf + sizeof(lc_message_head_t), msg->data, len);
 
 	len += sizeof(lc_message_head_t);
-
-	/* set loopback */
-	setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &opt,sizeof(opt));
 
 	/* use tap iface if available */
 	opt = (channel->ctx->tapname) ? if_nametoindex(channel->ctx->tapname) : 0;

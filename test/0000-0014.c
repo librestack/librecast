@@ -21,29 +21,24 @@ void msg_received(lc_message_t *msg)
 
 int main()
 {
-	test_name("multicast ping (loopback)");
+	test_name("multicast ping (loopback disabled)");
 	LOG_LEVEL = 127;
 	lc_ctx_t *lctx = NULL;
 	lc_socket_t *sock = NULL; 
 	lc_channel_t *chan = NULL;
 	lc_message_t msg;
-	int opt = 1;
 
 	lctx = lc_ctx_new();
 	sock = lc_socket_new(lctx);
 	chan = lc_channel_new(lctx, "example.com");
 
-	test_assert(!lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt)),
-			"set IPV6_MULTICAST_LOOP");
-
 	test_assert(!lc_channel_bind(sock, chan), "lc_channel_bind()");
 	test_assert(!lc_channel_join(chan), "lc_channel_join()");
 	test_assert(!lc_socket_listen(sock, msg_received, NULL), "lc_socket_listen()");
 
-	/* send packet and receive on loopback */
-	int op = LC_OP_PING;
-	lc_msg_init(&msg);
-	lc_msg_set(&msg, LC_ATTR_OPCODE, &op);
+	/* send packet with loopback turned off */
+	char *data = "BLACK LIVES MATTER";
+	lc_msg_init_data(&msg, data, strlen(data), NULL, NULL);
 	signal(SIGINT, sighandler);
 	lc_msg_send(chan, &msg);
 
@@ -51,7 +46,7 @@ int main()
 	t.tv_sec = 0;
 	t.tv_nsec = 99999999;
 	nanosleep(&t, &t);
-	test_assert(gotmsg, "timeout waiting for loopback message");
+	test_assert(!gotmsg, "received loopback message when loopback disabled");
 
 	test_assert(!lc_socket_listen_cancel(sock), "lc_socket_listen_cancel()");
 	lc_channel_free(chan);
