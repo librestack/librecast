@@ -12,15 +12,16 @@ void logmsg(int level, char *msg, ...)
 {
 	va_list argp;
 	char *b;
+	int cancelstate;
 
 	if ((LOG_LEVEL & level) != level) return;
 	va_start(argp, msg);
-	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &cancelstate);
 	b = malloc(_vscprintf(msg, argp) + 1);
 	assert(b != NULL);
 	vsprintf(b, msg, argp);
 	va_end(argp);
 	fprintf(stderr, "%s\n", b);
 	free(b);
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	pthread_setcancelstate(cancelstate, NULL);
 }
