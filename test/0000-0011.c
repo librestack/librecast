@@ -4,7 +4,7 @@
 
 int main()
 {
-	result("lc_socket_listen() / lc_socket_listen_cancel()");
+	test_name("lc_socket_listen() / lc_socket_listen_cancel()");
 	LOG_LEVEL = 127;
 	lc_ctx_t *lctx = NULL;
 	lc_socket_t *sock = NULL; 

@@ -3,7 +3,7 @@
 
 int main()
 {
-	result("lc_channel_join() / lc_channel_part()");
+	test_name("lc_channel_join() / lc_channel_part()");
 	lc_ctx_t *lctx = NULL;
 	lc_socket_t *sock = NULL; 
 	lc_channel_t *chan = NULL;

@@ -2,7 +2,7 @@
 
 int main()
 {
-	result("lc_channel_get_id()");
+	test_name("lc_channel_get_id()");
 	lc_ctx_t *lctx;
 	lc_channel_t *chan = NULL;
 	uint32_t id;

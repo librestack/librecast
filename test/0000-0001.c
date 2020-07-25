@@ -2,7 +2,7 @@
 
 int main()
 {
-	result("lc_socket_new() / lc_socket_close()");
+	test_name("lc_socket_new() / lc_socket_close()");
 
 	lc_ctx_t *lctx;
 	lc_socket_t *sock;

@@ -2,7 +2,7 @@
 
 int main()
 {
-	result("lc_socket_get_id()");
+	test_name("lc_socket_get_id()");
 	lc_ctx_t *lctx;
 	lc_socket_t *sock = NULL;
 	uint32_t sockid;

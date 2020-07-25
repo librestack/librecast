@@ -2,7 +2,7 @@
 
 int main()
 {
-	result("lc_ctx_get_id()");
+	test_name("lc_ctx_get_id()");
 	lc_ctx_t *lctx = NULL;
 	uint32_t id;
 

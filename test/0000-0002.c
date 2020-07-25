@@ -2,7 +2,7 @@
 
 int main()
 {
-	result("lc_channel_new() / lc_channel_free()");
+	test_name("lc_channel_new() / lc_channel_free()");
 
 	lc_ctx_t *lctx;
 	lc_channel_t *chan;
