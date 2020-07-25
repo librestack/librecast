@@ -9,11 +9,11 @@ all: src
 install: all
 	cd src && $(MAKE) $@
 
-.PHONY: clean src test
+.PHONY: clean realclean src test
 
 src:
 	cd src && $(MAKE)
-clean:
+clean realclean:
 	cd src && $(MAKE) $@
 	cd test && $(MAKE) $@
 memcheck:

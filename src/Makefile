@@ -31,7 +31,9 @@ install: $(LIBFILE)
 	cp -r ../include/* $(INCLUDEDIR)
 	ldconfig
 
-.PHONY: clean
+.PHONY: clean realclean
 
 clean:
 	$(RM) *.o $(LIBFILE)
+
+realclean: clean
