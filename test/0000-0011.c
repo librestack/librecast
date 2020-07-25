@@ -35,9 +35,6 @@ int main()
 	test_assert(lc_socket_listen(sock, NULL, NULL) == LC_ERROR_SOCKET_LISTENING,
 			"lc_socket_listen() returns LC_ERROR_SOCKET_LISTENING when socket busy");
 
-	test_assert(lc_socket_listen_cancel(sock) == 0,
-			"lc_socket_listen_cancel() returns 0 on success");
-
 	lc_channel_free(chan);
 	lc_socket_close(sock);
 	lc_ctx_free(lctx);
