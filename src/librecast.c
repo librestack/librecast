@@ -924,14 +924,15 @@ int lc_db_open(lc_ctx_t *ctx, char *dbpath)
 {
 	/* prepare databases */
 	int err = 0;
-	ctx->dbpath = (dbpath) ? dbpath : LC_DATABASE_DIR;
+	if (dbpath == NULL) return LC_ERROR_DB_REQUIRED;
+	ctx->dbpath = dbpath;
 	E(mdb_env_create(&ctx->db));
 	E(mdb_env_set_maxdbs(ctx->db, LC_DATABASE_COUNT));
 	E(mdb_env_open(ctx->db, ctx->dbpath, 0, 0600));
 	if (err != 0) {
 		mdb_env_close(ctx->db);
 		ctx->db = NULL;
-		logmsg(LOG_DEBUG, "Continuing with no database");
+		return LC_ERROR_DB_OPEN;
 	}
 	return 0;
 }
