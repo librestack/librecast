@@ -43,9 +43,24 @@ void test_strcmp(char *str1, char *str2, char *msg, ...)
 	}
 }
 
+void test_strncmp(char *str1, char *str2, size_t len, char *msg, ...)
+{
+	if (str1 == NULL || str2 == NULL || strncmp(str1, str2, len)) {
+		va_list argp;
+		va_start(argp, msg);
+		vfail_msg(msg, argp);
+		va_end(argp);
+	}
+}
+
 void test_expect(char *expected, char *got)
 {
 	test_strcmp(expected, got, "expected: '%s', got: '%s'", expected, got);
+}
+
+void test_expectn(char *expected, char *got, size_t len)
+{
+	test_strncmp(expected, got, len, "expected: '%s', got: '%s'", expected, got);
 }
 
 void test_log(char *msg, ...)
