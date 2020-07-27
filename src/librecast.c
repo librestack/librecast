@@ -1250,47 +1250,50 @@ int lc_socket_listen_cancel(lc_socket_t *sock)
 	return 0;
 }
 
+void process_msg(lc_socket_call_t *sc, lc_message_t *msg)
+{
+	lc_channel_t *chan;
+	msg->dstaddr = calloc(1, INET6_ADDRSTRLEN);
+	msg->srcaddr = calloc(1, INET6_ADDRSTRLEN);
+	inet_ntop(AF_INET6, &msg->dst, msg->dstaddr, INET6_ADDRSTRLEN);
+	inet_ntop(AF_INET6, &msg->src, msg->srcaddr, INET6_ADDRSTRLEN);
+	logmsg(LOG_DEBUG, "message destination %s", msg->dstaddr);
+	logmsg(LOG_DEBUG, "message source      %s", msg->srcaddr);
+	logmsg(LOG_DEBUG, "got data %zi bytes", msg->len);
+	msg->sockid = sc->sock->id;
+
+	/* update channel stats */
+	chan = lc_channel_by_address(msg->dstaddr);
+	msg->chan = chan;
+	if (chan) {
+		chan->seq = (msg->seq > chan->seq) ? msg->seq + 1 : chan->seq + 1;
+		chan->rnd = msg->rnd;
+		logmsg(LOG_DEBUG, "channel clock set to %u.%u", chan->seq, chan->rnd);
+		lc_channel_logmsg(chan, msg); /* store in channel log */
+	}
+
+	/* process opcode */
+	logmsg(LOG_DEBUG, "OPCODE received: %lu", msg->op);
+	switch (msg->op) {
+		LC_OPCODES(LC_OPCODE_FUN)
+	default:
+		lc_error_log(LOG_ERROR, LC_ERROR_INVALID_OPCODE);
+	}
+}
+
 void *lc_socket_listen_thread(void *arg)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	ssize_t len;
 	lc_message_t msg;
 	lc_socket_call_t *sc = arg;
-	lc_channel_t *chan;
-
 	lc_msg_init(&msg);
 	pthread_cleanup_push(free, arg);
 	pthread_cleanup_push(lc_msg_free, &msg);
 	while(1) {
 		len = lc_msg_recv(sc->sock, &msg);
-
-		msg.dstaddr = calloc(1, INET6_ADDRSTRLEN);
-		msg.srcaddr = calloc(1, INET6_ADDRSTRLEN);
-		inet_ntop(AF_INET6, &msg.dst, msg.dstaddr, INET6_ADDRSTRLEN);
-		inet_ntop(AF_INET6, &msg.src, msg.srcaddr, INET6_ADDRSTRLEN);
-		logmsg(LOG_DEBUG, "message destination %s", msg.dstaddr);
-		logmsg(LOG_DEBUG, "message source      %s", msg.srcaddr);
-		logmsg(LOG_DEBUG, "got data %i bytes", (int)len);
 		if (len > 0) {
-			msg.sockid = sc->sock->id;
-
-			/* update channel stats */
-			chan = lc_channel_by_address(msg.dstaddr);
-			msg.chan = chan;
-			if (chan) {
-				chan->seq = (msg.seq > chan->seq) ? msg.seq + 1 : chan->seq + 1;
-				chan->rnd = msg.rnd;
-				logmsg(LOG_DEBUG, "channel clock set to %u.%u", chan->seq, chan->rnd);
-				lc_channel_logmsg(chan, &msg); /* store in channel log */
-			}
-
-			/* process opcode */
-			logmsg(LOG_DEBUG, "OPCODE received: %lu", msg.op);
-			switch (msg.op) {
-				LC_OPCODES(LC_OPCODE_FUN)
-			default:
-				lc_error_log(LOG_ERROR, LC_ERROR_INVALID_OPCODE);
-			}
+			process_msg(sc, &msg);
 		}
 		if (len < 0) {
 			lc_msg_free(&msg);
