@@ -5,14 +5,14 @@
 
 int main()
 {
-	test_name("lc_channel_setval() - test errors");
+	test_name("lc_channel_setval() - error handling");
 	LOG_LEVEL = 127;
 
 	lc_ctx_t *lctx = lc_ctx_new();
 	lc_socket_t *sock = lc_socket_new(lctx);
 	lc_channel_t *chan = lc_channel_new(lctx, "example.com");
 	lc_val_t key, val;
-	char keydata[] = "0000-0017";
+	char keydata[] = "0000-0018";
 	char valdata[] = "42";
 	memset(&key, 0, sizeof(lc_val_t));
 	memset(&val, 0, sizeof(lc_val_t));

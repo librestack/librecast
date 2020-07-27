@@ -5,7 +5,7 @@
 
 int main()
 {
-	test_name("lc_channel_getval()");
+	test_name("lc_channel_getval() - error handling");
 	LOG_LEVEL = 127;
 
 	lc_ctx_t *lctx = lc_ctx_new();
