@@ -705,12 +705,6 @@ void lc_msg_free(void *ptr)
 			free(msg->data);
 		}
 	}
-	if (msg->srcaddr != NULL) {
-		free(msg->srcaddr);
-	}
-	if (msg->dstaddr != NULL) {
-		free(msg->dstaddr);
-	}
 	lc_msg_init(msg);
 }
 
@@ -1256,8 +1250,6 @@ int lc_socket_listen_cancel(lc_socket_t *sock)
 void process_msg(lc_socket_call_t *sc, lc_message_t *msg)
 {
 	lc_channel_t *chan;
-	msg->dstaddr = calloc(1, INET6_ADDRSTRLEN);
-	msg->srcaddr = calloc(1, INET6_ADDRSTRLEN);
 	inet_ntop(AF_INET6, &msg->dst, msg->dstaddr, INET6_ADDRSTRLEN);
 	inet_ntop(AF_INET6, &msg->src, msg->srcaddr, INET6_ADDRSTRLEN);
 	logmsg(LOG_DEBUG, "message destination %s", msg->dstaddr);

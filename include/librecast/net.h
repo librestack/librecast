@@ -85,8 +85,8 @@ typedef struct lc_message_t {
 	lc_opcode_t op;
 	lc_free_fn_t *free;
 	lc_channel_t *chan;
-	char *srcaddr;
-	char *dstaddr;
+	char srcaddr[INET6_ADDRSTRLEN];
+	char dstaddr[INET6_ADDRSTRLEN];
 	void *hint;
 	void *data;
 } lc_message_t;
