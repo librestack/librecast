@@ -34,7 +34,7 @@ build:
 %.check: %.test
 	@echo -e "check completed"
 	@echo -e "    logfile:   " $(BOLD) $(LOGFILE) $(RESET)
-	@echo -e "    valgrind:  " $(BOLD) "$@.valgrind" $(RESET)
+	@echo -e "    valgrind:  " $(BOLD) "$^.valgrind" $(RESET)
 
 test.o: test.h
 
