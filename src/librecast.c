@@ -701,14 +701,17 @@ void lc_msg_free(void *ptr)
 	if (msg->data != NULL) {
 		if (*msg->free != NULL)
 			msg->free(msg, msg->hint);
-		else
+		else {
 			free(msg->data);
+		}
 	}
-	if (msg->srcaddr != NULL)
+	if (msg->srcaddr != NULL) {
 		free(msg->srcaddr);
-	if (msg->dstaddr != NULL)
+	}
+	if (msg->dstaddr != NULL) {
 		free(msg->dstaddr);
-	msg = NULL;
+	}
+	lc_msg_init(msg);
 }
 
 void *lc_msg_data(lc_message_t *msg)
@@ -1300,6 +1303,7 @@ void *lc_socket_listen_thread(void *arg)
 			if (sc->callback_err)
 				sc->callback_err(len);
 		}
+		lc_msg_free(&msg);
 	}
 	/* not reached */
 	pthread_cleanup_pop(0);
