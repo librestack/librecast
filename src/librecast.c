@@ -1059,12 +1059,10 @@ void lc_op_get(lc_socket_call_t *sc, lc_message_t *msg)
 		return;
 	}
 
-	/* key */
+	/* read requested value from database */
 	key = malloc(msg->len + 1);
 	memcpy(key, msg->data, msg->len);
 	key[msg->len] = '\0';
-
-	/* read requested value from database */
 	if ((err = lc_db_get(chan->ctx, chan->uri, key, msg->len, (void *)&val, &vlen)) != 0) {
 		lc_error_log(LOG_DEBUG, err);
 		goto errexit;
