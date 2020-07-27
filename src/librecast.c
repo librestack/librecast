@@ -614,11 +614,14 @@ int lc_channel_getval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
 
 	if (chan == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
+	if (key == NULL || key->size == 0 || key->data == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_INVALID_PARAMS);
 
 	lc_msg_init_size(&msg, key->size);
 	lc_msg_set(&msg, LC_ATTR_OPCODE, &i);
 	memcpy(lc_msg_data(&msg), key->data, key->size);
 	err = lc_msg_send(chan, &msg);
+	lc_msg_free(&msg);
 
 	return err;
 }
