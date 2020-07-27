@@ -24,7 +24,7 @@ build:
 	@echo -e "\nRunning tests"
 
 %.test: %.c test.o ../src/liblibrecast.so
-	$(CC) $(CFLAGS) -o $@ $< test.o $(LDFLAGS)
+	@$(CC) $(CFLAGS) -o $@ $< test.o $(LDFLAGS)
 	@echo -ne "\e[2m" $* " "
 	@echo -ne "\n== $@" >> $(LOGFILE)
 	@LD_LIBRARY_PATH=../src $(MEMCHECK) ./$@ 2>> $(LOGFILE) && echo -e " $(PASS)" || echo -e " $(FAIL)"
