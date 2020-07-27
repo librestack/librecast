@@ -16,7 +16,9 @@ src:
 clean realclean:
 	cd src && $(MAKE) $@
 	cd test && $(MAKE) $@
-memcheck:
+check:
 	cd test && $(MAKE) $@
 test:
 	cd test && $(MAKE) $@
+%.test %.check:
+	cd test && $(MAKE) -B $@
