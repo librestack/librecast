@@ -1,5 +1,6 @@
-CFLAGS += -Wall -L../src
-LIBS = -llibrecast
+CFLAGS += -Wall
+LDFLAGS := -L../src -llibrecast
+#LIBS = -llibrecast
 BOLD := "\\e[0m\\e[2m"
 RESET := "\\e[0m"
 PASS = "\\e[0m\\e[32mOK\\e[0m" # end bold, green text
@@ -23,7 +24,7 @@ build:
 	@echo -e "\nRunning tests"
 
 %.test: %.c test.o ../src/liblibrecast.so
-	@$(CC) $(CFLAGS) -o $@ $< test.o $(LIBS)
+	$(CC) $(CFLAGS) -o $@ $< test.o $(LDFLAGS)
 	@echo -ne "\e[2m" $* " "
 	@echo -ne "\n== $@" >> $(LOGFILE)
 	@LD_LIBRARY_PATH=../src $(MEMCHECK) ./$@ 2>> $(LOGFILE) && echo -e " $(PASS)" || echo -e " $(FAIL)"
@@ -35,6 +36,10 @@ build:
 	@echo -e "check completed"
 	@echo -e "    logfile:   " $(BOLD) $(LOGFILE) $(RESET)
 	@echo -e "    valgrind:  " $(BOLD) "$^.valgrind" $(RESET)
+
+%.debug: MEMCHECK = gdb
+%.debug: %.test
+	@echo "exiting debugger"
 
 test.o: test.h
 

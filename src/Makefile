@@ -31,7 +31,12 @@ install: $(LIBFILE)
 	cp -r ../include/* $(INCLUDEDIR)
 	ldconfig
 
-.PHONY: clean realclean
+.PHONY: clean realclean uninstall
+
+uninstall:
+	rm -f $(LIBDIR)/$(LIBFILE)
+	rm -f $(LIBDIR)/$(LIBFILE).1
+	rm -f $(LIBDIR)/$(LIBFILE).1.0
 
 clean:
 	$(RM) *.o $(LIBFILE)

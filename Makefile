@@ -9,6 +9,9 @@ all: src
 install: all
 	cd src && $(MAKE) $@
 
+uninstall:
+	cd src && $(MAKE) $@
+
 .PHONY: clean realclean src test
 
 src:
@@ -20,5 +23,5 @@ check:
 	cd test && $(MAKE) $@
 test:
 	cd test && $(MAKE) $@
-%.test %.check:
+%.test %.check %.debug:
 	cd test && $(MAKE) -B $@
