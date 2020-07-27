@@ -1060,7 +1060,7 @@ void lc_op_get(lc_socket_call_t *sc, lc_message_t *msg)
 	}
 
 	/* key */
-	key = malloc(msg->len);
+	key = malloc(msg->len + 1);
 	memcpy(key, msg->data, msg->len);
 	key[msg->len] = '\0';
 
