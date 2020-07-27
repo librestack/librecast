@@ -161,7 +161,7 @@ int lc_hashgroup(char *baseaddr, char *groupname, char *hashaddr, unsigned int f
 /* data storage functions */
 int lc_getval(lc_val_t *key, lc_val_t *val);
 int lc_setval(lc_val_t *key, lc_val_t *val);
-int lc_channel_getval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val);
+int lc_channel_getval(lc_channel_t *chan, lc_val_t *key);
 int lc_channel_setval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val);
 
 /* destroy librecast context and clean up */

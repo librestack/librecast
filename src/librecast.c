@@ -605,7 +605,7 @@ void lc_msglist_free(lc_messagelist_t *msg)
 	msg = NULL;
 }
 
-int lc_channel_getval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
+int lc_channel_getval(lc_channel_t *chan, lc_val_t *key)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	lc_message_t msg;
@@ -1576,8 +1576,7 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 		msg->len = i - sizeof(lc_message_head_t);
 		msg->data = calloc(1, msg->len);
 		if (msg->data == NULL) {
-			lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
-			return 0;
+			return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
 		}
 	}
 

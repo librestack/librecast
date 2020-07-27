@@ -16,23 +16,23 @@ int main()
 	memset(&key, 0, sizeof(lc_val_t));
 	memset(&val, 0, sizeof(lc_val_t));
 
-	test_assert(lc_channel_getval(NULL, NULL, NULL) == LC_ERROR_CHANNEL_REQUIRED,
+	test_assert(lc_channel_getval(NULL, NULL) == LC_ERROR_CHANNEL_REQUIRED,
 			"lc_channel_getval() requires channel");
-	test_assert(lc_channel_getval(chan, NULL, NULL) == LC_ERROR_INVALID_PARAMS,
+	test_assert(lc_channel_getval(chan, NULL) == LC_ERROR_INVALID_PARAMS,
 			"lc_channel_getval() requires key");
 	key.data = keydata;
-	test_assert(lc_channel_getval(chan, &key, NULL) == LC_ERROR_INVALID_PARAMS,
+	test_assert(lc_channel_getval(chan, &key) == LC_ERROR_INVALID_PARAMS,
 			"lc_channel_getval() requires key.size > 0");
 
 	key.size = strlen(keydata);
 	key.data = NULL;
-	test_assert(lc_channel_getval(chan, &key, NULL) == LC_ERROR_INVALID_PARAMS,
+	test_assert(lc_channel_getval(chan, &key) == LC_ERROR_INVALID_PARAMS,
 			"lc_channel_getval() requires key.data");
 
 	lc_channel_bind(sock, chan);
 
 	key.data = keydata;
-	test_assert(lc_channel_getval(chan, &key, NULL) == 0,
+	test_assert(lc_channel_getval(chan, &key) == 0,
 			"lc_channel_getval() ");
 
 	lc_channel_free(chan);
