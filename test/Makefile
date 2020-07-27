@@ -1,4 +1,5 @@
 CFLAGS += -Wall -L../src
+OBJS := ../src/*.o
 LIBS = -llibrecast
 BOLD := "\\e[0m\\e[2m"
 RESET := "\\e[0m"
@@ -22,8 +23,8 @@ build:
 	@echo -e "$(TIMESTAMP) - starting tests" >> $(LOGFILE)
 	@echo -e "\nRunning tests"
 
-%.test: %.c test.o
-	@$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+%.test: %.c test.o $(OBJS)
+	@$(CC) $(CFLAGS) -o $@ $< test.o $(LIBS)
 	@echo -ne "\e[2m" $* " "
 	@echo -ne "\n== $@" >> $(LOGFILE)
 	@LD_LIBRARY_PATH=../src $(MEMCHECK) ./$@ 2>> $(LOGFILE) && echo -e " $(PASS)" || echo -e " $(FAIL)"
