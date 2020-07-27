@@ -1638,7 +1638,7 @@ int lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 	if (channel->address == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_INVALID_PARAMS);
 	if (channel->socket == NULL)
-		return lc_error_log(LOG_ERROR, LC_ERROR_INVALID_PARAMS);
+		return lc_error_log(LOG_ERROR, LC_ERROR_SOCKET_REQUIRED);
 	if (msg == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_MESSAGE_REQUIRED);
 	if (msg->len > 0 && msg->data == NULL)
