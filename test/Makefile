@@ -1,5 +1,7 @@
 CFLAGS += -Wall -L../src
 LIBS = -llibrecast
+BOLD := "\\e[0m\\e[2m"
+RESET := "\\e[0m"
 PASS = "\\e[0m\\e[32mOK\\e[0m" # end bold, green text
 FAIL = "\\e[0m\\e[31mFAIL\\e[0m" # end bold, red text
 LEAK = "\\e[0m\\e[31mFAIL \| LEAK\\e[0m\\n\\tSee $@.valgrind"
@@ -30,7 +32,9 @@ build:
 %.check: MEMCHECK = $(VALGRIND)
 %.check: FAIL = $(LEAK)
 %.check: %.test
-	@echo "check completed"
+	@echo -e "check completed"
+	@echo -e "    logfile:   " $(BOLD) $(LOGFILE) $(RESET)
+	@echo -e "    valgrind:  " $(BOLD) "$@.valgrind" $(RESET)
 
 test.o: test.h
 
