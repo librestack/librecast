@@ -1,5 +1,4 @@
 CFLAGS += -Wall -L../src
-OBJS := ../src/*.o
 LIBS = -llibrecast
 BOLD := "\\e[0m\\e[2m"
 RESET := "\\e[0m"
@@ -23,7 +22,7 @@ build:
 	@echo -e "$(TIMESTAMP) - starting tests" >> $(LOGFILE)
 	@echo -e "\nRunning tests"
 
-%.test: %.c test.o $(OBJS)
+%.test: %.c test.o ../src/liblibrecast.so
 	@$(CC) $(CFLAGS) -o $@ $< test.o $(LIBS)
 	@echo -ne "\e[2m" $* " "
 	@echo -ne "\n== $@" >> $(LOGFILE)
