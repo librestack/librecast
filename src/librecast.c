@@ -609,7 +609,7 @@ int lc_channel_getval(lc_channel_t *chan, lc_val_t *key)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	lc_message_t msg;
-	int err = 0;
+	ssize_t err = 0;
 	int i = LC_OP_GET;
 
 	if (chan == NULL)
@@ -623,7 +623,7 @@ int lc_channel_getval(lc_channel_t *chan, lc_val_t *key)
 	err = lc_msg_send(chan, &msg);
 	lc_msg_free(&msg);
 
-	return err;
+	return (err < 0) ? LC_ERROR_NET_SEND : 0;
 }
 
 int lc_channel_setval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
@@ -632,7 +632,7 @@ int lc_channel_setval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
 	lc_message_t msg;
 	lc_len_t keylen;
 	void *pkt;
-	int err;
+	ssize_t err = 0;
 
 	if (chan == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
@@ -657,7 +657,7 @@ int lc_channel_setval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
 	err = lc_msg_send(chan, &msg);
 	lc_msg_free(&msg);
 
-	return err;
+	return (err < 0) ? LC_ERROR_NET_SEND : 0;
 }
 
 int lc_msg_init(lc_message_t *msg)
@@ -1625,7 +1625,7 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 	return i;
 }
 
-int lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
+ssize_t lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	if (channel == NULL)
@@ -1645,7 +1645,7 @@ int lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 	lc_message_head_t *head = NULL;
 	char *buf = NULL;
 	size_t len = 0;
-	size_t bytes = 0;
+	ssize_t bytes = 0;
 	struct timespec t;
 
 	head = calloc(1, sizeof(lc_message_head_t));
@@ -1685,7 +1685,7 @@ int lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 	free(head);
 	free(buf);
 
-	return 0;
+	return bytes;
 }
 
 int lc_getrandom(void *buf, size_t buflen, unsigned int flags)

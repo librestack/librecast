@@ -227,7 +227,7 @@ int lc_socket_raw(lc_socket_t *sock);
 ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg);
 
 /* send a message to a channel */
-int lc_msg_send(lc_channel_t *channel, lc_message_t *msg);
+ssize_t lc_msg_send(lc_channel_t *channel, lc_message_t *msg);
 
 /* join multicast group by address
  * src can be NULL for ASM mode, or a valid source address for SSM */

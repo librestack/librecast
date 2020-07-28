@@ -1,4 +1,4 @@
-CFLAGS += -Wall
+CFLAGS += -Wall -g
 LDFLAGS := -L../src -llibrecast
 #LIBS = -llibrecast
 BOLD := "\\e[0m\\e[2m"
