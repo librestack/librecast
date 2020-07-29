@@ -21,6 +21,8 @@ clean realclean:
 	cd test && $(MAKE) $@
 sparse: clean
 	CC=cgcc $(MAKE) src
+clang: clean
+	CC=clang $(MAKE) src
 check:
 	cd test && $(MAKE) $@
 test:
