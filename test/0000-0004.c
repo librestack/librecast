@@ -1,4 +1,5 @@
 #include "test.h"
+#include <librecast/net.h>
 
 int main()
 {

@@ -1,6 +1,8 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2017-2020 Brett Sheffield <bacs@librecast.net>
+
 CFLAGS += -Wall -g -I ../include
-LDFLAGS := -L../src -llibrecast
-#LIBS = -llibrecast
+LDFLAGS := -L../src -llibrecast -llcdb -llsdb
 BOLD := "\\e[0m\\e[2m"
 RESET := "\\e[0m"
 PASS = "\\e[0m\\e[32mOK\\e[0m" # end bold, green text

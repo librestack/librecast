@@ -6,6 +6,7 @@
 #define _LIBRECAST_NET_H
 
 #include <librecast/types.h>
+#include <openssl/sha.h>
 
 /* create new librecast context and set up environment
  * call lc_ctx_free() when done */
@@ -21,6 +22,7 @@ int lc_msg_init_data(lc_message_t *msg, void *data, size_t len, void *f, void *h
 void lc_msg_free(void *msg);
 int lc_msg_get(lc_message_t *msg, lc_msg_attr_t attr, void *value);
 int lc_msg_set(lc_message_t *msg, lc_msg_attr_t attr, void *value);
+int lc_msg_id(lc_message_t *msg, unsigned char id[SHA_DIGEST_LENGTH]);
 
 /* return pointer to message payload */
 void *lc_msg_data(lc_message_t *msg);

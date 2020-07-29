@@ -8,6 +8,9 @@
 #define _LIBRECAST_DB_H 1
 
 #include <librecast/types.h>
+#include <lmdb.h>
+
+typedef MDB_env lc_ctx_db_t;
 
 /* open database */
 int lc_db_open(lc_ctx_t *ctx, char *dbpath);
@@ -31,5 +34,8 @@ int lc_query_push(lc_query_t *q, lc_query_op_t op, void *data);
 int lc_query_exec(lc_query_t *q, lc_messagelist_t **msg);
 
 void lc_msglist_free(lc_messagelist_t *msg);
+
+/* store message in channel log */
+int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg);
 
 #endif /* _LIBRECAST_DB_H */
