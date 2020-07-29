@@ -1,15 +1,18 @@
-/*
- * librecast.h - The librecast API
- * 
- */
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+/* Copyright (c) 2017-2020 Brett Sheffield <bacs@librecast.net> */
+/* librecast/net.h - librecast network API */
 
 #ifndef _LIBRECAST_NET_H
 #define _LIBRECAST_NET_H
 
 #include <librecast/types.h>
 
-/* create new librecast context and set up environment */
+/* create new librecast context and set up environment
+ * call lc_ctx_free() when done */
 lc_ctx_t * lc_ctx_new();
+
+/* destroy librecast context and clean up */
+void lc_ctx_free(lc_ctx_t *ctx);
 
 /* manage message structures */
 void *lc_msg_init(lc_message_t *msg);
@@ -19,31 +22,8 @@ void lc_msg_free(void *msg);
 int lc_msg_get(lc_message_t *msg, lc_msg_attr_t attr, void *value);
 int lc_msg_set(lc_message_t *msg, lc_msg_attr_t attr, void *value);
 
-void lc_msglist_free(lc_messagelist_t *msg);
-
 /* return pointer to message payload */
 void *lc_msg_data(lc_message_t *msg);
-
-/* open database */
-int lc_db_open(lc_ctx_t *ctx, char *dbpath);
-
-/* fetch a single key */
-int lc_db_get(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void **val, size_t *vlen);
-
-/* set key/val in named database db */
-int lc_db_set(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void *val, size_t vlen);
-
-/* as lc_db_set(), respecting database modes  */
-int lc_db_set_mode(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void *val, size_t vlen, int mode);
-
-/* set key/val index */
-int lc_db_idx(lc_ctx_t *ctx, const char *left, const char *right, void *key, size_t klen, void *val, size_t vlen, int mode);
-
-/* query functions */
-int lc_query_new(lc_ctx_t *ctx, lc_query_t **q);
-void lc_query_free(lc_query_t *q);
-int lc_query_push(lc_query_t *q, lc_query_op_t op, void *data);
-int lc_query_exec(lc_query_t *q, lc_messagelist_t **msg);
 
 /* convert opcode to text */
 char *lc_opcode_text(lc_opcode_t op);
@@ -62,15 +42,6 @@ int lc_tap_create(char **ifname);
 
 /* create multicast group address from baseaddr and hash of groupname */
 int lc_hashgroup(char *baseaddr, char *groupname, char *hashaddr, unsigned int flags);
-
-/* data storage functions */
-int lc_getval(lc_val_t *key, lc_val_t *val);
-int lc_setval(lc_val_t *key, lc_val_t *val);
-int lc_channel_getval(lc_channel_t *chan, lc_val_t *key);
-int lc_channel_setval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val);
-
-/* destroy librecast context and clean up */
-void lc_ctx_free(lc_ctx_t *ctx);
 
 /* create librecast socket */
 lc_socket_t *lc_socket_new(lc_ctx_t *ctx);
