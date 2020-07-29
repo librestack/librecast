@@ -14,7 +14,3 @@ Prerequisites:
  cd libbridge
  make
  make install
-
-Ubuntu 16.04 LTS:
- apt-get install libncurses5-dev
-
