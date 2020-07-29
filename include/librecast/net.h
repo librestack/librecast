@@ -8,8 +8,6 @@
 #include <netinet/in.h>
 #include <stdint.h>
 
-#define LIBRECASTD_NOT_RUNNING 0
-#define LIBRECASTD_RUNNING 1
 #define LC_BRIDGE_NAME "lc0"
 #define LC_DATABASE_COUNT 32
 #define DEFAULT_MULTICAST_LOOP 0
