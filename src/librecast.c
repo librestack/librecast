@@ -656,56 +656,45 @@ int lc_channel_setval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
 	/* send */
 	err = lc_msg_send(chan, &msg);
 	lc_msg_free(&msg);
+	free(pkt);
 
 	return (err < 0) ? LC_ERROR_NET_SEND : 0;
 }
 
-int lc_msg_init(lc_message_t *msg)
+void *lc_msg_init(lc_message_t *msg)
 {
-	memset(msg, 0, sizeof(lc_message_t));
-	return 0;
+	return memset(msg, 0, sizeof(lc_message_t));
 }
 
 int lc_msg_init_size(lc_message_t *msg, size_t len)
 {
-	int err;
-
-	if ((err = lc_msg_init(msg)) != 0)
-		return err;
-
+	lc_msg_init(msg);
+	if ((msg->data = malloc(len)) == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
 	msg->len = len;
-	if ((msg->data = malloc(len)) == NULL)
-		return LC_ERROR_MALLOC;
-
+	msg->free = (void *)free;
 	return 0;
 }
 
 int lc_msg_init_data(lc_message_t *msg, void *data, size_t len, void *f, void *hint)
 {
-	int err;
-
-	if ((err = lc_msg_init(msg)) != 0)
-		return err;
-
+	lc_msg_init(msg);
 	msg->len = len;
 	msg->data = data;
 	msg->free = f;
 	msg->hint = hint;
-
 	return 0;
 }
 
 void lc_msg_free(void *ptr)
 {
 	lc_message_t *msg = (lc_message_t *)ptr;
-	if (msg->data != NULL) {
-		if (*msg->free != NULL)
-			msg->free(msg, msg->hint);
-		else {
-			free(msg->data);
-		}
+	if (*msg->free) {
+		msg->free(msg->data, msg->hint);
+		msg->data = NULL;
 	}
-	lc_msg_init(msg);
 }
 
 void *lc_msg_data(lc_message_t *msg)
@@ -1573,11 +1562,8 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 	logmsg(LOG_DEBUG, "%i bytes waiting to be read", i);
 
 	if (i > sizeof(lc_message_head_t)) {
-		msg->len = i - sizeof(lc_message_head_t);
-		msg->data = calloc(1, msg->len);
-		if (msg->data == NULL) {
-			return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
-		}
+		err = lc_msg_init_size(msg, i - sizeof(lc_message_head_t));
+		if (err) return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
 	}
 
 	memset(&msgh, 0, sizeof(struct msghdr));
