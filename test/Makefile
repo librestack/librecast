@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (c) 2017-2020 Brett Sheffield <bacs@librecast.net>
 
+SHELL := /bin/bash
 CFLAGS += -Wall -g -I ../include
 LDFLAGS := -L../src -llibrecast -llcdb -llsdb
 BOLD := "\\e[0m\\e[2m"
