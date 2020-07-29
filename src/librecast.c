@@ -699,9 +699,7 @@ void lc_msg_free(void *ptr)
 
 void *lc_msg_data(lc_message_t *msg)
 {
-	if (msg == NULL)
-		return NULL;
-	return msg->data;
+	return (!msg) ? NULL : msg->data;
 }
 
 int lc_msg_get(lc_message_t *msg, lc_msg_attr_t attr, void *value)
