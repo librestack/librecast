@@ -32,7 +32,10 @@ int lc_query_new(lc_ctx_t *ctx, lc_query_t **q);
 void lc_query_free(lc_query_t *q);
 int lc_query_push(lc_query_t *q, lc_query_op_t op, void *data);
 int lc_query_exec(lc_query_t *q, lc_messagelist_t **msg);
+int lc_query_filter(MDB_txn *txn, MDB_val timestamp, MDB_val msgid, lc_query_t *q);
 
+int lc_msg_filter(MDB_txn *txn, MDB_val msgid, char *database, char *filter);
+int lc_msg_filter_time(MDB_val timestamp, lc_query_param_t *p);
 void lc_msglist_free(lc_messagelist_t *msg);
 
 /* store message in channel log */

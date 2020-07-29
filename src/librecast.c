@@ -53,9 +53,10 @@ void lc_op_ping(lc_socket_call_t *sc, lc_message_t *msg);
 void lc_op_pong(lc_socket_call_t *sc, lc_message_t *msg);
 void lc_op_get(lc_socket_call_t *sc, lc_message_t *msg);
 void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg);
+void lc_op_ret(lc_socket_call_t *sc, lc_message_t *msg);
 void lc_op_del(lc_socket_call_t *sc, lc_message_t *msg);
 
-int lc_bridge_init()
+int lc_bridge_init(void)
 {
 	if (br_init()) {
 		lc_error_log(LOG_ERROR, LC_ERROR_BRIDGE_INIT);
@@ -329,7 +330,7 @@ int lc_hashgroup(char *baseaddr, char *groupname, char *hashaddr, unsigned int f
 	return 0;
 }
 
-lc_ctx_t * lc_ctx_new()
+lc_ctx_t * lc_ctx_new(void)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	lc_ctx_t *ctx, *p;
@@ -686,7 +687,7 @@ int lc_socket_listen_cancel(lc_socket_t *sock)
 	return 0;
 }
 
-void process_msg(lc_socket_call_t *sc, lc_message_t *msg)
+static void process_msg(lc_socket_call_t *sc, lc_message_t *msg)
 {
 	lc_channel_t *chan;
 	inet_ntop(AF_INET6, &msg->dst, msg->dstaddr, INET6_ADDRSTRLEN);

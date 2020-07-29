@@ -16,7 +16,7 @@ typedef MDB_env lc_ctx_db_t;
 
 #define E(expr) if (err == 0) TEST((err = (expr)) == MDB_SUCCESS, #expr)
 #define RET(expr) if (err == 0) TEST((err = (expr)) == MDB_SUCCESS, #expr); else return err
-#define TEST(test, f) ((test) ? (void)0 : ((void)logmsg(LOG_DEBUG, "ERROR(%i): %s: %s", err, #f, mdb_strerror(err)), err=LC_ERROR_DB_EXEC))
+#define TEST(test, f) ((test) ? 0 : (logmsg(LOG_DEBUG, "ERROR(%i): %s: %s", err, #f, mdb_strerror(err)), err=LC_ERROR_DB_EXEC))
 
 int lc_db_get(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void **val, size_t *vlen)
 {

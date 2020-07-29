@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (c) 2017-2020 Brett Sheffield <bacs@librecast.net>
 
+CC=cgcc
 CFLAGS += -Wall -Werror -g -I ../include
 HEADERS = ../include/$(LIBNAME).h $(wildcard ../include/$(LIBNAME)/*.h)
 LIBNAME := librecast
