@@ -1,5 +1,5 @@
 #define _GNU_SOURCE
-#include "../include/librecast.h"
+#include <librecast.h>
 #include <libbridge.h>
 #include "errors.h"
 #include "log.h"

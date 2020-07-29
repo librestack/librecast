@@ -1,4 +1,4 @@
-CFLAGS += -Wall -g
+CFLAGS += -Wall -g -I ../include
 LDFLAGS := -L../src -llibrecast
 #LIBS = -llibrecast
 BOLD := "\\e[0m\\e[2m"

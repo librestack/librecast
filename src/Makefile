@@ -1,4 +1,5 @@
-CFLAGS += -Wall -Werror -g
+CFLAGS += -Wall -Werror -g -I ../include
+HEADERS = ../include/$(LIBNAME).h ../include/$(LIBNAME)/*.h
 LIBNAME = librecast
 INSTALLDIR = /usr/local/bin
 LIBDIR = /usr/local/lib
@@ -12,16 +13,16 @@ all: $(LIBFILE)
 $(LIBFILE): $(OBJECTS)
 	$(CC) $(CFLAGS) -shared -o $(LIBFILE) $(OBJECTS) $(LIBS)
 
-$(LIBNAME).o: ../include/$(LIBNAME).h $(LIBNAME).c
-	$(CC) $(CFLAGS) -fPIC -c $(LIBNAME).c $(LIBS)
+$(LIBNAME).o: $(LIBNAME).c $(HEADERS)
+	$(CC) $(CFLAGS) -fPIC -c $< $(LIBS)
 
-errors.o: errors.h errors.c
+errors.o: errors.h
 	$(CC) $(CFLAGS) -fPIC -c errors.c $(LIBS)
 
-log.o: log.h log.c
+log.o: log.h
 	$(CC) $(CFLAGS) -fPIC -c log.c $(LIBS)
 
-misc.o: misc.h misc.c
+misc.o: misc.h
 	$(CC) $(CFLAGS) -fPIC -c misc.c $(LIBS)
 
 install: $(LIBFILE)
