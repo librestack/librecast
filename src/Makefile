@@ -23,10 +23,10 @@ liblsdb.so: db.o $(OBJECTS)
 	$(CC) $(CFLAGS) -shared -o $@ $^ -llmdb
 
 %.o: %.c %.h librecast_pvt.h $(HEADERS)
-	$(CC) $(CFLAGS) -fPIC -c $< $(LIBS)
+	$(CC) $(CFLAGS) -fPIC -c $<
 
 %.o: %.c librecast_pvt.h
-	$(CC) $(CFLAGS) -fPIC -c $< $(LIBS)
+	$(CC) $(CFLAGS) -fPIC -c $<
 
 install: $(LIBFILE)
 	cp $(LIBFILE) $(LIBDIR)/$(LIBFILE).1.0
