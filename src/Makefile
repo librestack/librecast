@@ -47,12 +47,18 @@ install: $(SOFILES)
 	$(INSTALL_DATA) liblsdb.so $(LIBDIR)/liblsdb.so.$(VERSION)
 	cp -r ../include/* $(INCLUDEDIR)
 	$(LDCONFIG) -n $(LIBDIR)
+	ln -sf $(LIBDIR)/liblibrecast.so.$(ABIVERS) $(LIBDIR)/liblibrecast.so
+	ln -sf $(LIBDIR)/liblcdb.so.$(ABIVERS) $(LIBDIR)/liblcdb.so
+	ln -sf $(LIBDIR)/liblsdb.so.$(ABIVERS) $(LIBDIR)/liblsdb.so
 
 .PHONY: clean realclean uninstall
 
 uninstall:
 	rm -f $(foreach f,$(SOFILES),$(DESTDIR)$(LIBDIR)/$f.$(VERSION))
 	$(LDCONFIG) -n $(LIBDIR)
+	rm -f $(LIBDIR)/liblibrecast.so
+	rm -f $(LIBDIR)/liblcdb.so
+	rm -f $(LIBDIR)/liblsdb.so
 
 clean:
 	$(RM) *.o $(SOFILES)
