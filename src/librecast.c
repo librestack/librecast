@@ -1100,7 +1100,7 @@ ssize_t lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 	head->op = msg->op;
 	len = msg->len;
 
-	logmsg(LOG_DEBUG, "sending message with OPCODE %lu", msg->op);
+	logmsg(LOG_DEBUG, "sending message with OPCODE %i", msg->op);
 
 	buf = calloc(1, sizeof(lc_message_head_t) + len);
 	memcpy(buf, head, sizeof(lc_message_head_t));
