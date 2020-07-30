@@ -709,7 +709,7 @@ static void process_msg(lc_socket_call_t *sc, lc_message_t *msg)
 	}
 
 	/* process opcode */
-	logmsg(LOG_DEBUG, "OPCODE received: %lu", msg->op);
+	logmsg(LOG_DEBUG, "OPCODE received: %i", msg->op);
 	switch (msg->op) {
 		LC_OPCODES(LC_OPCODE_FUN)
 	default:
