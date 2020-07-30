@@ -351,11 +351,9 @@ int lc_query_exec(lc_query_t *q, lc_messagelist_t **msglist)
 		/* append message to result list */
 		if (*msglist == NULL)
 			*msglist = msg;
-		else {
+		else if (lastmsg)
 			lastmsg->next = msg;
-		}
 		lastmsg = msg;
-
 		msgs++;
 	}
 	if (rc != 0) logmsg(LOG_DEBUG, "%s", mdb_strerror(rc));
