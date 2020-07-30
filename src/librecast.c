@@ -703,7 +703,7 @@ static void process_msg(lc_socket_call_t *sc, lc_message_t *msg)
 	if (chan) {
 		chan->seq = (msg->seq > chan->seq) ? msg->seq + 1 : chan->seq + 1;
 		chan->rnd = msg->rnd;
-		logmsg(LOG_DEBUG, "channel clock set to %u.%u", chan->seq, chan->rnd);
+		logmsg(LOG_DEBUG, "channel clock set to %lu.%lu", chan->seq, chan->rnd);
 		lc_channel_logmsg(chan, msg); /* store in channel log */
 	}
 
