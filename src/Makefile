@@ -1,26 +1,37 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (c) 2017-2020 Brett Sheffield <bacs@librecast.net>
 
+VERSION := 1.0.0
+ABIVERS := 1.0
+SHELL = /bin/sh
+.SUFFIXES:
+.SUFFIXES: .c .o
 CFLAGS += -Wall -Werror -g -I ../include
 HEADERS = ../include/$(LIBNAME).h $(wildcard ../include/$(LIBNAME)/*.h)
 LIBNAME := librecast
-INSTALLDIR := /usr/local/bin
-LIBDIR := /usr/local/lib
-INCLUDEDIR := /usr/local/include
+INSTALL ?= install
+LDCONFIG ?= ldconfig
+INSTALL_DATA := $(INSTALL) -m 644
+PREFIX ?= /usr/local
+LIBDIR := $(DESTDIR)$(PREFIX)/lib
+INCLUDEDIR := $(DESTDIR)$(PREFIX)/include
 LIBS := -pthread -lpthread -lbridge -lcrypto -llmdb
 OBJECTS := errors.o log.o misc.o
 SOFILES := liblibrecast.so liblcdb.so liblsdb.so
+SOVFILES := $(foreach f,$(SOFILES),$f.$(VERSION))
+ABIFILES := $(foreach f,$(SOFILES),$f.$(ABIVERS))
 
 all: $(SOFILES)
+	$(LDCONFIG) -n ./
 
 liblibrecast.so: librecast.o $(OBJECTS)
-	$(CC) $(CFLAGS) -shared -o $@ $^ $(LIBS)
+	$(CC) -shared -Wl,-soname,liblibrecast.so.$(ABIVERS) -o $@ $^ $(LIBS)
 
 liblcdb.so: netdb.o $(OBJECTS)
-	$(CC) $(CFLAGS) -shared -o $@ $^ $(LIBS)
+	$(CC) $(CFLAGS) -shared -Wl,-soname,liblcdb.so.$(ABIVERS) -o $@ $^ $(LIBS)
 
 liblsdb.so: db.o $(OBJECTS)
-	$(CC) $(CFLAGS) -shared -o $@ $^ -llmdb
+	$(CC) $(CFLAGS) -shared -Wl,-soname,liblsdb.so.$(ABIVERS) -o $@ $^ -llmdb
 
 %.o: %.c %.h librecast_pvt.h $(HEADERS)
 	$(CC) $(CFLAGS) -fPIC -c $<
@@ -28,19 +39,20 @@ liblsdb.so: db.o $(OBJECTS)
 %.o: %.c librecast_pvt.h
 	$(CC) $(CFLAGS) -fPIC -c $<
 
-install: $(LIBFILE)
-	cp $(LIBFILE) $(LIBDIR)/$(LIBFILE).1.0
-	ln -sf $(LIBDIR)/$(LIBFILE).1.0 $(LIBDIR)/$(LIBFILE).1
-	ln -sf $(LIBDIR)/$(LIBFILE).1 $(LIBDIR)/$(LIBFILE)
+install: $(SOFILES)
+	$(INSTALL) -d $(LIBDIR)
+	$(INSTALL) -d $(INCLUDEDIR)
+	$(INSTALL_DATA) liblibrecast.so $(LIBDIR)/liblibrecast.so.$(VERSION)
+	$(INSTALL_DATA) liblcdb.so $(LIBDIR)/liblcdb.so.$(VERSION)
+	$(INSTALL_DATA) liblsdb.so $(LIBDIR)/liblsdb.so.$(VERSION)
 	cp -r ../include/* $(INCLUDEDIR)
-	ldconfig
+	$(LDCONFIG) -n $(LIBDIR)
 
 .PHONY: clean realclean uninstall
 
 uninstall:
-	rm -f $(LIBDIR)/$(LIBFILE)
-	rm -f $(LIBDIR)/$(LIBFILE).1
-	rm -f $(LIBDIR)/$(LIBFILE).1.0
+	rm -f $(foreach f,$(SOFILES),$(DESTDIR)$(LIBDIR)/$f.$(VERSION))
+	$(LDCONFIG) -n $(LIBDIR)
 
 clean:
 	$(RM) *.o $(SOFILES)

@@ -1,7 +1,3 @@
 *.o
-*.so
+*.so*
 *.swp
-src/librecastd
-src/lctl
-src/nodewatch
-tests/docker/librecastd/bin/*

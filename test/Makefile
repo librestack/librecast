@@ -26,7 +26,7 @@ build:
 	@echo -e "$(TIMESTAMP) - starting tests" >> $(LOGFILE)
 	@echo -e "\nRunning tests"
 
-%.test: %.c test.o ../src/liblibrecast.so
+%.test: %.c test.o
 	@$(CC) $(CFLAGS) -o $@ $< test.o $(LDFLAGS)
 	@echo -ne "\e[2m" $* " "
 	@echo -ne "\n== $@" >> $(LOGFILE)
