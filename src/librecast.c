@@ -223,33 +223,28 @@ void *lc_msg_data(lc_message_t *msg)
 	return (!msg) ? NULL : msg->data;
 }
 
-int lc_msg_get(lc_message_t *msg, lc_msg_attr_t attr, void *value)
+int lc_msg_get(lc_message_t *msg, lc_msg_attr_t attr, void **value)
 {
-	if (msg == NULL)
-		return LC_ERROR_INVALID_PARAMS;
-
+	if (!msg || !value) return LC_ERROR_INVALID_PARAMS;
 	switch (attr) {
 	case LC_ATTR_DATA:
-		value = msg->data;
+		*value = msg->data;
 		break;
 	case LC_ATTR_LEN:
-		value = &msg->len;
+		*value = (void *)&msg->len;
 		break;
 	case LC_ATTR_OPCODE:
-		value = &msg->op;
+		*value = (void *)&msg->op;
 		break;
 	default:
 		return LC_ERROR_MSG_ATTR_UNKNOWN;
 	}
-
 	return 0;
 }
 
 int lc_msg_set(lc_message_t *msg, lc_msg_attr_t attr, void *value)
 {
-	if (msg == NULL)
-		return LC_ERROR_INVALID_PARAMS;
-
+	if (!msg) return LC_ERROR_INVALID_PARAMS;
 	switch (attr) {
 	case LC_ATTR_DATA:
 		msg->data = value;
@@ -263,7 +258,6 @@ int lc_msg_set(lc_message_t *msg, lc_msg_attr_t attr, void *value)
 	default:
 		return LC_ERROR_MSG_ATTR_UNKNOWN;
 	}
-
 	return 0;
 }
 
