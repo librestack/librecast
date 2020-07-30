@@ -330,11 +330,6 @@ int lc_query_exec(lc_query_t *q, lc_messagelist_t **msglist)
 
 	/* fetch messages in timestamp order */
 	for (op = MDB_FIRST; (rc = mdb_cursor_get(cursor, &key, &data, op)) == 0; op = MDB_NEXT) {
-		if (rc != 0) {
-			logmsg(LOG_DEBUG, "%s", mdb_strerror(rc));
-			continue;
-		}
-
 		/* filter msgs */
 		if (!(lc_query_filter(txn, key, data, q)))
 			continue;
@@ -363,6 +358,8 @@ int lc_query_exec(lc_query_t *q, lc_messagelist_t **msglist)
 
 		msgs++;
 	}
+	if (rc != 0) logmsg(LOG_DEBUG, "%s", mdb_strerror(rc));
+
 cleanup:
 	mdb_cursor_close(cursor);
 	mdb_txn_abort(txn);
