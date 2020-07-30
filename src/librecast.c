@@ -1128,13 +1128,15 @@ ssize_t lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 int lc_getrandom(void *buf, size_t buflen, unsigned int flags)
 {
 	int fd;
+	int err = 0;
 	size_t len;
 
 	if ((fd = open("/dev/urandom", O_RDONLY)) == -1)
 		return lc_error_log(LOG_ERROR, LC_ERROR_RANDOM_OPEN);
-	if ((len = read(fd, buf, buflen)) == -1)
-		return lc_error_log(LOG_ERROR, LC_ERROR_RANDOM_READ);
+	if ((len = read(fd, buf, buflen)) == -1) {
+		err = lc_error_log(LOG_ERROR, LC_ERROR_RANDOM_READ);
+	}
 	close(fd);
 
-	return 0;
+	return err;
 }
