@@ -447,7 +447,8 @@ void lc_op_ping(lc_socket_call_t *sc, lc_message_t *msg)
 	/* received PING, echo PONG back to same channel */
 	opt = LC_OP_PONG;
 	lc_msg_set(msg, LC_ATTR_OPCODE, &opt);
-	lc_msg_send(msg->chan, msg);
+	if (lc_msg_send(msg->chan, msg) == -1)
+		logmsg(LOG_ERROR, "lc_msg_send error: '%s'", strerror(errno));
 
 	/* TODO: send PONG reply to global scope solicited-node multicast address of src */
 
