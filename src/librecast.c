@@ -622,10 +622,11 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 	}
 	s = socket(AF_INET6, SOCK_DGRAM, 0);
 	int err = errno;
-	if (s == -1)
+	if (s == -1) {
 		logmsg(LOG_DEBUG, "socket ERROR: %s", strerror(err));
-	else
-		sock->socket = s;
+		goto socket_err;
+	}
+	sock->socket = s;
 	logmsg(LOG_DEBUG, "socket %i created with id %u", sock->socket, sock->id);
 
 	/* request ancilliary control data */
@@ -641,6 +642,7 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 	return sock;
 setsockopt_err:
 	close(s);
+socket_err:
 	p->next = NULL;
 	free(sock);
 	return NULL;
