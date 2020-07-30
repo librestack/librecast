@@ -56,11 +56,9 @@ install: $(SOFILES)
 uninstall:
 	rm -f $(foreach f,$(SOFILES),$(DESTDIR)$(LIBDIR)/$f.$(VERSION))
 	$(LDCONFIG) -n $(LIBDIR)
-	rm -f $(LIBDIR)/liblibrecast.so
-	rm -f $(LIBDIR)/liblcdb.so
-	rm -f $(LIBDIR)/liblsdb.so
+	cd $(LIBDIR)/ && rm -f $(SOFILES)
 
 clean:
-	$(RM) *.o $(SOFILES)
+	$(RM) *.o $(SOFILES) $(ABIFILES)
 
 realclean: clean
