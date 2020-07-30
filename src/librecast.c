@@ -122,15 +122,17 @@ int lc_bridge_add_interface(const char *brname, const char *ifname) {
 int lc_link_set(char *ifname, int flags)
 {
 	struct ifreq ifr;
+	size_t len = strlen(ifname);
 	int fd, err = 0;
 
+	if (len >= IFNAMSIZ) return lc_error_log(LOG_ERROR, LC_ERROR_INVALID_PARAMS);
 	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
 		err = errno;
 		logmsg(LOG_ERROR, "failed to create ioctl socket: %s", strerror(err));
 		return LC_ERROR_SOCK_IOCTL;
 	}
 	memset(&ifr, 0, sizeof(ifr));
-	memcpy(ifr.ifr_name, ifname, strlen(ifname));
+	memcpy(ifr.ifr_name, ifname, len);
 	logmsg(LOG_DEBUG, "fetching flags for interface %s", ifr.ifr_name);
 	if ((err = ioctl(fd, SIOCGIFFLAGS, &ifr)) == -1) {
 	}
