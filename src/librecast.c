@@ -629,12 +629,20 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 
 	/* request ancilliary control data */
 	i = 1;
-	setsockopt(s, IPPROTO_IPV6, IPV6_RECVPKTINFO, &i, sizeof(i));
+	if (setsockopt(s, IPPROTO_IPV6, IPV6_RECVPKTINFO, &i, sizeof(i)) == -1)
+		goto setsockopt_err;
 	i = DEFAULT_MULTICAST_LOOP;
-	setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &i, sizeof(i));
+	if (setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &i, sizeof(i)) == -1)
+		goto setsockopt_err;
 	i = DEFAULT_MULTICAST_HOPS;
-	setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &i, sizeof(i));
+	if (setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &i, sizeof(i)) == -1)
+		goto setsockopt_err;
 	return sock;
+setsockopt_err:
+	close(s);
+	p->next = NULL;
+	free(sock);
+	return NULL;
 }
 
 int lc_socket_getopt(lc_socket_t *sock, int optname, void *optval, socklen_t *optlen)
