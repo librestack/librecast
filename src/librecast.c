@@ -613,6 +613,7 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 	int s, i;
 
 	sock = calloc(1, sizeof(lc_socket_t));
+	if (!sock) return NULL;
 	sock->ctx = ctx;
 	sock->id = ++sock_id;
 	for (p = sock_list; p != NULL; p = p->next) {
