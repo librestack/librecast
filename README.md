@@ -28,6 +28,10 @@ The library will be extended soon to provide transitional support and tunnelling
 such that multicast can function as an overlay network until native multicast
 becomes more widely available.
 
+Comments, questions, suggestions, bug reports, and patches welcome.  See CONTRIBUTING.md
+
+Brett Sheffield `<brett@librecast.net>`
+
 ### Website
 
 https://librecast.net/
@@ -35,6 +39,10 @@ https://librecast.net/
 ### IRC channel
 
 `#librecast` on freenode.net
+
+If you have a question, please be patient. An answer might take a few hours
+depending on time zones and whether anyone on the team is available at that
+moment.  Feel free to raise an issue on the bug tracker.
 
 ### Installing
 
@@ -71,18 +79,14 @@ Other useful make targets:
 `make coverity` builds the project using the coverity static analyser, creating
 a librecast.tgz ready to upload to Coverity Scan for analysis.
 
-The code is available here:
+## Questions, Bug reports, Feature Requests
 
-https://github.com/librestack/librecast
+New issues can be raised at:
 
-Makes scalable, secure network programming available easily in any supported
-language.  Initial support is for C, with python, perl, rust, golang and other
-wrappers following as time and interest permits.  Feel free to contribute a
-wrapper.
+https://github.com/librestack/librecast/issues
 
-Comments, questions, suggestions, bug reports, and patches welcome.  See CONTRIBUTING.md
-
-Brett Sheffield `<brett@librecast.net>`
+It's okay to raise an issue to ask a question.  You can also email or ask on
+IRC.
 
 <hr />
 
