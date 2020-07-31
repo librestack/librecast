@@ -32,6 +32,98 @@ Comments, questions, suggestions, bug reports, and patches welcome.  See CONTRIB
 
 Brett Sheffield `<brett@librecast.net>`
 
+### Documentation
+
+Coming soon.  In the meantime, you can probably figure things out by looking at
+the tests and header files.  There are code samples in `test/` that will show
+you how to do the most common things.
+
+#### Getting started
+
+In C, we'll need a header.  Just the first one will do:
+```
+#include <librecast.h>        /* include all functions */
+
+/* or */
+
+#include <librecast/net.h>    /* just the network (multicast) bits */
+#include <librecast/db.h>     /* local database functions */
+#include <librecast/netdb.h>  /* remote (multicast) database functions */
+
+/* or, if you just need to refer to a Librecast type in another project */
+
+#include <librecast/types.h>  /* Librecast type declarations */
+
+```
+
+Everything starts with a Librecast Context:
+
+```
+lc_ctx_t *lctx;
+lctx = lc_ctx_new();
+
+lc_ctx_free(lctx); /* free it when done */
+```
+
+Then you probably want a Librecast Socket:
+```
+lc_socket_t *sock;
+sock = lc_socket_new(lctx);
+
+/* you can set whatever underlying socket options you want, such as TTL and LOOPBACK */
+/* if you want to receive your own packets, you'll need this: */
+lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt);
+
+lc_socket_close(sock); /* close this when done */
+```
+
+Sockets aren't much use without Channels.  A Channel, in Librecast terms,
+represents a multicast group.  You create channels, bind them to sockets, and
+join those channels.
+
+```
+lc_channel_t *chan;
+chan = lc_channel_new(lctx, "example.com");
+
+lc_channel_bind(sock, chan)  /* bind the channel to a socket */
+lc_channel_bind(sock, chan2) /* you can bind more than one */
+
+lc_channel_join(chan) /* we need to join a channel if we want to listen */
+/* no need to join if we only want to send */
+
+lc_channel_free(chan); /* free when done */
+```
+
+To listen on a channel and process messages, we can either use a synchronous
+call, or asyncronous with callbacks:
+
+```
+void callback_msg(lc_message_t *msg) {
+	/* do something with message */
+}
+
+void callback_err() {
+	/* handle error */
+}
+
+/* this starts a listening thread, with callbacks */
+lc_socket_listen(sock, callback_msg, callback_err);
+
+/* or, we can do a blocking recv */
+size_t bytes = lc_msg_recv(sock, &msg);     /* blocking recv */
+
+```
+
+Now lets create a message and send it:
+
+```
+char data[] = "life, the universe, everything";
+lc_message_t msg;
+lc_msg_init_data(&msg, data, strlen(data), NULL, NULL);
+lc_msg_send(chan, &msg);
+```
+
+
 ### Website
 
 https://librecast.net/
