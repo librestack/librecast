@@ -193,6 +193,8 @@ int lc_query_new(lc_ctx_t *ctx, lc_query_t **q)
 {
 	if (ctx == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_CTX_REQUIRED);
+	if (ctx->db == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_DB_REQUIRED);
 
 	if ((*q = calloc(1, sizeof(lc_query_t))) == NULL)
 		return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
@@ -204,14 +206,13 @@ int lc_query_new(lc_ctx_t *ctx, lc_query_t **q)
 
 void lc_query_free(lc_query_t *q)
 {
+	if (!q) return;
 	lc_query_param_t *p, *tmp;
-
-	for (p = q->param; p != NULL; free(tmp)) {
+	for (p = q->param; p; free(tmp)) {
 		tmp = p;
 		p = p->next;
 	}
 	free(q);
-	q = NULL;
 }
 
 int lc_query_push(lc_query_t *q, lc_query_op_t op, void *data)
@@ -317,6 +318,10 @@ int lc_query_exec(lc_query_t *q, lc_messagelist_t **msglist)
 	char *kval = "";
 	lc_messagelist_t *msg, *lastmsg = NULL;
 
+	if (!q) {
+		lc_error_log(LOG_ERROR, LC_ERROR_QUERY_REQUIRED);
+		return -1;
+	}
 	if (q->ctx->db == NULL) return -1;
 	E(mdb_txn_begin(q->ctx->db, NULL, MDB_RDONLY, &txn));
 	E(mdb_dbi_open(txn, "timestamp_message", MDB_INTEGERDUP, &dbi_idx_t));
@@ -356,7 +361,6 @@ int lc_query_exec(lc_query_t *q, lc_messagelist_t **msglist)
 		lastmsg = msg;
 		msgs++;
 	}
-	if (rc != 0) logmsg(LOG_DEBUG, "%s", mdb_strerror(rc));
 
 cleanup:
 	mdb_cursor_close(cursor);

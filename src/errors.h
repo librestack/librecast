@@ -61,7 +61,8 @@
 	X(54, LC_ERROR_MSG_ATTR_UNKNOWN,   "Unknown message attribute") \
 	X(55, LC_ERROR_THREAD_CANCEL,      "Failed to cancel thread") \
 	X(56, LC_ERROR_THREAD_JOIN,        "Failed to join thread") \
-	X(57, LC_ERROR_INVALID_OPCODE,     "Invalid opcode")
+	X(57, LC_ERROR_INVALID_OPCODE,     "Invalid opcode") \
+	X(58, LC_ERROR_QUERY_REQUIRED,     "Librecast query required for this operation")
 #undef X
 
 #define LC_ERROR_MSG(code, name, msg) case code: return msg;
