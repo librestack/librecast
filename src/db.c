@@ -408,8 +408,8 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	size_t klen, vlen;
 	unsigned char key[SHA_DIGEST_LENGTH];
 
-	if (chan == NULL)
-		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
+	if (!chan) return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
+	if (!msg) return lc_error_log(LOG_ERROR, LC_ERROR_MESSAGE_REQUIRED);
 
 	/* only log data messages */
 	if (msg->op != LC_OP_DATA)
@@ -428,7 +428,6 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	E(lc_db_set(ctx, "message", key, klen, msg->data, msg->len));
 
 	/* metadata indexes */
-
 	mode = LC_DB_MODE_DUP | LC_DB_MODE_BOTH;
 	E(lc_db_idx(ctx, "message", "channel", key, klen, chan->uri, strlen(chan->uri), mode));
 	E(lc_db_idx(ctx, "message", "src", key, klen, msg->srcaddr, INET6_ADDRSTRLEN, mode));
