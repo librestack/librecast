@@ -34,9 +34,11 @@ Brett Sheffield `<brett@librecast.net>`
 
 ### Documentation
 
-Coming soon.  In the meantime, you can probably figure things out by looking at
-the tests and header files.  There are code samples in `test/` that will show
-you how to do the most common things.
+You can probably figure most things out by looking at the tests and header
+files.  There are code samples in `test/` that will show you how to do the most
+common things.
+
+Lets run through the basic concepts:
 
 #### Getting started
 
