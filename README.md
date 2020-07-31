@@ -32,6 +32,21 @@ Comments, questions, suggestions, bug reports, and patches welcome.  See CONTRIB
 
 Brett Sheffield `<brett@librecast.net>`
 
+
+### Website
+
+https://librecast.net/
+
+
+### IRC channel
+
+`#librecast` on freenode.net
+
+If you have a question, please be patient. An answer might take a few hours
+depending on time zones and whether anyone on the team is available at that
+moment.  Feel free to raise an issue on the bug tracker.
+
+
 ### Documentation
 
 You can probably figure most things out by looking at the tests and header
@@ -39,6 +54,7 @@ files.  There are code samples in `test/` that will show you how to do the most
 common things.
 
 Lets run through the basic concepts:
+
 
 #### Getting started
 
@@ -126,26 +142,16 @@ lc_msg_send(chan, &msg);
 ```
 
 
-### Website
-
-https://librecast.net/
-
-### IRC channel
-
-`#librecast` on freenode.net
-
-If you have a question, please be patient. An answer might take a few hours
-depending on time zones and whether anyone on the team is available at that
-moment.  Feel free to raise an issue on the bug tracker.
-
 ### Installing
 
 See INSTALL.md
+
 
 ### Compilation and Testing Options
 
 The code compiles using either gcc or clang.  There is a `make clang` target.
 The default is whatever your default CC is.
+
 
 #### Testing
 A test runner and a set of test modules exercise the main functions, including
