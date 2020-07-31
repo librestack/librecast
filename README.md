@@ -4,6 +4,11 @@
 
 ![Librecast Logo](https://secure.gravatar.com/avatar/52295d18e59ef41aeac21f3745250288?s=250)
 
+<a href="https://scan.coverity.com/projects/librestack-librecast">
+  <img alt="Coverity Scan Build Status"
+       src="https://scan.coverity.com/projects/21543/badge.svg"/>
+</a>
+
 ## README
 
 Librecast is an *experimental* project to provide fast, efficient and scalable
