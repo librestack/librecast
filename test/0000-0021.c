@@ -12,6 +12,7 @@ int main()
 	lc_channel_t *chan;
 	lc_message_t msg[4];
 	char dbpath[] = "0000-0021.tmp.XXXXXX";
+	char chanuri[] = "example.com";
 	char *freedom[4];
 	freedom[0] = "The freedom to run the program as you wish, for any purpose";
 	freedom[1] = "The freedom to study how the program works, and change it";
@@ -23,7 +24,7 @@ int main()
 	int res = 0;
 
 	lctx = lc_ctx_new();
-	chan = lc_channel_new(lctx, "example.com");
+	chan = lc_channel_new(lctx, chanuri);
 
 	/* initialize messages */
 	for (int i = 0; i < 4; i++) {
@@ -55,15 +56,14 @@ int main()
 		test_log("lc_db_get()[%i] returned %i with %zu bytes", i, res, vlen);
 		test_expectn(freedom[i], (char *)val, vlen);
 		free(val);
+
+		test_assert((res = lc_db_get(lctx, "message_channel", (char *)key, SHA_DIGEST_LENGTH,
+						&val, &vlen)) == 0, "lc_db_get()");
+		test_expectn(chanuri, (char *)val, vlen);
+		free(val);
 	}
 
-	/* TODO:
-	 * - check no. msgs
-	 * - check id
-	 * - check data
-	 * - check channel, dst, src, timestamp
-	 * - check indexes
-	 */
+	/* TODO: check dst, src, timestamp */
 
 	lc_channel_free(chan);
 	lc_ctx_free(lctx);
