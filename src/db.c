@@ -405,7 +405,8 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	int err = 0;
 	int mode;
 	char *val;
-	size_t klen, vlen;
+	size_t klen = SHA_DIGEST_LENGTH;
+	size_t vlen = 0;
 	unsigned char key[SHA_DIGEST_LENGTH];
 
 	if (!chan) return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
@@ -422,8 +423,6 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	if ((err = lc_msg_id(msg, (unsigned char *)key)) != 0)
 		return err;
 
-	klen = SHA_DIGEST_LENGTH;
-
 	/* log message to database */
 	E(lc_db_set(ctx, "message", key, klen, msg->data, msg->len));
 
@@ -432,13 +431,11 @@ int lc_channel_logmsg(lc_channel_t *chan, lc_message_t *msg)
 	E(lc_db_idx(ctx, "message", "channel", key, klen, chan->uri, strlen(chan->uri), mode));
 	E(lc_db_idx(ctx, "message", "src", key, klen, msg->srcaddr, INET6_ADDRSTRLEN, mode));
 	E(lc_db_idx(ctx, "message", "dst", key, klen, msg->dstaddr, INET6_ADDRSTRLEN, mode));
-
 	vlen = asprintf(&val, "%"PRIu64"", msg->timestamp);
 	mode = LC_DB_MODE_DUP | LC_DB_MODE_LEFT ;
 	E(lc_db_idx(ctx, "message", "timestamp", key, klen, val, vlen, mode));
 	mode = LC_DB_MODE_DUP | LC_DB_MODE_RIGHT | LC_DB_MODE_INT;
 	E(lc_db_idx(ctx, "message", "timestamp", key, klen, val, vlen, mode));
-
 	free(val);
 
 	logmsg(LOG_FULLTRACE, "%s exiting", __func__);
