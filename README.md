@@ -52,3 +52,19 @@ anyone else finds it useful.  Comments, questions, suggestions, bug reports,
 and patches all welcome.
 
 Brett Sheffield `<brett@gladserv.com>`
+
+<hr />
+
+<p class="bigbreak">
+This project was funded through the <a href="https://nlnet.nl/discovery"> NGI0 Discovery </a> Fund, a fund established by NLnet with financial support from the European
+Commission's <a href="https://ngi.eu">Next Generation Internet</a> programme, under the aegis of DG Communications Networks, Content and Technology under grant agreement No 825322. *Applications are still open, you can <a href="https://nlnet.nl/propose">apply today</a>*
+</p>
+
+<p>
+  <a href="https://nlnet.nl/project/LibrecastLive/">
+      <img width="250" src="https://nlnet.nl/logo/banner.png" alt="Logo NLnet: abstract logo of four people seen from above" class="logocenter" />
+  </a>
+  <a href="https://ngi.eu/">
+      <img width="250" align="right" src="https://nlnet.nl/image/logos/NGI0_tag.png" alt="Logo NGI Zero: letterlogo shaped like a tag" class="logocenter" />
+  </a>
+</p>
