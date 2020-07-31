@@ -57,11 +57,17 @@ Logs are output in the test directory (the tests tell you where).
 analysis.
 
 Other useful make targets:
+
 `make 0000-0004.test` run a single test.
+
 `make 0000-0004.check` run a single test with valgrind
+
 `make 0000-0004.debug` runs a single test with the gdb debugger
+
 `make sparse` compiles the project using cgcc (the sparse static analyser)
+
 `make clang` builds the project using clang
+
 `make coverity` builds the project using the coverity static analyser, creating
 a librecast.tgz ready to upload to Coverity Scan for analysis.
 
