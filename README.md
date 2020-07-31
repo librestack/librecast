@@ -2,7 +2,7 @@
 
 <a href="https://opensource.org"><img height="150" align="right" src="https://opensource.org/files/OSIApprovedCropped.png" alt="Open Source Initiative Approved License logo"></a>
 
-![Librecast Logo](https://secure.gravatar.com/avatar/52295d18e59ef41aeac21f3745250288?s=250)
+![Librecast Logo](https://secure.gravatar.com/avatar/52295d18e59ef41aeac21f3745250288?s=200)
 
 <a href="https://scan.coverity.com/projects/librestack-librecast">
   <img alt="Coverity Scan Build Status"
