@@ -53,6 +53,8 @@ You can probably figure most things out by looking at the tests and header
 files.  There are code samples in `test/` that will show you how to do the most
 common things.
 
+Remember to link your program with `-llibrecast`.  If you're using `librecast/db.h` and `librecast/netdb.h` you'll also need `-llsdb` and `-llcdb` respectively.
+
 Lets run through the basic concepts:
 
 
