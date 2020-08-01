@@ -1,8 +1,9 @@
-INSTALLDIR := /usr/local/bin
+PREFIX ?= /usr/local
+export PREFIX
 LIBNAME := librecast
-LIBDIR := /usr/local/lib
+LIBDIR := $(PREFIX)/lib
 LIBFILE := lib${LIBNAME}.so
-INCLUDEDIR := /usr/local/include
+INCLUDEDIR := $(PREFIX)/include
 COVERITY_DIR := cov-int
 COVERITY_TGZ := $(LIBNAME).tgz
 
@@ -14,10 +15,12 @@ install: all
 uninstall:
 	cd src && $(MAKE) $@
 
-.PHONY: clean realclean src test sparse
+.PHONY: clean realclean src test sparse doc
 
 src:
 	cd src && $(MAKE)
+doc:
+	cd doc && $(MAKE) $@
 clean realclean:
 	cd src && $(MAKE) $@
 	cd test && $(MAKE) $@
