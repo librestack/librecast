@@ -1,0 +1,45 @@
+.TH LC_CTX_NEW 3 2020-07-31 "LIBRECAST" "Librecast Programmer's Manual"
+.SH NAME
+lc_ctx_new \- create new Librecast context
+.SH SYNOPSIS
+.nf
+.B #include <librecast/net.h>
+.PP
+.BI "lc_ctx_t *lc_ctx_new(void);"
+.PP
+Compile and link with \fI\-llibrecast\fP.
+.SH DESCRIPTION
+Create new Librecast context and set up environment.
+Call lc_ctx_free(3) when done.
+.SH RETURN VALUE
+Returns a pointer to a 
+.I lc_ctx_t
+handle.
+.PP
+On error returns NULL and sets
+.I errno
+to
+.BR ENOMEM .
+.SH ERRORS
+.TP
+.B ENOMEM
+Out of memory.
+Possibly, the application hit the
+.BR RLIMIT_AS
+or
+.BR RLIMIT_DATA
+limit described in
+.BR getrlimit (2).
+.SH EXAMPLE
+.SS Program source
+\&
+.EX
+lc_ctx_t *lctx;
+lctx = lc_ctx_new();
+
+/* your Librecast program here */
+
+lc_ctx_free(lctx); /* free context when done */
+.EE
+.SH SEE ALSO
+lc_ctx_free(3)
