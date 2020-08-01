@@ -340,7 +340,7 @@ lc_ctx_t * lc_ctx_new(void)
 		return NULL;
 	lc_bridge_new(LC_BRIDGE_NAME);
 
-	ctx = calloc(1, sizeof(lc_ctx_t));
+	if (!(ctx = calloc(1, sizeof(lc_ctx_t)))) return NULL; /* errno set by calloc */
 	ctx->id = ++ctx_id;
 	for (p = ctx_list; p != NULL; p = p->next) {
 		if (p->next == NULL)
