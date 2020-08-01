@@ -46,7 +46,7 @@ install: $(SOFILES)
 	$(INSTALL_DATA) liblcdb.so $(LIBDIR)/liblcdb.so.$(VERSION)
 	$(INSTALL_DATA) liblsdb.so $(LIBDIR)/liblsdb.so.$(VERSION)
 	cp -r ../include/* $(INCLUDEDIR)
-	$(LDCONFIG) -n $(LIBDIR)
+	$(LDCONFIG)
 	ln -sf $(LIBDIR)/liblibrecast.so.$(ABIVERS) $(LIBDIR)/liblibrecast.so
 	ln -sf $(LIBDIR)/liblcdb.so.$(ABIVERS) $(LIBDIR)/liblcdb.so
 	ln -sf $(LIBDIR)/liblsdb.so.$(ABIVERS) $(LIBDIR)/liblsdb.so
