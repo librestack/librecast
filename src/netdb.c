@@ -51,6 +51,7 @@ int lc_channel_setval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
 	/* pack data: [keylen][key][data] */
 	keylen = htobe64(key->size);
 	pkt = malloc(sizeof(lc_len_t) + key->size + val->size);
+	if (!pkt) return -1; /* ENOMEM - errno is set by malloc() */
 	memcpy(pkt, &keylen, sizeof(lc_len_t));
 	memcpy(pkt + sizeof(lc_len_t), key->data, key->size);
 	memcpy(pkt + sizeof(lc_len_t) + key->size, val->data, val->size);
