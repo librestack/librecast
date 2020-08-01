@@ -1,4 +1,4 @@
-.TH LC_CTX_NEW 3 2020-07-31 "LIBRECAST" "Librecast Programmer's Manual"
+.TH LC_CTX_NEW 3 2020-08-01 "LIBRECAST" "Librecast Programmer's Manual"
 .SH NAME
 lc_ctx_new \- create new Librecast context
 .SH SYNOPSIS
@@ -10,7 +10,9 @@ lc_ctx_new \- create new Librecast context
 Compile and link with \fI\-llibrecast\fP.
 .SH DESCRIPTION
 Create new Librecast context and set up environment.
-Call lc_ctx_free(3) when done.
+Call
+.BR lc_ctx_free (3)
+when done.
 .SH RETURN VALUE
 Returns a pointer to a 
 .I lc_ctx_t
@@ -42,4 +44,4 @@ lctx = lc_ctx_new();
 lc_ctx_free(lctx); /* free context when done */
 .EE
 .SH SEE ALSO
-lc_ctx_free(3)
+.BR lc_ctx_free (3)
