@@ -38,7 +38,7 @@ build:
 %.check: MEMCHECK = $(VALGRIND)
 %.check: FAIL = $(LEAK)
 %.check: %.test
-	@echo -e "check completed"
+	@echo "check completed"
 	@echo -e "    logfile:   " $(BOLD) $(LOGFILE) / $(LASTLOG) $(RESET)
 	@echo -e "    valgrind:  " $(BOLD) "$^.valgrind" $(RESET)
 
@@ -54,7 +54,7 @@ result:
 
 clean:
 	rm -f *.test *.o
-	@rm -f $(LOGFILE)
+	@rm -f $(LOGFILE) $(LASTLOG)
 
 realclean: clean
 	rm -f lsdb-test-????????.log* ????-????.test.valgrind

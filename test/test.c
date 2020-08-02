@@ -75,8 +75,16 @@ void test_log(char *msg, ...)
 	free(b);
 }
 
-void test_name(char *str)
+void test_name(char *str, ...)
 {
-	printf("%-70s", str);
-	test_log("  (%s)", str);
+	char *b;
+	va_list argp;
+	va_start(argp, str);
+	b = malloc(_vscprintf(str, argp) + 1);
+	vsprintf(b, str, argp);
+	printf("%-70s", b);
+	test_log("  (%s)", b);
+	va_end(argp);
+	free(b);
 }
+
