@@ -606,7 +606,8 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	lc_socket_t *sock, *p;
-	int s, i;
+	struct ifaddrs *ifa, *ifap;
+	int s, i = 1;
 
 	sock = calloc(1, sizeof(lc_socket_t));
 	if (!sock) return NULL;
@@ -625,8 +626,6 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 	sock->socket = s;
 	logmsg(LOG_DEBUG, "socket %i created with id %u", sock->socket, sock->id);
 
-	/* request ancilliary control data */
-	i = 1;
 	if (setsockopt(s, IPPROTO_IPV6, IPV6_RECVPKTINFO, &i, sizeof(i)) == -1)
 		goto setsockopt_err;
 	i = DEFAULT_MULTICAST_LOOP;
@@ -635,6 +634,20 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 	i = DEFAULT_MULTICAST_HOPS;
 	if (setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &i, sizeof(i)) == -1)
 		goto setsockopt_err;
+	if (getifaddrs(&ifa) == -1)
+		logmsg(LOG_DEBUG, "getifaddrs(): %s", strerror(errno));
+	else {
+		for (ifap = ifa; ifap; ifap = ifap->ifa_next) {
+			if ((ifap->ifa_flags & IFF_MULTICAST) != IFF_MULTICAST)
+				continue;
+			if (ifap->ifa_addr == NULL
+			||  ifap->ifa_addr->sa_family != AF_INET6)
+				continue;
+			i = if_nametoindex(ifap->ifa_name);
+			setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_IF, &i, sizeof(i));
+		}
+		freeifaddrs(ifa);
+	}
 	return sock;
 setsockopt_err:
 	close(s);
@@ -932,8 +945,12 @@ int lc_channel_join(lc_channel_t * channel)
 	}
 
 	for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
-		if (ifa->ifa_addr == NULL || ifa->ifa_addr->sa_family != AF_INET6) continue; /* only ipv6
-+*/
+		if ((ifa->ifa_flags & IFF_LOOPBACK) != IFF_LOOPBACK) {
+			if ((ifa->ifa_flags & IFF_MULTICAST) != IFF_MULTICAST
+			  || ifa->ifa_addr == NULL
+			  || ifa->ifa_addr->sa_family != AF_INET6)
+				continue;
+		}
 		req.ipv6mr_interface = if_nametoindex(ifa->ifa_name);
 		if (setsockopt(sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &req,
 					sizeof(req)) == 0)
@@ -1089,7 +1106,6 @@ ssize_t lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 
 	struct addrinfo *addr = channel->address;
 	int sock = channel->socket->socket;
-	int opt = 1;
 	lc_message_head_t *head = NULL;
 	char *buf = NULL;
 	size_t len = 0;
@@ -1118,18 +1134,15 @@ ssize_t lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 
 	len += sizeof(lc_message_head_t);
 
-	/* use tap iface if available */
-	opt = (channel->ctx->tapname) ? if_nametoindex(channel->ctx->tapname) : 0;
-	if (setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &opt,
-			sizeof(opt) == 0))
-	{
-		if (channel->ctx->tapname)
-			logmsg(LOG_DEBUG, "Sending on interface %s", channel->ctx->tapname);
-		else
-			logmsg(LOG_DEBUG, "Sending on default interface");
-		bytes = sendto(sock, buf, len, 0, addr->ai_addr, addr->ai_addrlen);
-		logmsg(LOG_DEBUG, "Sent %i bytes", (int)bytes);
+	errno = 0;
+	logmsg(LOG_DEBUG, "ai_addrlen: %zu", addr->ai_addrlen);
+	bytes = sendto(sock, buf, len, 0, addr->ai_addr, addr->ai_addrlen);
+	if (bytes == -1) {
+		logmsg(LOG_ERROR, "sendto(): '%s'", strerror(errno));
 	}
+	else
+		logmsg(LOG_DEBUG, "Sent %i bytes", (int)bytes);
+
 	free(head);
 	free(buf);
 
