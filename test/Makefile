@@ -27,6 +27,8 @@ build:
 	@echo -e "$(TIMESTAMP) - starting tests" >> $(LOGFILE)
 	@echo -e "\nRunning tests"
 
+0000-0019.test: LDFLAGS += -pthread
+
 %.test: %.c test.o
 	@$(CC) $(CFLAGS) -o $@ $< test.o $(LDFLAGS)
 	@echo -ne "\e[2m" $* " "
