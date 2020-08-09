@@ -1019,6 +1019,7 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 
 	logmsg(LOG_DEBUG, "recvmsg on sock = %i", sock->socket);
 	i = recv(sock->socket, NULL, 0, MSG_PEEK | MSG_TRUNC);
+	if (i == -1) return i;
 	logmsg(LOG_DEBUG, "%i bytes waiting to be read", i);
 
 	if (i > sizeof(lc_message_head_t)) {
@@ -1043,6 +1044,7 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 	err = errno;
 	if (i == -1) {
 		logmsg(LOG_DEBUG, "recvmsg ERROR: %s", strerror(err));
+		return i;
 	}
 	if (i > 0) {
 	        /* read header */
