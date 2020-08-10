@@ -413,6 +413,19 @@ void lc_ctx_free(lc_ctx_t *ctx)
 		close(ctx->fdtap);
 		if (ctx->db)
 			mdb_env_close(ctx->db);
+		void *h;
+		void *p = sock_list;
+		while (p) {
+			h = p;
+			p = ((lc_socket_t *)p)->next;
+			lc_socket_close(h);
+		}
+		p = chan_list;
+		while (p) {
+			h = p;
+			p = ((lc_channel_t *)p)->next;
+			lc_channel_free(h);
+		}
 		free(ctx);
 	}
 	ctx = NULL;
@@ -613,9 +626,14 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 	if (!sock) return NULL;
 	sock->ctx = ctx;
 	sock->id = ++sock_id;
-	for (p = sock_list; p != NULL; p = p->next) {
-		if (p->next == NULL)
-			p->next = sock;
+	if (!sock_list) sock_list = sock;
+	else {
+		for (p = sock_list; p; p = p->next) {
+			if (p->next == NULL) {
+				p->next = sock;
+				break;
+			}
+		}
 	}
 	s = socket(AF_INET6, SOCK_DGRAM, 0);
 	int err = errno;
@@ -768,12 +786,20 @@ void *lc_socket_listen_thread(void *arg)
 void lc_socket_close(lc_socket_t *sock)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
-	if (sock) {
-		lc_socket_listen_cancel(sock);
-		if (sock->socket)
-			close(sock->socket);
+	if (!sock) return;
+	lc_socket_listen_cancel(sock);
+	if (sock->socket)
+		close(sock->socket);
+	lc_socket_t *prev = NULL;
+	for (lc_socket_t *p = sock_list; p != NULL; p = p->next) {
+		if (p->id == sock->id) {
+			if (prev) prev->next = p->next;
+			else sock_list = p->next;
+		}
+		prev = p;
 	}
 	free(sock);
+	sock = NULL;
 }
 
 lc_channel_t * lc_channel_init(lc_ctx_t *ctx, char * grpaddr, char * service)
@@ -788,17 +814,14 @@ lc_channel_t * lc_channel_init(lc_ctx_t *ctx, char * grpaddr, char * service)
 		lc_error_log(LOG_ERROR, LC_ERROR_CTX_REQUIRED);
 		return NULL;
 	}
-
 	hints.ai_family = AF_INET6;
 	hints.ai_socktype = SOCK_DGRAM;
 	hints.ai_flags = AI_NUMERICHOST;
-
 	if (getaddrinfo(grpaddr, service, &hints, &addr) != 0) {
 		err = errno;
 		logmsg(LOG_ERROR, "getaddrinfo() failed: %s", strerror(err));
 		return NULL;
 	}
-
 	channel = calloc(1, sizeof(lc_channel_t));
 	channel->uri = NULL;
 	channel->ctx = ctx;
@@ -806,10 +829,7 @@ lc_channel_t * lc_channel_init(lc_ctx_t *ctx, char * grpaddr, char * service)
 	channel->seq = 0;
 	channel->rnd = 0;
 	channel->address = addr;
-
-	if (chan_list == NULL) {
-		chan_list = channel;
-	}
+	if (!chan_list) chan_list = channel;
 	else {
 		for (p = chan_list; p != NULL; p = p->next) {
 			if (p->next == NULL) {
@@ -818,7 +838,6 @@ lc_channel_t * lc_channel_init(lc_ctx_t *ctx, char * grpaddr, char * service)
 			}
 		}
 	}
-
 	return channel;
 }
 
@@ -1012,9 +1031,19 @@ int lc_channel_free(lc_channel_t * channel)
 	logmsg(LOG_TRACE, "%s", __func__);
 	if (channel == NULL)
 		return 0;
+	/* remove from chan_list */
+	lc_channel_t *prev = NULL;
+	for (lc_channel_t *p = chan_list; p != NULL; p = p->next) {
+		if (p->id == channel->id) {
+			if (prev) prev->next = p->next;
+			else chan_list = p->next;
+		}
+		prev = p;
+	}
 	if (channel->address != NULL)
 		freeaddrinfo(channel->address);
 	free(channel);
+	channel = NULL;
 	return 0;
 }
 
