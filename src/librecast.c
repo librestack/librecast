@@ -962,12 +962,10 @@ int lc_channel_join(lc_channel_t * channel)
 	}
 
 	for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
-		if ((ifa->ifa_flags & IFF_LOOPBACK) != IFF_LOOPBACK) {
-			if ((ifa->ifa_flags & IFF_MULTICAST) != IFF_MULTICAST
-			  || ifa->ifa_addr == NULL
-			  || ifa->ifa_addr->sa_family != AF_INET6)
-				continue;
-		}
+		if ((ifa->ifa_flags & IFF_MULTICAST) != IFF_MULTICAST
+		  || ifa->ifa_addr == NULL
+		  || ifa->ifa_addr->sa_family != AF_INET6)
+			continue;
 		req.ipv6mr_interface = if_nametoindex(ifa->ifa_name);
 		if (setsockopt(sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &req,
 					sizeof(req)) == 0)
