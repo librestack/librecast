@@ -15,6 +15,8 @@ typedef struct lc_ctx_t {
 	int fdtap;
 	char *tapname;
 	char *dbpath;
+	lc_socket_t *sock_list;
+	lc_channel_t *chan_list;
 } lc_ctx_t;
 
 typedef struct lc_socket_t {

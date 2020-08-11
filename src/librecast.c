@@ -37,8 +37,6 @@ uint32_t sock_id = 0;
 uint32_t chan_id = 0;
 
 lc_ctx_t *ctx_list = NULL;
-lc_socket_t *sock_list = NULL;
-lc_channel_t *chan_list = NULL;
 
 #define BUFSIZE 1500
 #define DEFAULT_ADDR "ff3e::"
@@ -414,13 +412,13 @@ void lc_ctx_free(lc_ctx_t *ctx)
 		if (ctx->db)
 			mdb_env_close(ctx->db);
 		void *h;
-		void *p = sock_list;
+		void *p = ctx->sock_list;
 		while (p) {
 			h = p;
 			p = ((lc_socket_t *)p)->next;
 			lc_socket_close(h);
 		}
-		p = chan_list;
+		p = ctx->chan_list;
 		while (p) {
 			h = p;
 			p = ((lc_channel_t *)p)->next;
@@ -626,9 +624,9 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 	if (!sock) return NULL;
 	sock->ctx = ctx;
 	sock->id = ++sock_id;
-	if (!sock_list) sock_list = sock;
+	if (!ctx->sock_list) ctx->sock_list = sock;
 	else {
-		for (p = sock_list; p; p = p->next) {
+		for (p = ctx->sock_list; p; p = p->next) {
 			if (p->next == NULL) {
 				p->next = sock;
 				break;
@@ -737,7 +735,7 @@ static void process_msg(lc_socket_call_t *sc, lc_message_t *msg)
 	msg->sockid = sc->sock->id;
 
 	/* update channel stats */
-	chan = lc_channel_by_address(msg->dstaddr);
+	chan = lc_channel_by_address(sc->sock->ctx, msg->dstaddr);
 	msg->chan = chan;
 	if (chan) {
 		chan->seq = (msg->seq > chan->seq) ? msg->seq + 1 : chan->seq + 1;
@@ -791,10 +789,10 @@ void lc_socket_close(lc_socket_t *sock)
 	if (sock->socket)
 		close(sock->socket);
 	lc_socket_t *prev = NULL;
-	for (lc_socket_t *p = sock_list; p != NULL; p = p->next) {
+	for (lc_socket_t *p = sock->ctx->sock_list; p != NULL; p = p->next) {
 		if (p->id == sock->id) {
 			if (prev) prev->next = p->next;
-			else sock_list = p->next;
+			else sock->ctx->sock_list = p->next;
 		}
 		prev = p;
 	}
@@ -829,9 +827,9 @@ lc_channel_t * lc_channel_init(lc_ctx_t *ctx, char * grpaddr, char * service)
 	channel->seq = 0;
 	channel->rnd = 0;
 	channel->address = addr;
-	if (!chan_list) chan_list = channel;
+	if (!ctx->chan_list) ctx->chan_list = channel;
 	else {
-		for (p = chan_list; p != NULL; p = p->next) {
+		for (p = ctx->chan_list; p != NULL; p = p->next) {
 			if (p->next == NULL) {
 				p->next = channel;
 				break;
@@ -896,13 +894,13 @@ int lc_channel_bind(lc_socket_t *sock, lc_channel_t * channel)
 	return 0;
 }
 
-lc_channel_t * lc_channel_by_address(char addr[INET6_ADDRSTRLEN])
+lc_channel_t * lc_channel_by_address(lc_ctx_t *lctx, char addr[INET6_ADDRSTRLEN])
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	lc_channel_t *p;
 	char dst[INET6_ADDRSTRLEN];
 
-	for (p = chan_list; p != NULL; p = p->next) {
+	for (p = lctx->chan_list; p != NULL; p = p->next) {
 		if ((getnameinfo(p->address->ai_addr, p->address->ai_addrlen, dst,
 				INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST)) != 0)
 		{
@@ -1033,10 +1031,10 @@ int lc_channel_free(lc_channel_t * channel)
 		return 0;
 	/* remove from chan_list */
 	lc_channel_t *prev = NULL;
-	for (lc_channel_t *p = chan_list; p != NULL; p = p->next) {
+	for (lc_channel_t *p = channel->ctx->chan_list; p != NULL; p = p->next) {
 		if (p->id == channel->id) {
 			if (prev) prev->next = p->next;
-			else chan_list = p->next;
+			else channel->ctx->chan_list = p->next;
 		}
 		prev = p;
 	}

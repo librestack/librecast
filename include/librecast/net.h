@@ -72,7 +72,7 @@ lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * url);
 int lc_channel_bind(lc_socket_t *sock, lc_channel_t * channel);
 
 /* find channel from address */
-lc_channel_t * lc_channel_by_address(char addr[INET6_ADDRSTRLEN]);
+lc_channel_t * lc_channel_by_address(lc_ctx_t *ctx, char addr[INET6_ADDRSTRLEN]);
 
 /* return librecast context for channel */
 lc_ctx_t *lc_channel_ctx(lc_channel_t *chan);
