@@ -839,7 +839,7 @@ lc_channel_t * lc_channel_init(lc_ctx_t *ctx, char * grpaddr, char * service)
 	return channel;
 }
 
-lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * uri)
+lc_channel_t * lc_channel_nnew(lc_ctx_t *ctx, char * uri, size_t len)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	lc_channel_t *channel;
@@ -850,7 +850,7 @@ lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * uri)
 		return NULL;
 	}
 
-	if ((lc_hashgroup(DEFAULT_ADDR, uri, strlen(uri), hashaddr, 0)) != 0)
+	if ((lc_hashgroup(DEFAULT_ADDR, uri, len, hashaddr, 0)) != 0)
 		return NULL;
 
 	logmsg(LOG_DEBUG, "channel group address: %s", hashaddr);
@@ -859,6 +859,11 @@ lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * uri)
 	channel->uri = uri;
 
 	return channel;
+}
+
+lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * uri)
+{
+	return lc_channel_nnew(ctx, uri, strlen(uri));
 }
 
 int lc_channel_bind(lc_socket_t *sock, lc_channel_t * channel)

@@ -66,6 +66,7 @@ void lc_socket_close(lc_socket_t *sock);
 lc_channel_t * lc_channel_init(lc_ctx_t *ctx, char * grpaddr, char * service);
 
 /* create a new channel handle from url */
+lc_channel_t * lc_channel_nnew(lc_ctx_t *ctx, char * uri, size_t len);
 lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * url);
 
 /* bind channel to socket */
