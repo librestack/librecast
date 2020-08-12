@@ -284,7 +284,7 @@ int lc_msg_id(lc_message_t *msg, unsigned char id[SHA_DIGEST_LENGTH])
 	return err;
 }
 
-int lc_hashgroup(char *baseaddr, char *groupname, char *hashaddr, unsigned int flags)
+int lc_hashgroup(char *baseaddr, char *groupname, size_t len, char *hashaddr, unsigned int flags)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	int i;
@@ -296,7 +296,7 @@ int lc_hashgroup(char *baseaddr, char *groupname, char *hashaddr, unsigned int f
 		c = malloc(sizeof(SHA_CTX));
 		if (!SHA1_Init(c))
 			return lc_error_log(LOG_ERROR, LC_ERROR_HASH_INIT);
-		if (!SHA1_Update(c, (unsigned char *)groupname, strlen(groupname)))
+		if (!SHA1_Update(c, (unsigned char *)groupname, len))
 			return lc_error_log(LOG_ERROR, LC_ERROR_HASH_UPDATE);
 		if (!SHA1_Update(c, &flags, sizeof(flags)))
 			return lc_error_log(LOG_ERROR, LC_ERROR_HASH_UPDATE);
@@ -850,9 +850,7 @@ lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * uri)
 		return NULL;
 	}
 
-	/* TODO: process url, extract port and address */
-
-	if ((lc_hashgroup(DEFAULT_ADDR, uri, hashaddr, 0)) != 0)
+	if ((lc_hashgroup(DEFAULT_ADDR, uri, strlen(uri), hashaddr, 0)) != 0)
 		return NULL;
 
 	logmsg(LOG_DEBUG, "channel group address: %s", hashaddr);

@@ -43,7 +43,7 @@ int lc_link_set(char *ifname, int flags);
 int lc_tap_create(char **ifname);
 
 /* create multicast group address from baseaddr and hash of groupname */
-int lc_hashgroup(char *baseaddr, char *groupname, char *hashaddr, unsigned int flags);
+int lc_hashgroup(char *baseaddr, char *groupname, size_t len, char *hashaddr, unsigned int flags);
 
 /* create librecast socket */
 lc_socket_t *lc_socket_new(lc_ctx_t *ctx);
