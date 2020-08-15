@@ -897,6 +897,11 @@ int lc_channel_bind(lc_socket_t *sock, lc_channel_t * channel)
 	return 0;
 }
 
+struct addrinfo * lc_channel_addrinfo(lc_channel_t * channel)
+{
+	return channel->address;
+}
+
 lc_channel_t * lc_channel_by_address(lc_ctx_t *lctx, char addr[INET6_ADDRSTRLEN])
 {
 	logmsg(LOG_TRACE, "%s", __func__);
@@ -1159,13 +1164,16 @@ ssize_t lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 	buf = calloc(1, sizeof(lc_message_head_t) + len);
 	memcpy(buf, head, sizeof(lc_message_head_t));
 	memcpy(buf + sizeof(lc_message_head_t), msg->data, len);
-
 	len += sizeof(lc_message_head_t);
 
 	errno = 0;
 	logmsg(LOG_DEBUG, "ai_addrlen: %zu", addr->ai_addrlen);
 	bytes = sendto(sock, buf, len, 0, addr->ai_addr, addr->ai_addrlen);
 	if (bytes == -1) {
+		char dst[INET6_ADDRSTRLEN];
+		getnameinfo(addr->ai_addr, addr->ai_addrlen, dst, INET6_ADDRSTRLEN,
+				NULL, 0, NI_NUMERICHOST);
+		logmsg(LOG_DEBUG, "sendto(): '%s'", dst);
 		logmsg(LOG_ERROR, "sendto(): '%s'", strerror(errno));
 	}
 	else
