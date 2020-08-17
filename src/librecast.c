@@ -617,7 +617,6 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	lc_socket_t *sock, *p;
-	struct ifaddrs *ifa, *ifap;
 	int s, i = 1;
 
 	sock = calloc(1, sizeof(lc_socket_t));
@@ -650,20 +649,6 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 	i = DEFAULT_MULTICAST_HOPS;
 	if (setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &i, sizeof(i)) == -1)
 		goto setsockopt_err;
-	if (getifaddrs(&ifa) == -1)
-		logmsg(LOG_DEBUG, "getifaddrs(): %s", strerror(errno));
-	else {
-		for (ifap = ifa; ifap; ifap = ifap->ifa_next) {
-			if ((ifap->ifa_flags & IFF_MULTICAST) != IFF_MULTICAST)
-				continue;
-			if (ifap->ifa_addr == NULL
-			||  ifap->ifa_addr->sa_family != AF_INET6)
-				continue;
-			i = if_nametoindex(ifap->ifa_name);
-			setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_IF, &i, sizeof(i));
-		}
-		freeifaddrs(ifa);
-	}
 	return sock;
 setsockopt_err:
 	close(s);
@@ -1123,6 +1108,69 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 	return i;
 }
 
+void lc_msg_sendto_error(int err, struct addrinfo *addr)
+{
+	char dst[INET6_ADDRSTRLEN];
+	getnameinfo(addr->ai_addr, addr->ai_addrlen, dst, INET6_ADDRSTRLEN,
+			NULL, 0, NI_NUMERICHOST);
+	logmsg(LOG_DEBUG, "sendto(): '%s'", dst);
+	logmsg(LOG_ERROR, "sendto(): '%s'", strerror(errno));
+}
+
+ssize_t lc_msg_sendto(int sock, const void *buf, size_t len, struct addrinfo *addr)
+{
+	ssize_t bytes;
+	errno = 0;
+	bytes = sendto(sock, buf, len, 0, addr->ai_addr, addr->ai_addrlen);
+	if (bytes == -1)
+		lc_msg_sendto_error(errno, addr);
+	else
+		logmsg(LOG_DEBUG, "%i bytes sent", (int)bytes);
+	return bytes;
+}
+
+ssize_t lc_msg_sendto_all(int sock, const void *buf, size_t len, struct addrinfo *addr)
+{
+	struct ifaddrs *ifa, *ifap;
+	ssize_t bytes = 0;
+	unsigned int *iface;
+	if (getifaddrs(&ifa) == -1) {
+		logmsg(LOG_DEBUG, "getifaddrs(): %s", strerror(errno));
+		bytes = -1;
+	}
+	else {
+		int i = 0, c = 0, duplicate = 0;
+		/* getifaddrs can give duplicate ifs => keep list and de-dupe */
+		for (ifap = ifa; ifap; ifap = ifap->ifa_next) c++;
+		iface = calloc(c, sizeof (unsigned int));
+		if (!iface) return -1; /* errno = ENOMEM set by calloc */
+		c = 0;
+		for (ifap = ifa; ifap; ifap = ifap->ifa_next) {
+			duplicate = 0;
+			if ((ifap->ifa_flags & IFF_MULTICAST) != IFF_MULTICAST)
+				continue;
+			if (ifap->ifa_addr == NULL
+			||  ifap->ifa_addr->sa_family != AF_INET6)
+				continue;
+			i = if_nametoindex(ifap->ifa_name);
+			for (int j = 0; j < c; j++) {
+				if (iface[j] == i) {
+					duplicate = 1;
+					break;
+				}
+			}
+			if (duplicate) continue;
+			iface[c++] = i;
+			setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &i, sizeof(i));
+			logmsg(LOG_DEBUG, "Sending on interface %s", ifap->ifa_name);
+			bytes = lc_msg_sendto(sock, buf, len, addr);
+		}
+		freeifaddrs(ifa);
+		free(iface);
+	}
+	return bytes;
+}
+
 ssize_t lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
@@ -1166,19 +1214,11 @@ ssize_t lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 	memcpy(buf + sizeof(lc_message_head_t), msg->data, len);
 	len += sizeof(lc_message_head_t);
 
-	errno = 0;
-	logmsg(LOG_DEBUG, "ai_addrlen: %zu", addr->ai_addrlen);
-	bytes = sendto(sock, buf, len, 0, addr->ai_addr, addr->ai_addrlen);
-	if (bytes == -1) {
-		char dst[INET6_ADDRSTRLEN];
-		getnameinfo(addr->ai_addr, addr->ai_addrlen, dst, INET6_ADDRSTRLEN,
-				NULL, 0, NI_NUMERICHOST);
-		logmsg(LOG_DEBUG, "sendto(): '%s'", dst);
-		logmsg(LOG_ERROR, "sendto(): '%s'", strerror(errno));
+	int i = (channel->ctx->tapname) ? if_nametoindex(channel->ctx->tapname) : 0;
+	if (setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &i, sizeof(i) == 0)) {
+		logmsg(LOG_DEBUG, "Sending on interface %s", channel->ctx->tapname);
+		bytes = lc_msg_sendto(sock, buf, len, addr);
 	}
-	else
-		logmsg(LOG_DEBUG, "Sent %i bytes", (int)bytes);
-
 	free(head);
 	free(buf);
 

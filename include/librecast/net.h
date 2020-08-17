@@ -111,6 +111,9 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg);
 /* send a message to a channel */
 ssize_t lc_msg_send(lc_channel_t *channel, lc_message_t *msg);
 
+ssize_t lc_msg_sendto(int sock, const void *buf, size_t len, struct addrinfo *addr);
+ssize_t lc_msg_sendto_all(int sock, const void *buf, size_t len, struct addrinfo *addr);
+
 /* join multicast group by address
  * src can be NULL for ASM mode, or a valid source address for SSM */
 int lc_joingroupbyaddr(unsigned char *addr, char *src);
