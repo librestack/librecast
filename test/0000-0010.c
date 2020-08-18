@@ -1,6 +1,5 @@
 #include "test.h"
 #include <librecast/net.h>
-#include "../src/errors.h"
 
 int main()
 {

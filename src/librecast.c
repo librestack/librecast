@@ -5,7 +5,6 @@
 #include "librecast_pvt.h"
 #include <librecast/net.h>
 #include <libbridge.h>
-#include "errors.h"
 #include "log.h"
 #include <assert.h>
 #include <arpa/inet.h>

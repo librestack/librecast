@@ -4,7 +4,6 @@
 #define _GNU_SOURCE
 #include "db.h"
 #include "librecast_pvt.h"
-#include "errors.h"
 #include "log.h"
 #include <librecast/net.h>
 #include <lmdb.h>

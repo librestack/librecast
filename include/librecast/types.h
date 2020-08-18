@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <stdint.h>
+#include <librecast/errors.h>
 
 #define LC_BRIDGE_NAME "lc0"
 #define LC_DATABASE_COUNT 32

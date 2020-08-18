@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "log.h"
-#include "errors.h"
+#include <librecast/errors.h>
 
 int lc_error_log(int level, int e)
 {

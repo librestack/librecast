@@ -1,7 +1,6 @@
 #include "test.h"
 #include <librecast/db.h>
 #include <librecast/net.h>
-#include "../src/errors.h"
 #include "../src/log.h"
 
 int main()

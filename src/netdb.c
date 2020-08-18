@@ -7,7 +7,6 @@
 #define _GNU_SOURCE
 #include <librecast/net.h>
 #include <librecast/netdb.h>
-#include "errors.h"
 #include "log.h"
 #include <stdlib.h>
 #include <string.h>
