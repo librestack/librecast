@@ -11,7 +11,7 @@ unsigned int LOG_LEVEL = 127;
 void logmsg(int level, char *msg, ...)
 {
 	va_list argp;
-	char *b;
+	char *b = NULL;
 	int cancelstate;
 
 	if ((LOG_LEVEL & level) != level) return;

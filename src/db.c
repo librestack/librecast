@@ -35,7 +35,7 @@ int lc_db_get(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void **val,
 		return lc_error_log(LOG_DEBUG, LC_ERROR_DB_REQUIRED);
 	if (key == NULL || klen < 1)
 		return lc_error_log(LOG_DEBUG, LC_ERROR_INVALID_PARAMS);
-
+	logmsg(LOG_DEBUG, "%s() using dbpath='%s'", __func__, ctx->dbpath);
 	env = ctx->db;
 	k.mv_data = key;
 	k.mv_size = klen;
@@ -81,7 +81,7 @@ int lc_db_set(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void *val, 
 		return lc_error_log(LOG_DEBUG, LC_ERROR_DB_REQUIRED);
 	if (key == NULL || klen < 1)
 		return lc_error_log(LOG_DEBUG, LC_ERROR_INVALID_PARAMS);
-
+	logmsg(LOG_DEBUG, "%s() using dbpath='%s'", __func__, ctx->dbpath);
 	env = ctx->db;
 	k.mv_data = key;
 	k.mv_size = klen;
@@ -93,6 +93,44 @@ int lc_db_set(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void *val, 
 	if (err != 0)
 		goto aborttxn;
 	E(mdb_put(txn, dbi, &k, &v, 0));
+	if (err != 0)
+		goto aborttxn;
+	RET(mdb_txn_commit(txn));
+
+	return err;
+aborttxn:
+	mdb_txn_abort(txn);
+	return err;
+}
+
+int lc_db_del(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void *val, size_t vlen)
+{
+	int err = 0;
+	MDB_txn *txn;
+	MDB_dbi dbi;
+	MDB_val k, v;
+	lc_ctx_db_t *env;
+
+	if (ctx == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_CTX_REQUIRED);
+	if (ctx->db == NULL)
+		return lc_error_log(LOG_DEBUG, LC_ERROR_DB_REQUIRED);
+	if (db == NULL)
+		return lc_error_log(LOG_DEBUG, LC_ERROR_DB_REQUIRED);
+	if (key == NULL || klen < 1)
+		return lc_error_log(LOG_DEBUG, LC_ERROR_INVALID_PARAMS);
+	logmsg(LOG_DEBUG, "%s() using dbpath='%s'", __func__, ctx->dbpath);
+	env = ctx->db;
+	k.mv_data = key;
+	k.mv_size = klen;
+	v.mv_data = val;
+	v.mv_size = vlen;
+
+	RET(mdb_txn_begin(env, NULL, 0, &txn));
+	E(mdb_dbi_open(txn, db, MDB_CREATE, &dbi));
+	if (err != 0)
+		goto aborttxn;
+	E(mdb_del(txn, dbi, &k, &v));
 	if (err != 0)
 		goto aborttxn;
 	RET(mdb_txn_commit(txn));

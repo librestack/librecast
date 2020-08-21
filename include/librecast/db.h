@@ -21,6 +21,9 @@ int lc_db_get(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void **val,
 /* set key/val in named database db */
 int lc_db_set(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void *val, size_t vlen);
 
+/* delete key/val in named database db */
+int lc_db_del(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void *val, size_t vlen);
+
 /* as lc_db_set(), respecting database modes  */
 int lc_db_set_mode(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void *val, size_t vlen, int mode);
 
