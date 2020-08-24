@@ -1191,7 +1191,8 @@ ssize_t lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 	size_t len = 0;
 	ssize_t bytes = 0;
 	struct timespec t;
-
+	int state = 0;
+	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &state);
 	head = calloc(1, sizeof(lc_message_head_t));
 	if (msg->timestamp != 0){
 		head->timestamp = htobe64(msg->timestamp);
@@ -1220,7 +1221,7 @@ ssize_t lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 	}
 	free(head);
 	free(buf);
-
+	pthread_setcancelstate(state, NULL);
 	return bytes;
 }
 
