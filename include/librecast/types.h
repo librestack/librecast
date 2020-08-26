@@ -77,7 +77,8 @@ typedef struct lc_message_t {
 	struct in6_addr src;
 	lc_seq_t seq;
 	lc_rnd_t rnd;
-	lc_len_t len;
+	lc_len_t len; /* byte length of message data */
+	size_t bytes; /* outer byte size of packet */
 	uint32_t sockid;
 	lc_opcode_t op;
 	lc_free_fn_t *free;

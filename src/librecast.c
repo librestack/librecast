@@ -749,6 +749,7 @@ void *lc_socket_listen_thread(void *arg)
 	while(1) {
 		len = lc_msg_recv(sc->sock, &msg);
 		if (len > 0) {
+			msg.bytes = len;
 			process_msg(sc, &msg);
 		}
 		if (len < 0) {
