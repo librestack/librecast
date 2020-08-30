@@ -1108,7 +1108,7 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 	return i;
 }
 
-void lc_msg_sendto_error(int err, struct addrinfo *addr)
+static void lc_msg_sendto_error(int err, struct addrinfo *addr)
 {
 	char dst[INET6_ADDRSTRLEN];
 	getnameinfo(addr->ai_addr, addr->ai_addrlen, dst, INET6_ADDRSTRLEN,
