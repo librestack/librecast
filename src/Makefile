@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (c) 2017-2020 Brett Sheffield <bacs@librecast.net>
 
-VERSION := 0.1.0
-ABIVERS := 0.1
+VERSION := 0.2.1
+ABIVERS := 0.2
 SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .c .o
