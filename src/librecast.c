@@ -1160,7 +1160,8 @@ ssize_t lc_msg_sendto_all(int sock, const void *buf, size_t len, struct addrinfo
 			}
 			if (duplicate) continue;
 			iface[c++] = i;
-			setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &i, sizeof(i));
+			if (!setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &i, sizeof(i)))
+				continue;
 			logmsg(LOG_DEBUG, "Sending on interface %s", ifap->ifa_name);
 			bytes = lc_msg_sendto(sock, buf, len, addr);
 		}
