@@ -652,7 +652,6 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 setsockopt_err:
 	close(s);
 socket_err:
-	p->next = NULL;
 	free(sock);
 	return NULL;
 }
