@@ -187,17 +187,24 @@ void *lc_msg_init(lc_message_t *msg)
 	return memset(msg, 0, sizeof(lc_message_t));
 }
 
+static void *_free(void *msg, void *hint)
+{
+	(void)hint;
+	free(msg);
+	return NULL;
+}
+
 int lc_msg_init_size(lc_message_t *msg, size_t len)
 {
 	lc_msg_init(msg);
 	if ((msg->data = malloc(len)) == NULL)
 		return -1;
 	msg->len = len;
-	msg->free = (void *)free;
+	msg->free = _free;
 	return 0;
 }
 
-int lc_msg_init_data(lc_message_t *msg, void *data, size_t len, void *f, void *hint)
+int lc_msg_init_data(lc_message_t *msg, void *data, size_t len, lc_free_fn_t *f, void *hint)
 {
 	lc_msg_init(msg);
 	msg->len = len;

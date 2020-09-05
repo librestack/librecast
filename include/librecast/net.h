@@ -18,7 +18,7 @@ void lc_ctx_free(lc_ctx_t *ctx);
 /* manage message structures */
 void *lc_msg_init(lc_message_t *msg);
 int lc_msg_init_size(lc_message_t *msg, size_t len);
-int lc_msg_init_data(lc_message_t *msg, void *data, size_t len, void *f, void *hint);
+int lc_msg_init_data(lc_message_t *msg, void *data, size_t len, lc_free_fn_t *f, void *hint);
 void lc_msg_free(void *msg);
 int lc_msg_get(lc_message_t *msg, lc_msg_attr_t attr, void **value);
 int lc_msg_set(lc_message_t *msg, lc_msg_attr_t attr, void *value);
