@@ -56,6 +56,10 @@ int lc_db_get(lc_ctx_t *ctx, const char *db, void *key, size_t klen, void **val,
 	}
 	else {
 		*val = malloc(v.mv_size);
+		if (*val == NULL) {
+			err = LC_ERROR_MALLOC;
+			goto aborttxn;
+		}
 		memcpy(*val, v.mv_data, v.mv_size);
 		*vlen = v.mv_size;
 	}
@@ -385,10 +389,25 @@ int lc_query_exec(lc_query_t *q, lc_messagelist_t **msglist)
 
 		/* copy message */
 		msg = calloc(1, sizeof(lc_messagelist_t));
+		if (msg == NULL) {
+			logmsg(LOG_DEBUG, "%s", strerror(errno));
+			break;
+		}
 		msg->hash = malloc(data.mv_size);
+		if (msg->hash == NULL) {
+			logmsg(LOG_DEBUG, "%s", strerror(errno));
+			free(msg);
+			break;
+		}
 		memcpy(msg->hash, data.mv_data, data.mv_size);
 		msg->timestamp = strtoumax(key.mv_data, NULL, 10);
 		msg->data = strndup(data_msg.mv_data, data_msg.mv_size);
+		if (msg->data == NULL) {
+			logmsg(LOG_DEBUG, "%s", strerror(errno));
+			free(msg->hash);
+			free(msg);
+			break;
+		}
 
 		/* append message to result list */
 		if (*msglist == NULL)
