@@ -134,6 +134,7 @@ int lc_link_set(char *ifname, int flags)
 	if ((err = ioctl(fd, SIOCGIFFLAGS, &ifr)) == -1) {
 		err = errno;
 		logmsg(LOG_ERROR, "ioctl failed: %s", strerror(err));
+		close(fd);
 		return LC_ERROR_IF_UP_FAIL;
 	}
 	logmsg(LOG_DEBUG, "setting flags for interface %s", ifr.ifr_name);
