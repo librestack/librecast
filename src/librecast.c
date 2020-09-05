@@ -170,6 +170,10 @@ int lc_tap_create(char **ifname)
 	}
 	logmsg(LOG_DEBUG, "created tap interface %s", ifr.ifr_name);
 	*ifname = strdup(ifr.ifr_name);
+	if (*ifname == NULL) {
+		lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
+		return -1;
+	}
 
 	/* bring interface up */
 	logmsg(LOG_DEBUG, "(librecast) bringing up interface %s", ifr.ifr_name);
@@ -274,7 +278,10 @@ int lc_msg_id(lc_message_t *msg, unsigned char id[SHA_DIGEST_LENGTH])
 	/* create hash from msg + src + timestamp */
 	SHA_CTX *c = NULL;
 	c = malloc(sizeof(SHA_CTX));
-	if (!SHA1_Init(c)) {
+	if (c == NULL) {
+		err = lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
+	}
+	else if (!SHA1_Init(c)) {
 		err = lc_error_log(LOG_ERROR, LC_ERROR_HASH_INIT);
 	}
 	else if (!SHA1_Update(c, msg->data, msg->len)) {
@@ -302,6 +309,8 @@ int lc_hashgroup(char *baseaddr, unsigned char *group, size_t len, char *hashadd
 
 	if (group) {
 		c = malloc(sizeof(SHA_CTX));
+		if (c == NULL)
+			return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
 		if (!SHA1_Init(c))
 			return lc_error_log(LOG_ERROR, LC_ERROR_HASH_INIT);
 		if (!SHA1_Update(c, (unsigned char *)group, len))
@@ -516,6 +525,10 @@ void lc_op_get(lc_socket_call_t *sc, lc_message_t *msg)
 
 	/* read requested value from database */
 	key = malloc(msg->len + 1);
+	if (key == NULL) {
+		lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
+		goto errexit;
+	}
 	memcpy(key, msg->data, msg->len);
 	key[msg->len] = '\0';
 	if ((err = lc_db_get(chan->ctx, chan->uri, key, msg->len, (void *)&val, &vlen)) != 0) {
@@ -526,6 +539,10 @@ void lc_op_get(lc_socket_call_t *sc, lc_message_t *msg)
 	/* send response with data (opcode: RET) */
 	/* [seq][rnd][data] */
 	pkt = malloc(vlen + sizeof(lc_seq_t) + sizeof(lc_rnd_t));
+	if (pkt == NULL) {
+		lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
+		goto errexit;
+	}
 	memcpy(pkt, &msg->seq, sizeof(lc_seq_t));
 	memcpy(pkt + sizeof(lc_seq_t), &msg->rnd, sizeof(lc_rnd_t));
 	memcpy(pkt + sizeof(lc_seq_t) + sizeof(lc_rnd_t), val, vlen);
@@ -536,7 +553,18 @@ void lc_op_get(lc_socket_call_t *sc, lc_message_t *msg)
 	/* DEBUG logging */
 	char *strkey, *strval;
 	strkey = strndup(key, msg->len);
+	if (strkey == NULL) {
+		lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
+		free(val);
+		goto errexit;
+	}
 	strval = strndup(val, vlen);
+	if (strval == NULL) {
+		lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
+		free(val);
+		free(strkey);
+		goto errexit;
+	}
 	logmsg(LOG_DEBUG, "getting key '%s' on channel '%s' == '%s'", strkey, chan->uri, strval);
 	free(strkey);
 	free(strval);
