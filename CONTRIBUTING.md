@@ -16,7 +16,7 @@ This is a small project, so I don't want to get bogged down in too much formalit
 
   A patch SHALL NOT include non-trivial code from other projects unless the Contributor is the original author of that code.
 
-  A patch MUST compile cleanly and pass project self-tests on at least the principle target platform.
+  A patch MUST compile cleanly and pass project self-tests on at least the principal target platform.
 
   A patch commit message SHOULD consist of a single short (less than 50 character) line summarizing the change, optionally followed by a blank line and then a more thorough description.
 
