@@ -329,9 +329,9 @@ lc_ctx_t * lc_ctx_new(void)
 	logmsg(LOG_TRACE, "%s", __func__);
 	lc_ctx_t *ctx, *p;
 
-	lc_getrandom(&ctx_id, sizeof(ctx_id), 0);
-	lc_getrandom(&sock_id, sizeof(sock_id), 0);
-	lc_getrandom(&chan_id, sizeof(chan_id), 0);
+	lc_getrandom(&ctx_id, sizeof(ctx_id));
+	lc_getrandom(&sock_id, sizeof(sock_id));
+	lc_getrandom(&chan_id, sizeof(chan_id));
 
 	/* create bridge */
 	if ((lc_bridge_init()) != 0)
@@ -448,8 +448,9 @@ void lc_op_data(lc_socket_call_t *sc, lc_message_t *msg)
 
 void lc_op_ping(lc_socket_call_t *sc, lc_message_t *msg)
 {
-	logmsg(LOG_TRACE, "%s", __func__);
+	(void) sc;
 	int opt;
+	logmsg(LOG_TRACE, "%s", __func__);
 
 	/* received PING, echo PONG back to same channel */
 	opt = LC_OP_PONG;
@@ -474,6 +475,7 @@ void lc_op_pong(lc_socket_call_t *sc, lc_message_t *msg)
 
 void lc_op_get(lc_socket_call_t *sc, lc_message_t *msg)
 {
+	(void) sc;
 	logmsg(LOG_TRACE, "%s", __func__);
 
 	lc_channel_t *chan;
@@ -608,6 +610,8 @@ void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
 
 void lc_op_del(lc_socket_call_t *sc, lc_message_t *msg)
 {
+	(void)sc;
+	(void)msg;
 	logmsg(LOG_TRACE, "%s", __func__);
 
 	/* TODO */
@@ -1039,7 +1043,7 @@ int lc_channel_free(lc_channel_t * channel)
 ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
-	int i = 0, err = 0;
+	ssize_t i = 0, err = 0;
 	struct iovec iov[2];
 	struct msghdr msgh;
 	char buf[sizeof(lc_message_head_t)];
@@ -1057,7 +1061,7 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 	if (i == -1) return i;
 	logmsg(LOG_DEBUG, "%i bytes waiting to be read", i);
 
-	if (i > sizeof(lc_message_head_t)) {
+	if ((size_t)i > sizeof(lc_message_head_t)) {
 		err = lc_msg_init_size(msg, i - sizeof(lc_message_head_t));
 		if (err) return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
 	}
@@ -1110,6 +1114,7 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 
 static void lc_msg_sendto_error(int err, struct addrinfo *addr)
 {
+	(void)err;
 	char dst[INET6_ADDRSTRLEN];
 	getnameinfo(addr->ai_addr, addr->ai_addrlen, dst, INET6_ADDRSTRLEN,
 			NULL, 0, NI_NUMERICHOST);
@@ -1139,7 +1144,8 @@ ssize_t lc_msg_sendto_all(int sock, const void *buf, size_t len, struct addrinfo
 		bytes = -1;
 	}
 	else {
-		int i = 0, c = 0, duplicate = 0;
+		int c = 0, duplicate = 0;
+		unsigned int i = 0;
 		/* getifaddrs can give duplicate ifs => keep list and de-dupe */
 		for (ifap = ifa; ifap; ifap = ifap->ifa_next) c++;
 		iface = calloc(c, sizeof (unsigned int));
@@ -1204,7 +1210,7 @@ ssize_t lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 	}
 	logmsg(LOG_DEBUG, "nanostamp: %"PRIu64"", be64toh(head->timestamp));
 	head->seq = htobe64(++channel->seq);
-	lc_getrandom(&head->rnd, sizeof(lc_rnd_t), 0);
+	lc_getrandom(&head->rnd, sizeof(lc_rnd_t));
 	head->len = htobe64(msg->len);
 	head->op = msg->op;
 	len = msg->len;
@@ -1227,11 +1233,11 @@ ssize_t lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 	return bytes;
 }
 
-int lc_getrandom(void *buf, size_t buflen, unsigned int flags)
+int lc_getrandom(void *buf, size_t buflen)
 {
 	int fd;
 	int err = 0;
-	size_t len;
+	ssize_t len;
 
 	if ((fd = open("/dev/urandom", O_RDONLY)) == -1)
 		return lc_error_log(LOG_ERROR, LC_ERROR_RANDOM_OPEN);

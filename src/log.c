@@ -8,7 +8,7 @@
 
 unsigned int LOG_LEVEL = 127;
 
-void logmsg(int level, char *msg, ...)
+void logmsg(unsigned int level, char *msg, ...)
 {
 	va_list argp;
 	char *b = NULL;

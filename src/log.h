@@ -19,6 +19,6 @@ enum {
 
 extern unsigned int LOG_LEVEL;
 
-void logmsg(int level, char *msg, ...);
+void logmsg(unsigned int level, char *msg, ...);
 
 #endif /* __LIBRECAST_LOG_H__ */
