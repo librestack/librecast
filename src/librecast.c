@@ -1067,7 +1067,7 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 	logmsg(LOG_DEBUG, "recvmsg on sock = %i", sock->socket);
 	i = recv(sock->socket, NULL, 0, MSG_PEEK | MSG_TRUNC);
 	if (i == -1) return i;
-	logmsg(LOG_DEBUG, "%i bytes waiting to be read", i);
+	logmsg(LOG_DEBUG, "%zd bytes waiting to be read", i);
 
 	if ((size_t)i > sizeof(lc_message_head_t)) {
 		err = lc_msg_init_size(msg, i - sizeof(lc_message_head_t));
