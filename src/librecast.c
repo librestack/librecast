@@ -584,8 +584,8 @@ void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
 	vlen = msg->len - klen - sizeof(lc_len_t);
 	key = malloc(klen);
 	val = malloc(vlen);
-	memcpy(key, msg->data + sizeof(lc_len_t), klen);
-	memcpy(val, msg->data + sizeof(lc_len_t) + klen, vlen);
+	memcpy(key, (char *)msg->data + sizeof(lc_len_t), klen);
+	memcpy(val, (char *)msg->data + sizeof(lc_len_t) + klen, vlen);
 
 	/* DEBUG logging */
 	char *strkey, *strval;
