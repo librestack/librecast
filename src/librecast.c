@@ -677,7 +677,7 @@ int lc_socket_listen(lc_socket_t *sock, void (*callback_msg)(lc_message_t*),
 					void (*callback_err)(int))
 {
 	logmsg(LOG_TRACE, "%s", __func__);
-	pthread_attr_t attr = {};
+	pthread_attr_t attr = {0};
 	lc_socket_call_t *sc;
 
 	if (sock == NULL)
