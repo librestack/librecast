@@ -37,7 +37,7 @@ int lc_channel_setval(lc_channel_t *chan, lc_val_t *key, lc_val_t *val)
 	logmsg(LOG_TRACE, "%s", __func__);
 	lc_message_t msg;
 	lc_len_t keylen;
-	void *pkt;
+	char *pkt;
 	ssize_t err = 0;
 
 	if (chan == NULL)
