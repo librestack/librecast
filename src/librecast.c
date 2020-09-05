@@ -591,14 +591,36 @@ void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
 	klen = be64toh(klen);
 	vlen = msg->len - klen - sizeof(lc_len_t);
 	key = malloc(klen);
+	if (key == NULL) {
+		lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
+		return;
+	}
 	val = malloc(vlen);
+	if (val == NULL) {
+		lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
+		free(key);
+		return;
+	}
 	memcpy(key, (char *)msg->data + sizeof(lc_len_t), klen);
 	memcpy(val, (char *)msg->data + sizeof(lc_len_t) + klen, vlen);
 
 	/* DEBUG logging */
 	char *strkey, *strval;
 	strkey = strndup(key, klen);
+	if (strkey == NULL) {
+		lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
+		free(key);
+		free(val);
+		return;
+	}
 	strval = strndup(val, vlen);
+	if (strval == NULL) {
+		lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
+		free(key);
+		free(val);
+		free(strkey);
+		return;
+	}
 	logmsg(LOG_DEBUG, "setting key '%s' on channel '%s' to '%s'", strkey, chan->uri, strval);
 	free(strkey);
 	free(strval);
@@ -694,6 +716,8 @@ int lc_socket_listen(lc_socket_t *sock, void (*callback_msg)(lc_message_t*),
 		return lc_error_log(LOG_DEBUG, LC_ERROR_SOCKET_LISTENING);
 
 	sc = calloc(1, sizeof(lc_socket_call_t));
+	if (sc == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
 	sc->sock = sock;
 	sc->callback_msg = callback_msg;
 	sc->callback_err = callback_err;
@@ -818,6 +842,11 @@ lc_channel_t * lc_channel_init(lc_ctx_t *ctx, char * grpaddr, char * service)
 		return NULL;
 	}
 	channel = calloc(1, sizeof(lc_channel_t));
+	if (channel == NULL) {
+		logmsg(LOG_ERROR, "calloc() failed: %s", strerror(errno));
+		freeaddrinfo(addr);
+		return NULL;
+	}
 	channel->uri = NULL;
 	channel->ctx = ctx;
 	channel->id = ++chan_id;
@@ -1210,6 +1239,8 @@ ssize_t lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 	int state = 0;
 	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &state);
 	head = calloc(1, sizeof(lc_message_head_t));
+	if (head == NULL)
+		return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
 	if (msg->timestamp != 0){
 		head->timestamp = htobe64(msg->timestamp);
 	}
@@ -1226,6 +1257,10 @@ ssize_t lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 	logmsg(LOG_DEBUG, "sending message with OPCODE %i", msg->op);
 
 	buf = calloc(1, sizeof(lc_message_head_t) + len);
+	if (buf == NULL) {
+		free(head);
+		return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
+	}
 	memcpy(buf, head, sizeof(lc_message_head_t));
 	memcpy(buf + sizeof(lc_message_head_t), msg->data, len);
 	len += sizeof(lc_message_head_t);
