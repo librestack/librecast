@@ -190,10 +190,8 @@ void *lc_msg_init(lc_message_t *msg)
 int lc_msg_init_size(lc_message_t *msg, size_t len)
 {
 	lc_msg_init(msg);
-	if ((msg->data = malloc(len)) == NULL) {
-		errno = ENOMEM;
+	if ((msg->data = malloc(len)) == NULL)
 		return -1;
-	}
 	msg->len = len;
 	msg->free = (void *)free;
 	return 0;
