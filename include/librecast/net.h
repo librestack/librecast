@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
-/* Copyright (c) 2017-2020 Brett Sheffield <bacs@librecast.net> */
+/* Copyright (c) 2017-2021 Brett Sheffield <bacs@librecast.net> */
 /* librecast/net.h - librecast network API */
 
 #ifndef _LIBRECAST_NET_H
@@ -41,6 +41,9 @@ int lc_bridge_new(char *brname);
 int lc_bridge_add_interface(const char *brname, const char *ifname);
 int lc_link_set(char *ifname, int flags);
 int lc_tap_create(char **ifname);
+
+/* copy a channel into ctx */
+lc_channel_t * lc_channel_copy(lc_ctx_t *ctx, lc_channel_t *chan);
 
 /* create multicast group address from baseaddr and hash of groupname */
 int lc_hashgroup(char *baseaddr, unsigned char *group, size_t len, char *hashaddr, unsigned int flags);

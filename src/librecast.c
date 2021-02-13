@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
-/* Copyright (c) 2017-2020 Brett Sheffield <bacs@librecast.net> */
+/* Copyright (c) 2017-2021 Brett Sheffield <bacs@librecast.net> */
 
 #define _GNU_SOURCE
 #include "librecast_pvt.h"
@@ -849,10 +849,40 @@ void lc_socket_close(lc_socket_t *sock)
 	sock = NULL;
 }
 
+static lc_channel_t * lc_channel_ins(lc_ctx_t *ctx, lc_channel_t *chan)
+{
+	lc_channel_t *p;
+	if (!ctx->chan_list) ctx->chan_list = chan;
+	else {
+		for (p = ctx->chan_list; p != NULL; p = p->next) {
+			if (p->next == NULL) {
+				p->next = chan;
+				break;
+			}
+		}
+	}
+	return chan;
+}
+
+static void lc_channel_setid(lc_channel_t *chan)
+{
+	chan->id = ++chan_id;
+}
+
+lc_channel_t * lc_channel_copy(lc_ctx_t *ctx, lc_channel_t *chan)
+{
+	lc_channel_t *copy = calloc(1, sizeof(lc_channel_t));
+	copy->ctx = ctx;
+	lc_channel_setid(copy);
+	copy->address = malloc(sizeof(struct addrinfo));
+	memcpy(copy->address, chan->address, sizeof(struct addrinfo));
+	return lc_channel_ins(ctx, copy);
+}
+
 lc_channel_t * lc_channel_init(lc_ctx_t *ctx, char * grpaddr, char * service)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
-	lc_channel_t *channel, *p;
+	lc_channel_t *channel;
 	struct addrinfo *addr = NULL;
 	struct addrinfo hints = {0};
 	int err = 0;
@@ -875,22 +905,10 @@ lc_channel_t * lc_channel_init(lc_ctx_t *ctx, char * grpaddr, char * service)
 		freeaddrinfo(addr);
 		return NULL;
 	}
-	channel->uri = NULL;
 	channel->ctx = ctx;
-	channel->id = ++chan_id;
-	channel->seq = 0;
-	channel->rnd = 0;
+	lc_channel_setid(channel);
 	channel->address = addr;
-	if (!ctx->chan_list) ctx->chan_list = channel;
-	else {
-		for (p = ctx->chan_list; p != NULL; p = p->next) {
-			if (p->next == NULL) {
-				p->next = channel;
-				break;
-			}
-		}
-	}
-	return channel;
+	return lc_channel_ins(ctx, channel);
 }
 
 lc_channel_t * lc_channel_nnew(lc_ctx_t *ctx, unsigned char *uri, size_t len)
