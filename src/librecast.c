@@ -6,6 +6,7 @@
 #include <librecast/net.h>
 #include <libbridge.h>
 #include "log.h"
+#include "macro.h"
 #include <assert.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -936,6 +937,16 @@ lc_channel_t * lc_channel_nnew(lc_ctx_t *ctx, unsigned char *uri, size_t len)
 lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * uri)
 {
 	return lc_channel_nnew(ctx, (unsigned char *)uri, strlen(uri));
+}
+
+lc_channel_t * lc_channel_sideband(lc_channel_t *base, uint64_t band)
+{
+	lc_ctx_t *ctx = base->ctx;
+	lc_channel_t *side = lc_channel_copy(ctx, base);
+	struct in6_addr *in = aitoin6(side->address);
+	uint64_t *ptr = (uint64_t *)&in->s6_addr[8];
+	*ptr = band;
+	return side;
 }
 
 int lc_channel_bind(lc_socket_t *sock, lc_channel_t * channel)

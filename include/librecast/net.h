@@ -48,6 +48,9 @@ lc_channel_t * lc_channel_copy(lc_ctx_t *ctx, lc_channel_t *chan);
 /* create multicast group address from baseaddr and hash of groupname */
 int lc_hashgroup(char *baseaddr, unsigned char *group, size_t len, char *hashaddr, unsigned int flags);
 
+/* create side band channel from base channel by replacing lower 64 bits with band */
+lc_channel_t * lc_channel_sideband(lc_channel_t *base, uint64_t band);
+
 /* create librecast socket */
 lc_socket_t *lc_socket_new(lc_ctx_t *ctx);
 
