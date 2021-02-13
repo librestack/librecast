@@ -873,9 +873,14 @@ static void lc_channel_setid(lc_channel_t *chan)
 lc_channel_t * lc_channel_copy(lc_ctx_t *ctx, lc_channel_t *chan)
 {
 	lc_channel_t *copy = calloc(1, sizeof(lc_channel_t));
+	if (!copy) return NULL;
 	copy->ctx = ctx;
 	lc_channel_setid(copy);
 	copy->address = malloc(sizeof(struct addrinfo));
+	if (!copy->address) {
+		free(copy);
+		return NULL;
+	}
 	memcpy(copy->address, chan->address, sizeof(struct addrinfo));
 	return lc_channel_ins(ctx, copy);
 }
@@ -943,6 +948,7 @@ lc_channel_t * lc_channel_sideband(lc_channel_t *base, uint64_t band)
 {
 	lc_ctx_t *ctx = base->ctx;
 	lc_channel_t *side = lc_channel_copy(ctx, base);
+	if (!side) return NULL;
 	struct in6_addr *in = aitoin6(side->address);
 	uint64_t *ptr = (uint64_t *)&in->s6_addr[8];
 	*ptr = band;
