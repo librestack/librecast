@@ -6,7 +6,7 @@ ABIVERS := 0.3
 SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .c .o
-CFLAGS += -Wall -Werror -Wextra -Wpedantic -g -I ../include
+CFLAGS += -Wall -Wextra -Wpedantic -g -I ../include
 HEADERS = ../include/$(LIBNAME).h $(wildcard ../include/$(LIBNAME)/*.h)
 LIBNAME := librecast
 INSTALL ?= install
