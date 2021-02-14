@@ -39,10 +39,6 @@ uint32_t chan_id = 0;
 
 lc_ctx_t *ctx_list = NULL;
 
-#define BUFSIZE 1500
-#define DEFAULT_ADDR "ff3e::"
-#define DEFAULT_PORT "4242"
-
 /* socket listener thread */
 void *lc_socket_listen_thread(void *sc);
 
