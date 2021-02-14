@@ -677,7 +677,7 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	lc_socket_t *sock, *p;
-	int s, i = 1;
+	int s, i;
 
 	sock = calloc(1, sizeof(lc_socket_t));
 	if (!sock) return NULL;
@@ -701,6 +701,13 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 	sock->socket = s;
 	logmsg(LOG_DEBUG, "socket %i created with id %u", sock->socket, sock->id);
 
+#ifdef IPV6_MULTICAST_ALL
+	/* available in Linux 4.2 onwards */
+	i = 0;
+	if (setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_ALL, &i, sizeof(i)) == -1)
+		goto setsockopt_err;
+#endif
+	i = 1;
 	if (setsockopt(s, IPPROTO_IPV6, IPV6_RECVPKTINFO, &i, sizeof(i)) == -1)
 		goto setsockopt_err;
 	i = DEFAULT_MULTICAST_LOOP;
