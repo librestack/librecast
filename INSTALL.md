@@ -2,10 +2,12 @@
 
 ## Prerequisites
 
-libbridge from bridge-utils
+* openssl
+* libsodium
+* libbridge from bridge-utils
 
 ```
-I've turned this into a shared library.  Install as follows:
+I've turned libbridge into a shared library.  Install as follows:
 git clone https://github.com/brettsheffield/bridge-utils
 cd bridge-utils
 autoconf

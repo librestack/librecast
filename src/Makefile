@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (c) 2017-2020 Brett Sheffield <bacs@librecast.net>
+# Copyright (c) 2017-2021 Brett Sheffield <bacs@librecast.net>
 
 VERSION := 0.3.0
 ABIVERS := 0.3
@@ -15,8 +15,8 @@ INSTALL_DATA := $(INSTALL) -m 644
 PREFIX ?= /usr/local
 LIBDIR := $(DESTDIR)$(PREFIX)/lib
 INCLUDEDIR := $(DESTDIR)$(PREFIX)/include
-LIBS := -pthread -lpthread -lbridge -lcrypto -llmdb
-OBJECTS := errors.o log.o misc.o
+LIBS := -pthread -lpthread -lbridge -lcrypto -llmdb -lsodium
+OBJECTS := errors.o hash.o log.o misc.o
 SOFILES := liblibrecast.so liblcdb.so liblsdb.so
 SOVFILES := $(foreach f,$(SOFILES),$f.$(VERSION))
 ABIFILES := $(foreach f,$(SOFILES),$f.$(ABIVERS))

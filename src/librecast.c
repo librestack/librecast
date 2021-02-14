@@ -5,6 +5,7 @@
 #include "librecast_pvt.h"
 #include <librecast/net.h>
 #include <libbridge.h>
+#include "hash.h"
 #include "log.h"
 #include "macro.h"
 #include <assert.h>
@@ -876,12 +877,12 @@ lc_channel_t * lc_channel_copy(lc_ctx_t *ctx, lc_channel_t *chan)
 	if (!copy) return NULL;
 	copy->ctx = ctx;
 	lc_channel_setid(copy);
-	copy->address = malloc(sizeof(struct addrinfo));
-	if (!copy->address) {
+	if (getaddrinfo(chan->address->ai_canonname, "0", chan->address, &copy->address)) {
+		perror("getaddrinfo()");
 		free(copy);
 		return NULL;
 	}
-	memcpy(copy->address, chan->address, sizeof(struct addrinfo));
+	memcpy(copy->address->ai_addr, chan->address->ai_addr, sizeof(struct sockaddr_in6));
 	return lc_channel_ins(ctx, copy);
 }
 
@@ -942,6 +943,19 @@ lc_channel_t * lc_channel_nnew(lc_ctx_t *ctx, unsigned char *uri, size_t len)
 lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * uri)
 {
 	return lc_channel_nnew(ctx, (unsigned char *)uri, strlen(uri));
+}
+
+lc_channel_t * lc_channel_sidehash(lc_channel_t *base, unsigned char *key, size_t keylen)
+{
+	struct in6_addr *in;
+	unsigned char *ptr;
+	lc_ctx_t *ctx = base->ctx;
+	lc_channel_t *side = lc_channel_copy(ctx, base);
+	if (!side) return NULL;
+	in = aitoin6(side->address);
+	ptr = (unsigned char *)&in->s6_addr[2];
+	hash_generic_key(ptr, 14, (unsigned char *)in, sizeof(struct in6_addr), key, keylen);
+	return side;
 }
 
 lc_channel_t * lc_channel_sideband(lc_channel_t *base, uint64_t band)
