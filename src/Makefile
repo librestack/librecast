@@ -22,7 +22,6 @@ SOVFILES := $(foreach f,$(SOFILES),$f.$(VERSION))
 ABIFILES := $(foreach f,$(SOFILES),$f.$(ABIVERS))
 
 all: $(SOFILES)
-	$(LDCONFIG) -n ./
 
 liblibrecast.so: librecast.o $(OBJECTS)
 	$(CC) -shared -Wl,-soname,liblibrecast.so.$(ABIVERS) -o $@ $^ $(LIBS)
