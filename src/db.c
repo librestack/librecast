@@ -6,6 +6,7 @@
 #include "librecast_pvt.h"
 #include "log.h"
 #include <librecast/net.h>
+#include <inttypes.h>
 #include <lmdb.h>
 #include <stdio.h>
 #include <stdlib.h>
