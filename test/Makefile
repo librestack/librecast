@@ -1,9 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (c) 2017-2020 Brett Sheffield <bacs@librecast.net>
+# Copyright (c) 2017-2021 Brett Sheffield <bacs@librecast.net>
 
 SHELL := /bin/bash
 CFLAGS += -Wall -g -I ../include
-LDFLAGS := -L../src -llibrecast -llcdb -llsdb
+NOTOBJS := ../src/$(PROGRAM).o
+OBJS := test.o $(filter-out $(NOTOBJS), $(wildcard ../src/*.o))
+LIBRARY_PATH := ../src
+LDFLAGS := -L$(LIBRARY_PATH) -llibrecast -llcdb -llsdb
 BOLD := "\\e[0m\\e[2m"
 RESET := "\\e[0m"
 PASS = "\\e[0m\\e[32mOK\\e[0m" # end bold, green text
@@ -24,16 +27,17 @@ test: clean build $(shell echo ????-????.c | sed 's/\.c/\.test/g') result
 
 build:
 	cd ../src && $(MAKE)
+	ldconfig -n $(LIBRARY_PATH)
 	@echo -e "$(TIMESTAMP) - starting tests" >> $(LOGFILE)
 	@echo -e "\nRunning tests"
 
 0000-0019.test: LDFLAGS += -pthread
 
-%.test: %.c test.o
+%.test: %.c $(OBJS)
 	@$(CC) $(CFLAGS) -o $@ $< test.o $(LDFLAGS)
 	@echo -ne "\e[2m" $* " "
 	@echo -ne "\n== $@" >> $(LOGFILE)
-	@LD_LIBRARY_PATH=../src $(MEMCHECK) ./$@ 2>> $(LOGFILE) && echo -e " $(PASS)" || echo -e " $(FAIL)"
+	@LD_LIBRARY_PATH=$(LIBRARY_PATH) $(MEMCHECK) ./$@ 2>> $(LOGFILE) && echo -e " $(PASS)" || echo -e " $(FAIL)"
 	@ln -sf $(LOGFILE) $(LASTLOG)
 	@$(eval tests_run=$(shell echo $$(($(tests_run)+1))))
 
