@@ -62,7 +62,8 @@
 	X(55, LC_ERROR_THREAD_CANCEL,      "Failed to cancel thread") \
 	X(56, LC_ERROR_THREAD_JOIN,        "Failed to join thread") \
 	X(57, LC_ERROR_INVALID_OPCODE,     "Invalid opcode") \
-	X(58, LC_ERROR_QUERY_REQUIRED,     "Librecast query required for this operation")
+	X(58, LC_ERROR_QUERY_REQUIRED,     "Librecast query required for this operation") \
+	X(59, LC_ERROR_SETSOCKOPT,         "Unable to set socket option")
 #undef X
 
 #define LC_ERROR_MSG(code, name, msg) case code: return msg;

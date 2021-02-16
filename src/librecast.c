@@ -1044,20 +1044,40 @@ int lc_channel_unbind(lc_channel_t * channel)
 	return 0;
 }
 
-int lc_channel_join(lc_channel_t * channel)
+static int lc_channel_membership(int sock, int opt, struct ipv6_mreq *req)
 {
-	logmsg(LOG_TRACE, "%s", __func__);
+	struct ifaddrs *ifaddr, *ifa = NULL;
+	int rc = LC_ERROR_MCAST_JOIN;
 
-	struct ipv6_mreq req;
-	struct ifaddrs *ifaddr, *ifa;
-	int sock;
+	if (getifaddrs(&ifaddr) == -1) {
+		req->ipv6mr_interface = 0; /* default interface */
+		if (!setsockopt(sock, IPPROTO_IPV6, opt, req, sizeof(req)))
+			return LC_ERROR_SETSOCKOPT;
+		return 0;
+	}
+	for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
+		if (!(ifa->ifa_flags & IFF_MULTICAST)) continue;
+		if (!ifa->ifa_addr) continue;
+		if (ifa->ifa_addr->sa_family != AF_INET6) continue;
+		req->ipv6mr_interface = if_nametoindex(ifa->ifa_name);
+		if (!req->ipv6mr_interface) continue;
+		if (!setsockopt(sock, IPPROTO_IPV6, opt, req, sizeof(struct ipv6_mreq))) {
+			rc = 0; /* report success if we joined anything */
+		}
+	}
+	freeifaddrs(ifaddr);
+
+	return rc;
+}
+
+static int lc_channel_action(lc_channel_t * channel, int opt)
+{
+	struct ipv6_mreq req = {0};
 	struct addrinfo *addr;
-	int joins = 0;
+	int sock;
 
-	if (channel == NULL)
-		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
-	if (channel->socket == NULL)
-		return lc_error_log(LOG_ERROR, LC_ERROR_SOCKET_REQUIRED);
+	if(!channel) return LC_ERROR_CHANNEL_REQUIRED;
+	if(!channel->socket) return LC_ERROR_SOCKET_REQUIRED;
 
 	sock = channel->socket->socket;
 	addr = channel->address;
@@ -1066,56 +1086,17 @@ int lc_channel_join(lc_channel_t * channel)
 		&((struct sockaddr_in6*)(addr->ai_addr))->sin6_addr,
 		sizeof(req.ipv6mr_multiaddr));
 
-	if (getifaddrs(&ifaddr) == -1) {
-		logmsg(LOG_DEBUG, "Failed to get interface list; using default");
-		req.ipv6mr_interface = 0; /* default interface */
-		if (setsockopt(sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &req, sizeof(req)) != 0)
-			goto join_fail;
-		logmsg(LOG_DEBUG, "Multicast join succeeded on default interface");
-		return 0;
-	}
-
-	for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
-		if ((ifa->ifa_flags & IFF_MULTICAST) != IFF_MULTICAST
-		  || ifa->ifa_addr == NULL
-		  || ifa->ifa_addr->sa_family != AF_INET6)
-			continue;
-		req.ipv6mr_interface = if_nametoindex(ifa->ifa_name);
-		if (setsockopt(sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &req,
-					sizeof(req)) == 0)
-		{
-			logmsg(LOG_DEBUG, "Multicast join succeeded on %s", ifa->ifa_name);
-			joins++;
-		}
-	}
-	freeifaddrs(ifaddr);
-	if (joins > 0)
-		return 0;
-
-join_fail:
-	logmsg(LOG_ERROR, "Multicast join failed");
-	return LC_ERROR_MCAST_JOIN;
+	return lc_channel_membership(sock, opt, &req);
 }
 
 int lc_channel_part(lc_channel_t * channel)
 {
-	logmsg(LOG_TRACE, "%s", __func__);
-	struct ipv6_mreq req;
-	int sock = channel->socket->socket;
-	struct addrinfo *addr = channel->address;
+	return lc_channel_action(channel, IPV6_DROP_MEMBERSHIP);
+}
 
-	memcpy(&req.ipv6mr_multiaddr,
-		&((struct sockaddr_in6*)(addr->ai_addr))->sin6_addr,
-		sizeof(req.ipv6mr_multiaddr));
-	req.ipv6mr_interface = 0; /* default interface */
-	if (setsockopt(sock, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP,
-		&req, sizeof(req)) != 0)
-	{
-		logmsg(LOG_ERROR, "Multicast leave failed");
-		return LC_ERROR_MCAST_LEAVE;
-	}
-
-	return 0;
+int lc_channel_join(lc_channel_t * channel)
+{
+	return lc_channel_action(channel, IPV6_ADD_MEMBERSHIP);
 }
 
 lc_socket_t *lc_channel_socket(lc_channel_t *channel)
