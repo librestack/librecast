@@ -33,7 +33,7 @@ build:
 
 0000-0019.test: LDFLAGS += -pthread
 
-%.test: %.c $(OBJS)
+%.test: %.c clean build $(OBJS)
 	@$(CC) $(CFLAGS) -o $@ $< test.o $(LDFLAGS)
 	@echo -ne "\e[2m" $* " "
 	@echo -ne "\n== $@" >> $(LOGFILE)
