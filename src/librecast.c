@@ -1047,7 +1047,9 @@ int lc_channel_unbind(lc_channel_t * channel)
 static int lc_channel_membership(int sock, int opt, struct ipv6_mreq *req)
 {
 	struct ifaddrs *ifaddr, *ifa = NULL;
-	int rc = LC_ERROR_MCAST_JOIN;
+	int rc;
+
+	rc = (opt == IPV6_ADD_MEMBERSHIP) ? LC_ERROR_MCAST_JOIN : LC_ERROR_MCAST_PART;
 
 	if (getifaddrs(&ifaddr) == -1) {
 		req->ipv6mr_interface = 0; /* default interface */

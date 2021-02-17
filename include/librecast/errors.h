@@ -28,7 +28,7 @@
 	X(21, LC_ERROR_SOCKET_CONNECT,     "Unable to connect to unix socket")   \
 	X(22, LC_ERROR_SOCKET_BIND,        "Unable to bind to unix socket")      \
 	X(23, LC_ERROR_MCAST_JOIN,         "Multicast join failed")              \
-	X(24, LC_ERROR_MCAST_LEAVE,        "Multicast leave failed")             \
+	X(24, LC_ERROR_MCAST_PART,         "Multicast part failed")              \
 	X(25, LC_ERROR_SOCKET_LISTENING,   "Socket already listening")           \
 	X(26, LC_ERROR_BRIDGE_INIT,        "Unable to setup bridge control")     \
 	X(27, LC_ERROR_BRIDGE_EXISTS,      "Bridge already exists")              \
