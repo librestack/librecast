@@ -74,6 +74,5 @@ extern lc_channel_t *chan_list;
 
 #define BUFSIZE 1500
 #define DEFAULT_ADDR "ff1e::"
-#define DEFAULT_PORT "4242"
 
 #endif /* _LIBRECAST_PVT_H */

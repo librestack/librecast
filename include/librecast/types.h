@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <librecast/errors.h>
 
+#define LC_DEFAULT_PORT "4242"
 #define LC_BRIDGE_NAME "lc0"
 #define LC_DATABASE_COUNT 32
 #define DEFAULT_MULTICAST_LOOP 0

@@ -937,7 +937,7 @@ lc_channel_t * lc_channel_nnew(lc_ctx_t *ctx, unsigned char *uri, size_t len)
 
 	logmsg(LOG_DEBUG, "channel group address: %s", hashaddr);
 
-	channel = lc_channel_init(ctx, hashaddr, DEFAULT_PORT);
+	channel = lc_channel_init(ctx, hashaddr, LC_DEFAULT_PORT);
 	channel->uri = (char *)uri;
 
 	return channel;
