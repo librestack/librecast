@@ -35,6 +35,9 @@ sparse: clean
 clang: clean
 	CC=clang $(MAKE) src
 
+clangtest: clean
+	CC=clang $(MAKE) test
+
 gcc: clean all
 
 check test sanitize: clean src
