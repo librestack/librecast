@@ -887,8 +887,6 @@ lc_channel_t * lc_channel_init(lc_ctx_t *ctx, char * grpaddr, char * service)
 	lc_channel_t *channel;
 	struct addrinfo *addr = NULL;
 	struct addrinfo hints = {0};
-	int err = 0;
-
 	if (!ctx) {
 		lc_error_log(LOG_ERROR, LC_ERROR_CTX_REQUIRED);
 		return NULL;
