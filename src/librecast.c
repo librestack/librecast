@@ -1311,9 +1311,12 @@ ssize_t lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
 	memcpy(buf + sizeof(lc_message_head_t), msg->data, len);
 	len += sizeof(lc_message_head_t);
 
-	int i = (channel->ctx->tapname) ? if_nametoindex(channel->ctx->tapname) : 0;
+	unsigned i = (channel->ctx->tapname) ? if_nametoindex(channel->ctx->tapname) : 0;
 	if (setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &i, sizeof(i) == 0)) {
-		logmsg(LOG_DEBUG, "Sending on interface %s", channel->ctx->tapname);
+		if (i)
+			logmsg(LOG_DEBUG, "Sending on interface %s", channel->ctx->tapname);
+		else
+			logmsg(LOG_DEBUG, "Sending on default interface");
 		bytes = lc_msg_sendto(sock, buf, len, addr);
 	}
 	free(head);
