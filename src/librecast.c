@@ -118,28 +118,25 @@ int lc_link_set(char *ifname, int flags)
 {
 	struct ifreq ifr;
 	size_t len = strlen(ifname);
-	int fd, err = 0;
+	int fd, err;
 
 	if (len >= IFNAMSIZ) return lc_error_log(LOG_ERROR, LC_ERROR_INVALID_PARAMS);
 	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
-		err = errno;
-		logmsg(LOG_ERROR, "failed to create ioctl socket: %s", strerror(err));
+		logmsg(LOG_ERROR, "failed to create ioctl socket: %s", strerror(errno));
 		return LC_ERROR_SOCK_IOCTL;
 	}
 	memset(&ifr, 0, sizeof(ifr));
 	memcpy(ifr.ifr_name, ifname, len);
 	logmsg(LOG_DEBUG, "fetching flags for interface %s", ifr.ifr_name);
 	if ((err = ioctl(fd, SIOCGIFFLAGS, &ifr)) == -1) {
-		err = errno;
-		logmsg(LOG_ERROR, "ioctl failed: %s", strerror(err));
+		logmsg(LOG_ERROR, "ioctl failed: %s", strerror(errno));
 		close(fd);
 		return LC_ERROR_IF_UP_FAIL;
 	}
 	logmsg(LOG_DEBUG, "setting flags for interface %s", ifr.ifr_name);
 	ifr.ifr_flags |= flags;
 	if ((err = ioctl(fd, SIOCSIFFLAGS, &ifr)) == -1) {
-		err = errno;
-		logmsg(LOG_ERROR, "ioctl failed: %s", strerror(err));
+		logmsg(LOG_ERROR, "ioctl failed: %s", strerror(errno));
 		err = LC_ERROR_IF_UP_FAIL;
 	}
 	close(fd);
@@ -154,15 +151,13 @@ int lc_tap_create(char **ifname)
 
 	/* create tap interface */
 	if ((fd = open("/dev/net/tun", O_RDWR)) == -1) {
-		err = errno;
-		logmsg(LOG_ERROR, "open tun failed: %s", strerror(err));
+		logmsg(LOG_ERROR, "open tun failed: %s", strerror(errno));
 		return -1;
 	}
 	memset(&ifr, 0, sizeof(ifr));
 	ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
 	if (ioctl(fd, TUNSETIFF, (void *) &ifr) == -1) {
-		err = errno;
-		logmsg(LOG_ERROR, "ioctl (TUNSETIFF) failed: %s", strerror(err));
+		logmsg(LOG_ERROR, "ioctl (TUNSETIFF) failed: %s", strerror(errno));
 		close(fd);
 		return -1;
 	}
@@ -300,7 +295,6 @@ int lc_msg_id(lc_message_t *msg, unsigned char id[SHA_DIGEST_LENGTH])
 int lc_hashgroup(char *baseaddr, unsigned char *group, size_t len, char *hashaddr, unsigned int flags)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
-	int i;
 	unsigned char hashgrp[SHA_DIGEST_LENGTH];
 	unsigned char binaddr[16];
 	SHA_CTX *c = NULL;
@@ -324,13 +318,12 @@ int lc_hashgroup(char *baseaddr, unsigned char *group, size_t len, char *hashadd
 
 		/* we have 112 bits (14 bytes) available for the group address
 		 * XOR the hashed group with the base multicast address */
-		for (i = 0; i < 14; i++) {
+		for (int i = 0; i < 14; i++) {
 			binaddr[i+2] ^= hashgrp[i];
 		}
 
 		if (inet_ntop(AF_INET6, binaddr, hashaddr, INET6_ADDRSTRLEN) == NULL) {
-			i = errno;
-			logmsg(LOG_ERROR, "%s (inet_ntop) %s", __func__, strerror(i));
+			logmsg(LOG_ERROR, "%s (inet_ntop) %s", __func__, strerror(errno));
 			return LC_ERROR_FAILURE;
 		}
 	}
@@ -693,9 +686,8 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 		}
 	}
 	s = socket(AF_INET6, SOCK_DGRAM, 0);
-	int err = errno;
 	if (s == -1) {
-		logmsg(LOG_DEBUG, "socket ERROR: %s", strerror(err));
+		logmsg(LOG_DEBUG, "socket ERROR: %s", strerror(errno));
 		goto socket_err;
 	}
 	sock->socket = s;
@@ -905,8 +897,7 @@ lc_channel_t * lc_channel_init(lc_ctx_t *ctx, char * grpaddr, char * service)
 	hints.ai_socktype = SOCK_DGRAM;
 	hints.ai_flags = AI_NUMERICHOST;
 	if (getaddrinfo(grpaddr, service, &hints, &addr) != 0) {
-		err = errno;
-		logmsg(LOG_ERROR, "getaddrinfo() failed: %s", strerror(err));
+		logmsg(LOG_ERROR, "getaddrinfo() failed: %s", strerror(errno));
 		return NULL;
 	}
 	channel = calloc(1, sizeof(lc_channel_t));
@@ -976,7 +967,7 @@ int lc_channel_bind(lc_socket_t *sock, lc_channel_t * channel)
 {
 	logmsg(LOG_TRACE, "%s", __func__);
 	struct addrinfo *addr;
-	int err, opt;
+	int opt = 1;
 
 	if (!sock)
 		return lc_error_log(LOG_ERROR, LC_ERROR_SOCKET_REQUIRED);
@@ -986,16 +977,13 @@ int lc_channel_bind(lc_socket_t *sock, lc_channel_t * channel)
 	addr = channel->address;
 	channel->socket = sock;
 
-	opt = 1;
 	if ((setsockopt(sock->socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) == -1) {
-		err = errno;
-		logmsg(LOG_ERROR, "failed to set SO_REUSEADDR: %s", strerror(err));
+		logmsg(LOG_ERROR, "failed to set SO_REUSEADDR: %s", strerror(errno));
 	}
 
 	logmsg(LOG_DEBUG, "binding socket id %u to channel id %u", sock->id, channel->id);
 	if (bind(sock->socket, addr->ai_addr, addr->ai_addrlen) != 0) {
-		err = errno;
-		logmsg(LOG_ERROR, "failed to bind socket: %s", strerror(err));
+		logmsg(LOG_ERROR, "failed to bind socket: %s", strerror(errno));
 		return LC_ERROR_SOCKET_BIND;
 	}
 	logmsg(LOG_DEBUG, "Bound to socket %i", sock->socket);
@@ -1180,9 +1168,8 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 	msgh.msg_flags = 0;
 
 	i = recvmsg(sock->socket, &msgh, 0);
-	err = errno;
 	if (i == -1) {
-		logmsg(LOG_DEBUG, "recvmsg ERROR: %s", strerror(err));
+		logmsg(LOG_DEBUG, "recvmsg ERROR: %s", strerror(errno));
 		return i;
 	}
 	if (i > 0) {
@@ -1214,18 +1201,16 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 
 static void lc_msg_sendto_error(int err, struct addrinfo *addr)
 {
-	(void)err;
 	char dst[INET6_ADDRSTRLEN];
 	getnameinfo(addr->ai_addr, addr->ai_addrlen, dst, INET6_ADDRSTRLEN,
 			NULL, 0, NI_NUMERICHOST);
 	logmsg(LOG_DEBUG, "sendto(): '%s'", dst);
-	logmsg(LOG_ERROR, "sendto(): '%s'", strerror(errno));
+	logmsg(LOG_ERROR, "sendto(): '%s'", strerror(err));
 }
 
 ssize_t lc_msg_sendto(int sock, const void *buf, size_t len, struct addrinfo *addr)
 {
 	ssize_t bytes;
-	errno = 0;
 	bytes = sendto(sock, buf, len, 0, addr->ai_addr, addr->ai_addrlen);
 	if (bytes == -1)
 		lc_msg_sendto_error(errno, addr);
