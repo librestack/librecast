@@ -9,7 +9,7 @@ COVERITY_TGZ := $(LIBNAME).tgz
 
 all: src
 
-install: all
+install: all doc
 	cd src && $(MAKE) $@
 
 uninstall:
