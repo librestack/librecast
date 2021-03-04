@@ -4,6 +4,11 @@
 
 * libsodium
 
+### Install libsodium on Ubuntu
+
+`sudo apt-install libsodium-dev
+
+
 ## Installing from source
 
 The code compiles using either gcc or clang.  There is a `make clang` target to
