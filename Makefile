@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2017-2021 Brett Sheffield <bacs@librecast.net>
+
 PREFIX ?= /usr/local
 export PREFIX
 LIBNAME := librecast
@@ -22,6 +25,12 @@ src:
 
 doc:
 	cd doc && $(MAKE) $@
+
+fixme:
+	grep -n FIXME src/*.{c,h} test/*.{c,h}
+
+todo:
+	grep -n TODO src/*.{c,h} test/*.{c,h}
 
 clean realclean:
 	cd src && $(MAKE) $@
