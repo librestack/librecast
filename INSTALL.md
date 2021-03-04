@@ -6,7 +6,7 @@
 
 ### Install libsodium on Ubuntu
 
-`sudo apt-install libsodium-dev
+`sudo apt install libsodium-dev
 
 
 ## Installing from source
