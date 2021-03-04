@@ -4,8 +4,7 @@
 SHELL := /bin/bash
 CFLAGS += -Wall -g -I ../include
 NOTOBJS := ../src/$(PROGRAM).o
-TESTOBJS := test.o misc.o falloc.o
-OBJS := $(TESTOBJS) $(filter-out $(NOTOBJS), $(wildcard ../src/*.o))
+OBJS := test.o misc.o falloc.o
 LIBRARY_PATH := ../src
 LDFLAGS := -L$(LIBRARY_PATH) -ldl -llibrecast
 BOLD := "\\e[0m\\e[2m"
@@ -35,7 +34,7 @@ build:
 0000-0019.test: LDFLAGS += -pthread
 
 %.test: %.c clean build $(OBJS)
-	@$(CC) $(CFLAGS) -o $@ $< $(TESTOBJS) $(LDFLAGS)
+	@$(CC) $(CFLAGS) -o $@ $< $(OBJS) $(LDFLAGS)
 	@echo -ne "\e[2m" $* " "
 	@echo -ne "\n== $@" >> $(LOGFILE)
 	@LD_LIBRARY_PATH=$(LIBRARY_PATH) $(MEMCHECK) ./$@ 2>> $(LOGFILE) && echo -e " $(PASS)" || echo -e " $(FAIL)"
