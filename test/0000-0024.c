@@ -1,6 +1,5 @@
 #include "test.h"
 #include "../src/librecast_pvt.h"
-#include "../src/macro.h"
 #include <librecast/net.h>
 #include <netdb.h>
 
@@ -26,8 +25,8 @@ int main()
 
 	test_assert(copy->ctx == lctx, "copy->ctx set");
 
-	oaddr = aitoin6(orig->address);
-	caddr = aitoin6(copy->address);
+	oaddr = &lc_channel_sockaddr(orig)->sin6_addr;
+	caddr = &lc_channel_sockaddr(copy)->sin6_addr;
 	test_assert(!memcmp(caddr, oaddr, sizeof(struct in6_addr)),
 			"copy->address set");
 

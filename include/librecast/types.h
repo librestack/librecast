@@ -1,13 +1,17 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+/* Copyright (c) 2017-2021 Brett Sheffield <bacs@librecast.net> */
+
 #ifndef _LIBRECAST_TYPES_H
 #define _LIBRECAST_TYPES_H 1
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <stdint.h>
 #include <librecast/errors.h>
 
-#define LC_DEFAULT_PORT "4242"
+#define LC_DEFAULT_PORT 4242
 #define LC_BRIDGE_NAME "lc0"
 #define LC_DATABASE_COUNT 32
 #define DEFAULT_MULTICAST_LOOP 0
@@ -28,15 +32,16 @@ typedef void *lc_free_fn_t(void *msg, void *hint);
 	X(0x0, LC_OP_DATA, "DATA", lc_op_data) \
 	X(0x1, LC_OP_PING, "PING", lc_op_ping) \
 	X(0x2, LC_OP_PONG, "PONG", lc_op_pong) \
-	X(0x3, LC_OP_GET,  "GET",  lc_op_get) \
-	X(0x4, LC_OP_SET,  "SET",  lc_op_set) \
-	X(0x5, LC_OP_DEL,  "DEL",  lc_op_del) \
-	X(0x6, LC_OP_RET,  "RET",  lc_op_ret)
+	X(0x3, LC_OP_GET,  "GET",  lc_op_get)  \
+	X(0x4, LC_OP_SET,  "SET",  lc_op_set)  \
+	X(0x5, LC_OP_DEL,  "DEL",  lc_op_del)  \
+	X(0x6, LC_OP_RET,  "RET",  lc_op_ret)  \
+	X(0x7, LC_OP_MAX,  "MAX",  lc_op_data)
 #undef X
 
 #define LC_OPCODE_ENUM(code, name, text, f) name = code,
 #define LC_OPCODE_TEXT(code, name, text, f) case code: return text;
-#define LC_OPCODE_FUN(code, name, text, f) case code: f(sc, msg); break;
+#define LC_OPCODE_FUN(code, name, text, f) case code: if (f) f(sc, msg); break;
 
 typedef enum {
 	LC_OPCODES(LC_OPCODE_ENUM)
@@ -101,5 +106,14 @@ typedef struct {
 	lc_len_t size;
 	void    *data;
 } lc_val_t;
+
+/* structure to pass to socket listening thread */
+typedef struct lc_socket_call_s {
+	lc_socket_t *sock;
+	void (*callback_msg)(lc_message_t*);
+	void (*callback_err)(int);
+} lc_socket_call_t;
+
+extern void (*lc_op_handler[LC_OP_MAX])(lc_socket_call_t *, lc_message_t *);
 
 #endif  /* _LIBRECAST_TYPES_H */

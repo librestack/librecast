@@ -5,7 +5,9 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../src/misc.h"
+#include "misc.h"
+#include "falloc.h"
+#include "valgrind.h"
 
 extern int fails;
 

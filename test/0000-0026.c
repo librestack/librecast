@@ -1,5 +1,4 @@
 #include "test.h"
-#include "../src/macro.h"
 #include <librecast/net.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
@@ -26,7 +25,7 @@ int main()
 
 	base = lc_channel_new(lctx, "freedom");
 	test_assert(base != NULL, "lc_channel_new() - create base channel");
-	bin6 = aitoin6(lc_channel_addrinfo(base));
+	bin6 = &lc_channel_sockaddr(base)->sin6_addr;
 
 	test_log("base: ");
 	dumpaddr(bin6);
@@ -34,11 +33,11 @@ int main()
 
 	test_assert((side = lc_channel_sidehash(base, &key, sizeof key)) != NULL,
 			"lc_channel_sidehash(1)");
-	sin6 = aitoin6(lc_channel_addrinfo(side));
+	sin6 = &lc_channel_sockaddr(side)->sin6_addr;
 	test_log("side: ");
 	dumpaddr(sin6);
 
-	test_assert(lc_channel_addrinfo(base) != lc_channel_addrinfo(side),
+	test_assert(lc_channel_sockaddr(base) != lc_channel_sockaddr(side),
 			"copy address differs from base");
 
 	test_assert(memcmp(sin6->s6_addr, bin6->s6_addr, 16),
@@ -47,10 +46,9 @@ int main()
 	/* make sure side channel of side channel isn't the original channel */
 	test_assert((rev = lc_channel_sidehash(side, &key, sizeof key)) != NULL,
 			"lc_channel_sidehash(2)");
-	sin6 = aitoin6(lc_channel_addrinfo(rev));
+	sin6 = &lc_channel_sockaddr(rev)->sin6_addr;
 	test_assert(memcmp(sin6->s6_addr, bin6->s6_addr, 16),
 			"side side channel and base channel must be different");
-	sin6 = aitoin6(lc_channel_addrinfo(rev));
 	test_log("side(2): ");
 	dumpaddr(sin6);
 

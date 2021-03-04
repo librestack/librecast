@@ -3,9 +3,10 @@
 
 int main()
 {
-	test_name("lc_ctx_get_id()");
 	lc_ctx_t *lctx = NULL;
 	uint32_t id;
+
+	test_name("lc_ctx_get_id()");
 
 	id = lc_ctx_get_id(lctx);
 	test_assert(id == 0, "expected 0 when calling lc_channel_get_id(NULL)");

@@ -1,6 +1,5 @@
 #include "test.h"
 #include <librecast/net.h>
-#include "../src/log.h"
 #include <errno.h>
 #include <pthread.h>
 #include <signal.h>
@@ -22,9 +21,6 @@ void *testthread(void *arg)
 
 int main()
 {
-	test_name("lc_msg_send() / lc_msg_recv() - blocking network recv");
-	LOG_LEVEL = 127;
-
 	struct sigaction sa = { .sa_handler = sighandler };
 	pthread_t thread;
 	pthread_attr_t attr = {};
@@ -33,10 +29,18 @@ int main()
 	const int on = 1;
 	ssize_t byt_sent;
 	ssize_t byt_recv;
-	lc_ctx_t *lctx = lc_ctx_new();
-	lc_socket_t *sock = lc_socket_new(lctx);
-	lc_channel_t *chan = lc_channel_new(lctx, channame);
+
+	test_name("lc_msg_send() / lc_msg_recv() - blocking network recv");
+
+	lc_ctx_t *lctx;
+	lc_socket_t *sock;
+	lc_channel_t *chan;
 	lc_message_t msg;
+	int op;
+
+	lctx = lc_ctx_new();
+	sock = lc_socket_new(lctx);
+	chan = lc_channel_new(lctx, channame);
 
 	/* set up signal handler so we can kill recv() */
 	sigemptyset(&sa.sa_mask);
@@ -52,15 +56,14 @@ int main()
 	lc_channel_join(chan);
 
 	/* if we ping ourselves, will we go blind? */
-	int op = LC_OP_PING;
+	op = LC_OP_PING;
 	lc_msg_init(&msg);
 	lc_msg_set(&msg, LC_ATTR_OPCODE, &op);
 	byt_sent = lc_msg_send(chan, &msg);
 	lc_msg_free(&msg);			/* clear struct before recv */
 
-	pthread_create(&thread, &attr, testthread, NULL);
+	pthread_create(&thread, &attr, &testthread, NULL);
 	byt_recv = lc_msg_recv(sock, &msg);	/* blocking recv */
-	pthread_cancel(thread);
 	pthread_join(thread, NULL);
 
 	test_log("sent %zi bytes", byt_sent);
@@ -83,7 +86,10 @@ int main()
 	test_log("recv %zi bytes", byt_recv);
 	test_assert(byt_sent == byt_recv, "bytes sent == bytes received (2)");
 	test_expectn(data, msg.data, msg.len); /* got our data back */
+
 	lc_msg_free(&msg);
+
+	pthread_attr_destroy(&attr);
 
 	lc_channel_free(chan);
 	lc_socket_close(sock);

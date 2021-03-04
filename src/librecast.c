@@ -4,34 +4,20 @@
 #define _GNU_SOURCE
 #include "librecast_pvt.h"
 #include <librecast/net.h>
-#include <libbridge.h>
 #include "hash.h"
-#include "log.h"
-#include "macro.h"
-#include <assert.h>
 #include <arpa/inet.h>
+#include <assert.h>
 #include <fcntl.h>
 #include <ifaddrs.h>
-#include <pthread.h>
-#include <linux/if.h>
-#include <linux/if_tun.h>
-#include <netdb.h>
+#include <net/if.h>
 #include <netinet/in.h>
-#include <openssl/sha.h>
+#include <pthread.h>
 #include <signal.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/ioctl.h>
 #include <sys/socket.h>
-#include <sys/stat.h>
 #include <sys/types.h>
-#include <time.h>
 #include <unistd.h>
-
-#ifndef _LIBBRIDGE_H
-#include <net/if.h>
-#endif
 
 uint32_t ctx_id = 0;
 uint32_t sock_id = 0;
@@ -39,186 +25,77 @@ uint32_t chan_id = 0;
 
 lc_ctx_t *ctx_list = NULL;
 
-/* socket listener thread */
-void *lc_socket_listen_thread(void *sc);
+static void lc_op_data_handler(lc_socket_call_t *sc, lc_message_t *msg);
+static void lc_op_ping_handler(lc_socket_call_t *sc, lc_message_t *msg);
+static void lc_op_pong_handler(lc_socket_call_t *sc, lc_message_t *msg);
 
-/* opcode handlers */
-void lc_op_data(lc_socket_call_t *sc, lc_message_t *msg);
-void lc_op_ping(lc_socket_call_t *sc, lc_message_t *msg);
-void lc_op_pong(lc_socket_call_t *sc, lc_message_t *msg);
-void lc_op_get(lc_socket_call_t *sc, lc_message_t *msg);
-void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg);
-void lc_op_ret(lc_socket_call_t *sc, lc_message_t *msg);
-void lc_op_del(lc_socket_call_t *sc, lc_message_t *msg);
+int (*lc_msg_logger)(lc_channel_t *, lc_message_t *, void *logdb) = NULL;
 
-int lc_bridge_init(void)
+void (*lc_op_handler[LC_OP_MAX])(lc_socket_call_t *, lc_message_t *) = {
+	lc_op_data_handler,
+	lc_op_ping_handler,
+	lc_op_pong_handler,
+};
+
+int lc_getrandom(void *buf, size_t buflen)
 {
-	if (br_init()) {
-		lc_error_log(LOG_ERROR, LC_ERROR_BRIDGE_INIT);
-		return -1;
-	}
-	return 0;
-}
+	int err, fd;
 
-int lc_bridge_new(char *brname)
-{
-	int err;
-
-	switch (err = br_add_bridge(brname)) {
-	case 0:
-		break;
-	case EEXIST:
-		return lc_error_log(LOG_DEBUG, LC_ERROR_BRIDGE_EXISTS);
-	default:
-		logmsg(LOG_ERROR, "%s", strerror(err));
-		return lc_error_log(LOG_ERROR, LC_ERROR_BRIDGE_ADD_FAIL);
-	}
-	logmsg(LOG_DEBUG, "(librecast) bridge %s created", brname);
-
-	/* bring up bridge */
-	logmsg(LOG_DEBUG, "(librecast) bringing up bridge %s", brname);
-	if ((err = lc_link_set(brname, IFF_UP)) != 0) {
-		return lc_error_log(LOG_ERROR, err);
-	}
-
-	return 0;
-}
-
-int lc_bridge_add_interface(const char *brname, const char *ifname) {
-	int err;
-
-	logmsg(LOG_DEBUG, "bridging %s to %s", ifname, brname);
-	err = br_add_interface(brname, ifname);
-	switch(err) {
-	case 0:
-		return 0;
-	case ENODEV:
-		if (if_nametoindex(ifname) == 0)
-			lc_error_log(LOG_ERROR, LC_ERROR_IF_NODEV);
-		else
-			lc_error_log(LOG_ERROR, LC_ERROR_BRIDGE_NODEV);
-		break;
-	case EBUSY:
-		lc_error_log(LOG_ERROR, LC_ERROR_IF_BUSY);
-		break;
-	case ELOOP:
-		lc_error_log(LOG_ERROR, LC_ERROR_IF_LOOP);
-		break;
-	case EOPNOTSUPP:
-		lc_error_log(LOG_ERROR, LC_ERROR_IF_OPNOTSUPP);
-		break;
-	default:
-		lc_error_log(LOG_ERROR, LC_ERROR_IF_BRIDGE_FAIL);
-	}
-
-	return -1;
-}
-
-int lc_link_set(char *ifname, int flags)
-{
-	struct ifreq ifr;
-	size_t len = strlen(ifname);
-	int fd, err;
-
-	if (len >= IFNAMSIZ) return lc_error_log(LOG_ERROR, LC_ERROR_INVALID_PARAMS);
-	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
-		logmsg(LOG_ERROR, "failed to create ioctl socket: %s", strerror(errno));
-		return LC_ERROR_SOCK_IOCTL;
-	}
-	memset(&ifr, 0, sizeof(ifr));
-	memcpy(ifr.ifr_name, ifname, len);
-	logmsg(LOG_DEBUG, "fetching flags for interface %s", ifr.ifr_name);
-	if ((err = ioctl(fd, SIOCGIFFLAGS, &ifr)) == -1) {
-		logmsg(LOG_ERROR, "ioctl failed: %s", strerror(errno));
-		close(fd);
-		return LC_ERROR_IF_UP_FAIL;
-	}
-	logmsg(LOG_DEBUG, "setting flags for interface %s", ifr.ifr_name);
-	ifr.ifr_flags |= flags;
-	if ((err = ioctl(fd, SIOCSIFFLAGS, &ifr)) == -1) {
-		logmsg(LOG_ERROR, "ioctl failed: %s", strerror(errno));
-		err = LC_ERROR_IF_UP_FAIL;
-	}
+	if ((fd = open("/dev/urandom", O_RDONLY)) == -1) return -1;
+	err = read(fd, buf, buflen);
 	close(fd);
 
 	return err;
 }
 
-int lc_tap_create(char **ifname)
+uint32_t lc_ctx_get_id(lc_ctx_t *ctx)
 {
-	struct ifreq ifr;
-	int fd, err;
-
-	/* create tap interface */
-	if ((fd = open("/dev/net/tun", O_RDWR)) == -1) {
-		logmsg(LOG_ERROR, "open tun failed: %s", strerror(errno));
-		return -1;
-	}
-	memset(&ifr, 0, sizeof(ifr));
-	ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
-	if (ioctl(fd, TUNSETIFF, (void *) &ifr) == -1) {
-		logmsg(LOG_ERROR, "ioctl (TUNSETIFF) failed: %s", strerror(errno));
-		close(fd);
-		return -1;
-	}
-	logmsg(LOG_DEBUG, "created tap interface %s", ifr.ifr_name);
-	*ifname = strdup(ifr.ifr_name);
-	if (*ifname == NULL) {
-		lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
-		return -1;
-	}
-
-	/* bring interface up */
-	logmsg(LOG_DEBUG, "(librecast) bringing up interface %s", ifr.ifr_name);
-	if ((err = lc_link_set(ifr.ifr_name, IFF_UP)) != 0) {
-		close(fd);
-		free(*ifname);
-		lc_error_log(LOG_ERROR, err);
-		return -1;
-	}
-
-	return fd;
+	return (ctx) ? ctx->id : 0;
 }
 
-void *lc_msg_init(lc_message_t *msg)
+uint32_t lc_socket_get_id(lc_socket_t *sock)
 {
-	return memset(msg, 0, sizeof(lc_message_t));
+	return (sock) ? sock->id : 0;
 }
 
-static void *_free(void *msg, void *hint)
+uint32_t lc_channel_get_id(lc_channel_t *chan)
 {
-	(void)hint;
-	free(msg);
-	return NULL;
+	return (chan) ? chan->id : 0;
 }
 
-int lc_msg_init_size(lc_message_t *msg, size_t len)
+lc_ctx_t *lc_channel_ctx(lc_channel_t *chan)
 {
-	lc_msg_init(msg);
-	if ((msg->data = malloc(len)) == NULL)
-		return -1;
-	msg->len = len;
-	msg->free = _free;
-	return 0;
+	return chan->ctx;
 }
 
-int lc_msg_init_data(lc_message_t *msg, void *data, size_t len, lc_free_fn_t *f, void *hint)
+lc_socket_t *lc_channel_socket(lc_channel_t *chan)
 {
-	lc_msg_init(msg);
-	msg->len = len;
-	msg->data = data;
-	msg->free = f;
-	msg->hint = hint;
-	return 0;
+	return chan->sock;
 }
 
-void lc_msg_free(void *ptr)
+char *lc_channel_uri(lc_channel_t *chan)
 {
-	lc_message_t *msg = (lc_message_t *)ptr;
-	if (*msg->free) {
-		msg->free(msg->data, msg->hint);
-		msg->data = NULL;
-	}
+	return chan->uri;
+}
+
+struct in6_addr *lc_channel_in6addr(lc_channel_t *chan)
+{
+	return &(chan->sa.sin6_addr);
+}
+
+struct sockaddr_in6 *lc_channel_sockaddr(lc_channel_t *chan)
+{
+	return &chan->sa;
+}
+
+int lc_channel_socket_raw(lc_channel_t *chan)
+{
+	return chan->sock->sock;
+}
+
+int lc_socket_raw(lc_socket_t *sock)
+{
+	return sock->sock;
 }
 
 void *lc_msg_data(lc_message_t *msg)
@@ -264,163 +141,503 @@ int lc_msg_set(lc_message_t *msg, lc_msg_attr_t attr, void *value)
 	return 0;
 }
 
-int lc_msg_id(lc_message_t *msg, unsigned char id[SHA_DIGEST_LENGTH])
+int lc_msg_id(lc_message_t *msg, unsigned char *id, size_t len)
 {
-	int err = 0;
+	hash_state state;
 
-	/* create hash from msg + src + timestamp */
-	SHA_CTX *c = NULL;
-	c = malloc(sizeof(SHA_CTX));
-	if (c == NULL) {
-		err = lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
-	}
-	else if (!SHA1_Init(c)) {
-		err = lc_error_log(LOG_ERROR, LC_ERROR_HASH_INIT);
-	}
-	else if (!SHA1_Update(c, msg->data, msg->len)) {
-		err = lc_error_log(LOG_ERROR, LC_ERROR_HASH_UPDATE);
-	}
-	else if (!SHA1_Update(c, msg->srcaddr, sizeof(struct in6_addr))) {
-		err = lc_error_log(LOG_ERROR, LC_ERROR_HASH_UPDATE);
-	}
-	/* TODO: timestamp */
-	else if (!SHA1_Final(id, c)) {
-		err = lc_error_log(LOG_ERROR, LC_ERROR_HASH_FINAL);
-	}
-	free(c);
-
-	return err;
-}
-
-int lc_hashgroup(char *baseaddr, unsigned char *group, size_t len, char *hashaddr, unsigned int flags)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-	unsigned char hashgrp[SHA_DIGEST_LENGTH];
-	unsigned char binaddr[16];
-	SHA_CTX *c = NULL;
-
-	if (group) {
-		c = malloc(sizeof(SHA_CTX));
-		if (c == NULL)
-			return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
-		if (!SHA1_Init(c))
-			return lc_error_log(LOG_ERROR, LC_ERROR_HASH_INIT);
-		if (!SHA1_Update(c, (unsigned char *)group, len))
-			return lc_error_log(LOG_ERROR, LC_ERROR_HASH_UPDATE);
-		if (!SHA1_Update(c, &flags, sizeof(flags)))
-			return lc_error_log(LOG_ERROR, LC_ERROR_HASH_UPDATE);
-		if (!SHA1_Final(hashgrp, c))
-			return lc_error_log(LOG_ERROR, LC_ERROR_HASH_FINAL);
-		free(c);
-
-		if (inet_pton(AF_INET6, baseaddr, &binaddr) != 1)
-			return lc_error_log(LOG_ERROR, LC_ERROR_INVALID_BASEADDR);
-
-		/* we have 112 bits (14 bytes) available for the group address
-		 * XOR the hashed group with the base multicast address */
-		for (int i = 0; i < 14; i++) {
-			binaddr[i+2] ^= hashgrp[i];
-		}
-
-		if (inet_ntop(AF_INET6, binaddr, hashaddr, INET6_ADDRSTRLEN) == NULL) {
-			logmsg(LOG_ERROR, "%s (inet_ntop) %s", __func__, strerror(errno));
-			return LC_ERROR_FAILURE;
-		}
-	}
-	logmsg(LOG_FULLTRACE, "%s exiting", __func__);
+	if (hash_init(&state, NULL, 0, len))
+		return LC_ERROR_HASH_INIT;
+	if (hash_update(&state, (unsigned char *)msg->data, msg->len))
+		return LC_ERROR_HASH_UPDATE;
+	if (hash_update(&state, (unsigned char *)msg->srcaddr, sizeof(struct in6_addr)))
+		return LC_ERROR_HASH_UPDATE;
+	if (hash_final(&state, id, len))
+		return LC_ERROR_HASH_FINAL;
 
 	return 0;
 }
 
-lc_ctx_t * lc_ctx_new(void)
+int lc_socket_getopt(lc_socket_t *sock, int optname, void *optval, socklen_t *optlen)
 {
-	logmsg(LOG_TRACE, "%s", __func__);
-	lc_ctx_t *ctx, *p;
+	return getsockopt(sock->sock, IPPROTO_IPV6, optname, optval, optlen);
+}
 
-	lc_getrandom(&ctx_id, sizeof(ctx_id));
-	lc_getrandom(&sock_id, sizeof(sock_id));
-	lc_getrandom(&chan_id, sizeof(chan_id));
+int lc_socket_setopt(lc_socket_t *sock, int optname, const void *optval, socklen_t optlen)
+{
+	return setsockopt(sock->sock, IPPROTO_IPV6, optname, optval, optlen);
+}
 
-	/* create bridge */
-	if ((lc_bridge_init()) != 0)
-		return NULL;
-	lc_bridge_new(LC_BRIDGE_NAME);
+int lc_socket_loop(lc_socket_t *sock, int val)
+{
+	return setsockopt(sock->sock, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &val, sizeof val);
+}
 
-	if (!(ctx = calloc(1, sizeof(lc_ctx_t)))) return NULL; /* errno set by calloc */
-	ctx->id = ++ctx_id;
-	for (p = ctx_list; p != NULL; p = p->next) {
-		if (p->next == NULL)
-			p->next = ctx;
+static void *_free(void *msg, void *hint)
+{
+	free(msg);
+	return hint;
+}
+
+void lc_msg_free(void *arg)
+{
+	lc_message_t *msg = (lc_message_t *)arg;
+	if (msg->free) {
+		msg->free(msg->data, msg->hint);
+		msg->data = NULL;
 	}
+}
 
-	/* create TAP interface */
-	char *tap = NULL;
-	int fdtap;
-	if ((fdtap = lc_tap_create(&tap)) == -1) {
-		lc_error_log(LOG_ERROR, LC_ERROR_TAP_ADD_FAIL);
-		logmsg(LOG_DEBUG, "continuing without tap/bridge");
-	}
-	else {
-		logmsg(LOG_DEBUG, "bridging interface %s to bridge %s", tap, LC_BRIDGE_NAME);
-		/* plug TAP into bridge */
-		if ((lc_bridge_add_interface(LC_BRIDGE_NAME, tap)) == -1) {
-			lc_error_log(LOG_ERROR, LC_ERROR_IF_BRIDGE_FAIL);
-			goto ctx_err;
+void *lc_msg_init(lc_message_t *msg)
+{
+	return memset(msg, 0, sizeof(lc_message_t));
+}
+
+int lc_msg_init_data(lc_message_t *msg, void *data, size_t len, lc_free_fn_t *f, void *hint)
+{
+	lc_msg_init(msg);
+	msg->len = len;
+	msg->data = data;
+	msg->free = f;
+	msg->hint = hint;
+	return 0;
+}
+
+int lc_msg_init_size(lc_message_t *msg, size_t len)
+{
+	lc_msg_init(msg);
+	msg->data = malloc(len);
+	if (!msg->data) return -1;
+	msg->len = len;
+	msg->free = &_free;
+	return 0;
+}
+
+void lc_channel_free(lc_channel_t * chan)
+{
+	if (!chan) return;
+	for (lc_channel_t *p = chan->ctx->chan_list, *prev = NULL; p; p = p->next) {
+		if (p->id == chan->id) {
+			if (prev) prev->next = p->next;
+			else chan->ctx->chan_list = p->next;
 		}
+		prev = p;
+	}
+	free(chan);
+}
 
-		ctx->tapname = tap;
-		ctx->fdtap = fdtap;
+ssize_t lc_msg_sendto(int sock, const void *buf, size_t len, struct sockaddr_in6 *sa, int flags)
+{
+	return sendto(sock, buf, len, flags, sa, sizeof(struct sockaddr_in6));
+}
+
+ssize_t lc_msg_send(lc_channel_t *chan, lc_message_t *msg)
+{
+	struct sockaddr_in6 *sa = &chan->sa;
+	lc_message_head_t *head = NULL;
+	char *buf = NULL;
+	size_t len = 0;
+	ssize_t bytes = 0;
+	struct timespec t = {0};
+	unsigned ifx = 0;
+	int state = 0;
+	int err = 0;
+
+	if (!chan->sock) return LC_ERROR_SOCKET_REQUIRED;
+	if (msg->len > 0 && !msg->data) return LC_ERROR_MESSAGE_EMPTY;
+
+	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &state);
+
+	head = calloc(1, sizeof(lc_message_head_t));
+	if (!head) return LC_ERROR_MALLOC;
+
+	if (msg->timestamp)
+		head->timestamp = htobe64(msg->timestamp);
+	else if (!clock_gettime(CLOCK_REALTIME, &t))
+		head->timestamp = htobe64(t.tv_sec * 1000000000 + t.tv_nsec);
+
+	head->seq = htobe64(++chan->seq);
+	lc_getrandom(&head->rnd, sizeof(lc_rnd_t));
+	head->len = htobe64(msg->len);
+	head->op = msg->op;
+	len = msg->len;
+	buf = calloc(1, sizeof(lc_message_head_t) + len);
+	if (!buf) {
+		free(head);
+		return LC_ERROR_MALLOC;
+	}
+	memcpy(buf, head, sizeof(lc_message_head_t));
+	memcpy(buf + sizeof(lc_message_head_t), msg->data, len);
+	len += sizeof(lc_message_head_t);
+
+	if (setsockopt(chan->sock->sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &ifx, sizeof(ifx) == 0)) {
+		bytes = lc_msg_sendto(chan->sock->sock, buf, len, sa, 0);
+		if (bytes == -1) err = errno;
 	}
 
-	return ctx;
-ctx_err:
-	lc_ctx_free(ctx);
+	free(head);
+	free(buf);
+	pthread_setcancelstate(state, NULL);
+
+	if (err) errno = err;
+	return bytes;
+}
+
+ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
+{
+	ssize_t zi = 0, err = 0;
+	struct iovec iov[2];
+	struct msghdr msgh = {0};
+	char buf[sizeof(lc_message_head_t)];
+	char cmsgbuf[BUFSIZE];
+	struct sockaddr_in6 from;
+	socklen_t fromlen = sizeof(from);
+	struct cmsghdr *cmsg;
+	struct in6_pktinfo *pi;
+	lc_message_head_t head;
+
+	zi = recv(sock->sock, NULL, 0, MSG_PEEK | MSG_TRUNC);
+	if (zi == -1) return -1;
+
+	if ((size_t)zi > sizeof(lc_message_head_t)) {
+		err = lc_msg_init_size(msg, (size_t)zi - sizeof(lc_message_head_t));
+		if (err) return LC_ERROR_MALLOC;
+	}
+
+	iov[0].iov_base = buf;
+	iov[0].iov_len = sizeof(lc_message_head_t);
+	iov[1].iov_base = msg->data;
+	iov[1].iov_len = msg->len;
+	msgh.msg_control = cmsgbuf;
+	msgh.msg_controllen = BUFSIZE;
+	msgh.msg_name = &from;
+	msgh.msg_namelen = fromlen;
+	msgh.msg_iov = iov;
+	msgh.msg_iovlen = 2;
+	msgh.msg_flags = 0;
+
+	zi = recvmsg(sock->sock, &msgh, 0);
+	if (zi == -1) return -1;
+
+	if (zi > 0) {
+		memcpy(&head, buf, sizeof(lc_message_head_t));
+		msg->seq = be64toh(head.seq);
+		msg->rnd = be64toh(head.rnd);
+		msg->len = be64toh(head.len);
+		msg->timestamp = be64toh(head.timestamp);
+		msg->op = head.op;
+		for (cmsg = CMSG_FIRSTHDR(&msgh); cmsg; cmsg = CMSG_NXTHDR(&msgh, cmsg)) {
+			if (cmsg->cmsg_type == IPV6_PKTINFO) {
+				pi = (struct in6_pktinfo *)CMSG_DATA(cmsg);
+				msg->dst = pi->ipi6_addr;
+				msg->src = (&from)->sin6_addr;
+				break;
+			}
+		}
+	}
+	return zi;
+}
+
+int lc_socket_listen_cancel(lc_socket_t *sock)
+{
+	if (sock->thread) {
+		if (pthread_cancel(sock->thread))
+			return LC_ERROR_THREAD_CANCEL;
+		if (pthread_join(sock->thread, NULL))
+			return LC_ERROR_THREAD_JOIN;
+		sock->thread = 0;
+	}
+	return 0;
+}
+
+static void lc_op_pong_handler(lc_socket_call_t *sc, lc_message_t *msg)
+{
+	if (sc->callback_msg) sc->callback_msg(msg);
+}
+
+static void lc_op_ping_handler(lc_socket_call_t *sc, lc_message_t *msg)
+{
+	(void) sc; /* unused */
+	int opt = LC_OP_PONG;
+
+	/* received PING, echo PONG back to same channel */
+	lc_msg_set(msg, LC_ATTR_OPCODE, &opt);
+	lc_msg_send(msg->chan, msg);
+}
+
+static void lc_op_data_handler(lc_socket_call_t *sc, lc_message_t *msg)
+{
+	/* callback to message handler */
+	if (sc->callback_msg) sc->callback_msg(msg);
+}
+
+lc_channel_t *lc_channel_by_address(lc_ctx_t *lctx, struct in6_addr *addr)
+{
+	for (lc_channel_t *p = lctx->chan_list; p; p = p->next) {
+		if (!memcmp(addr,& p->sa.sin6_addr, sizeof(struct in6_addr)))
+			return p;
+	}
 	return NULL;
 }
 
-uint32_t lc_ctx_get_id(lc_ctx_t *ctx)
+static void process_msg(lc_socket_call_t *sc, lc_message_t *msg)
 {
-	logmsg(LOG_TRACE, "%s", __func__);
+	lc_channel_t *chan;
 
-	if (ctx == NULL) {
-		lc_error_log(LOG_ERROR, LC_ERROR_CTX_REQUIRED);
-		return 0;
+	inet_ntop(AF_INET6, &msg->dst, msg->dstaddr, INET6_ADDRSTRLEN);
+	inet_ntop(AF_INET6, &msg->src, msg->srcaddr, INET6_ADDRSTRLEN);
+	msg->sockid = sc->sock->id;
+
+	/* update channel stats */
+	chan = lc_channel_by_address(sc->sock->ctx, &msg->dst);
+	if (chan) {
+		msg->chan = chan;
+		chan->seq = (msg->seq > chan->seq) ? msg->seq + 1 : chan->seq + 1;
+		chan->rnd = msg->rnd;
+		if (lc_msg_logger) lc_msg_logger(chan, msg, NULL);
 	}
 
-	return ctx->id;
+	/* opcode handler */
+	if (lc_op_handler[msg->op]) lc_op_handler[msg->op](sc, msg);
+
+	/* callback to message handler */
+	if (sc->callback_msg) sc->callback_msg(msg);
 }
 
-uint32_t lc_socket_get_id(lc_socket_t *sock)
+void *lc_socket_listen_thread(void *arg)
 {
-	logmsg(LOG_TRACE, "%s", __func__);
-	if (sock == NULL) {
-		lc_error_log(LOG_ERROR, LC_ERROR_SOCKET_REQUIRED);
-		return 0;
+	ssize_t len;
+	lc_message_t msg = {0};
+	lc_socket_call_t *sc = arg;
+
+	pthread_cleanup_push(free, arg);
+	pthread_cleanup_push(lc_msg_free, &msg);
+	while(1) {
+		len = lc_msg_recv(sc->sock, &msg);
+		if (len > 0) {
+			msg.bytes = len;
+			process_msg(sc, &msg);
+		}
+		if (len < 0) {
+			lc_msg_free(&msg);
+			if (sc->callback_err) sc->callback_err(len);
+		}
+		lc_msg_free(&msg);
 	}
-	return sock->id;
+	/* not reached */
+	pthread_cleanup_pop(0);
+	pthread_cleanup_pop(0);
+
+	return NULL;
 }
 
-uint32_t lc_channel_get_id(lc_channel_t *chan)
+int lc_socket_listen(lc_socket_t *sock, void (*callback_msg)(lc_message_t*),
+					void (*callback_err)(int))
 {
-	logmsg(LOG_TRACE, "%s", __func__);
-	if (chan == NULL) {
-		lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
-		return 0;
+	pthread_attr_t attr = {0};
+	lc_socket_call_t *sc;
+
+	if (!sock) return LC_ERROR_SOCKET_REQUIRED;
+	if (sock->thread) return LC_ERROR_SOCKET_LISTENING;
+
+	sc = calloc(1, sizeof(lc_socket_call_t));
+	if (!sc) return LC_ERROR_MALLOC;
+	sc->sock = sock;
+	sc->callback_msg = callback_msg;
+	sc->callback_err = callback_err;
+
+	pthread_attr_init(&attr);
+	pthread_create(&sock->thread, &attr, &lc_socket_listen_thread, sc);
+	pthread_attr_destroy(&attr);
+
+	return 0;
+}
+
+static int lc_channel_membership(int sock, int opt, struct ipv6_mreq *req)
+{
+	if (!setsockopt(sock, IPPROTO_IPV6, opt, req, sizeof(struct ipv6_mreq))) {
+		return 0; /* report success if we joined anything */
 	}
-	return chan->id;
+	return (opt == IPV6_ADD_MEMBERSHIP) ? LC_ERROR_MCAST_JOIN : LC_ERROR_MCAST_PART;
+}
+
+static int lc_channel_action(lc_channel_t *chan, int opt)
+{
+	struct ipv6_mreq req = {0};
+	int sock;
+
+	if(!chan->sock) return LC_ERROR_SOCKET_REQUIRED;
+
+	sock = chan->sock->sock;
+	memcpy(&req.ipv6mr_multiaddr, &chan->sa.sin6_addr, sizeof(struct in6_addr));
+
+	return lc_channel_membership(sock, opt, &req);
+}
+
+int lc_channel_part(lc_channel_t *chan)
+{
+	return lc_channel_action(chan, IPV6_DROP_MEMBERSHIP);
+}
+
+int lc_channel_join(lc_channel_t *chan)
+{
+	return lc_channel_action(chan, IPV6_ADD_MEMBERSHIP);
+}
+
+int lc_channel_unbind(lc_channel_t *chan)
+{
+	chan->sock = NULL;
+	return 0;
+}
+
+int lc_channel_bind(lc_socket_t *sock, lc_channel_t *chan)
+{
+	int opt = 1;
+	struct sockaddr_in6 any = {
+		.sin6_family = AF_INET6,
+		.sin6_addr = IN6ADDR_ANY_INIT,
+		.sin6_port = htons(LC_DEFAULT_PORT),
+	};
+
+	if ((setsockopt(sock->sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) == -1)
+		return LC_ERROR_SETSOCKOPT;
+
+	if (bind(sock->sock, (struct sockaddr *)&any, sizeof(struct sockaddr_in6)) == -1)
+		return LC_ERROR_SOCKET_BIND;
+
+	chan->sock = sock;
+
+	return 0;
+}
+
+static int lc_hashgroup(char *baseaddr, unsigned char *group, size_t len,
+		struct in6_addr *addr, unsigned int flags)
+{
+	unsigned char hashgrp[HASHSIZE];
+	hash_state state;
+
+	if (hash_init(&state, NULL, 0, HASHSIZE))
+		return LC_ERROR_HASH_INIT;
+	if (hash_update(&state, (unsigned char *)group, len))
+		return LC_ERROR_HASH_UPDATE;
+	if (hash_update(&state, (unsigned char *)&flags, sizeof(flags)))
+		return LC_ERROR_HASH_UPDATE;
+	if (hash_final(&state, hashgrp, HASHSIZE))
+		return LC_ERROR_HASH_FINAL;
+
+	/* we have 112 bits (14 bytes) available for the group address
+	 * XOR the hashed group with the base multicast address */
+	if (inet_pton(AF_INET6, baseaddr, &addr->s6_addr) != 1)
+		return LC_ERROR_INVALID_BASEADDR;
+	for (int i = 2; i < 16; i++) {
+		addr->s6_addr[i] ^= hashgrp[i];
+	}
+
+	return 0;
+}
+
+static lc_channel_t * lc_channel_ins(lc_ctx_t *ctx, lc_channel_t *chan)
+{
+	chan->next = ctx->chan_list;
+	ctx->chan_list = chan;
+	return chan;
+}
+
+static inline void lc_channel_setid(lc_channel_t *chan)
+{
+	chan->id = ++chan_id;
+}
+
+lc_channel_t * lc_channel_sidehash(lc_channel_t *base, unsigned char *key, size_t keylen)
+{
+	struct in6_addr *in;
+	unsigned char *ptr;
+	lc_ctx_t *ctx = base->ctx;
+	lc_channel_t *side = lc_channel_copy(ctx, base);
+	if (!side) return NULL;
+	in = &side->sa.sin6_addr;
+	ptr = (unsigned char *)&in->s6_addr[2];
+	hash_generic_key(ptr, 14, (unsigned char *)in, sizeof(struct in6_addr), key, keylen);
+	return side;
+}
+
+lc_channel_t * lc_channel_sideband(lc_channel_t *base, uint64_t band)
+{
+	struct in6_addr *in;
+	uint64_t *ptr;
+	lc_ctx_t *ctx = base->ctx;
+	lc_channel_t *side = lc_channel_copy(ctx, base);
+	if (!side) return NULL;
+	in = &side->sa.sin6_addr;
+	ptr = (uint64_t *)&in->s6_addr[8];
+	*ptr = band;
+	return side;
+}
+
+lc_channel_t * lc_channel_copy(lc_ctx_t *ctx, lc_channel_t *chan)
+{
+	lc_channel_t *copy = calloc(1, sizeof(lc_channel_t));
+	if (!copy) return NULL;
+	copy->ctx = ctx;
+	lc_channel_setid(copy);
+	memcpy(&copy->sa, &chan->sa, sizeof(struct sockaddr_in6));
+	return lc_channel_ins(ctx, copy);
+}
+
+lc_channel_t *lc_channel_init(lc_ctx_t *ctx, struct sockaddr_in6 *sa)
+{
+	lc_channel_t *chan;
+	chan = calloc(1, sizeof(lc_channel_t));
+	if (!chan) return NULL;
+	chan->ctx = ctx;
+	lc_channel_setid(chan);
+	memcpy(&chan->sa, sa, sizeof(struct sockaddr_in6));
+	return lc_channel_ins(ctx, chan);
+}
+
+lc_channel_t * lc_channel_nnew(lc_ctx_t *ctx, unsigned char *s, size_t len)
+{
+	struct sockaddr_in6 sa = {
+		.sin6_family = AF_INET6,
+		.sin6_port = htons(LC_DEFAULT_PORT)
+	};
+
+	if (lc_hashgroup(DEFAULT_ADDR, s, len, &sa.sin6_addr, 0))
+		return NULL;
+
+	return lc_channel_init(ctx, &sa);
+}
+
+lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char *s)
+{
+	lc_channel_t *chan;
+	chan = lc_channel_nnew(ctx, (unsigned char *)s, strlen(s));
+	chan->uri = s;
+	return chan;
+}
+
+void lc_socket_close(lc_socket_t *sock)
+{
+	if (!sock) return;
+
+	lc_socket_listen_cancel(sock);
+
+	if (sock->sock) close(sock->sock);
+	lc_socket_t *prev = NULL;
+	for (lc_socket_t *p = sock->ctx->sock_list; p; p = p->next) {
+		if (p->id == sock->id) {
+			if (prev) prev->next = p->next;
+			else sock->ctx->sock_list = p->next;
+		}
+		prev = p;
+	}
+	free(sock);
 }
 
 void lc_ctx_free(lc_ctx_t *ctx)
 {
-	logmsg(LOG_TRACE, "%s", __func__);
 	if (ctx) {
-		if (ctx->tapname)
-			free(ctx->tapname);
-		close(ctx->fdtap);
-		if (ctx->db)
-			mdb_env_close(ctx->db);
-		void *h;
-		void *p = ctx->sock_list;
+		void *p, *h;
+		p = ctx->sock_list;
 		while (p) {
 			h = p;
 			p = ((lc_socket_t *)p)->next;
@@ -434,909 +651,62 @@ void lc_ctx_free(lc_ctx_t *ctx)
 		}
 		free(ctx);
 	}
-	ctx = NULL;
-}
-
-char *lc_opcode_text(lc_opcode_t op)
-{
-	switch (op) {
-		LC_OPCODES(LC_OPCODE_TEXT)
-	}
-	return NULL;
-}
-
-void lc_op_data(lc_socket_call_t *sc, lc_message_t *msg)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-
-	/* callback to message handler */
-	if (sc->callback_msg)
-		sc->callback_msg(msg);
-}
-
-void lc_op_ping(lc_socket_call_t *sc, lc_message_t *msg)
-{
-	(void) sc;
-	int opt;
-	logmsg(LOG_TRACE, "%s", __func__);
-
-	/* received PING, echo PONG back to same channel */
-	opt = LC_OP_PONG;
-	lc_msg_set(msg, LC_ATTR_OPCODE, &opt);
-	if (lc_msg_send(msg->chan, msg) == -1)
-		logmsg(LOG_ERROR, "lc_msg_send error: '%s'", strerror(errno));
-
-	/* TODO: send PONG reply to global scope solicited-node multicast address of src */
-
-	/* TODO: ff0e:: + low-order 24 bits of src address */
-
-}
-
-void lc_op_pong(lc_socket_call_t *sc, lc_message_t *msg)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-
-	/* callback to message handler */
-	if (sc->callback_msg)
-		sc->callback_msg(msg);
-}
-
-void lc_op_get(lc_socket_call_t *sc, lc_message_t *msg)
-{
-	(void) sc;
-	logmsg(LOG_TRACE, "%s", __func__);
-
-	lc_channel_t *chan;
-	lc_ctx_db_t *db;
-	size_t vlen;
-	lc_opcode_t opcode = LC_OP_RET;
-	int err = 0;
-	char *key;
-	char *val = NULL;
-	char *pkt;
-
-	if (msg == NULL) {
-		lc_error_log(LOG_ERROR, LC_ERROR_MESSAGE_REQUIRED);
-		return;
-	}
-	if (msg->data == NULL) {
-		lc_error_log(LOG_ERROR, LC_ERROR_MESSAGE_EMPTY);
-		return;
-	}
-	chan = msg->chan;
-	if (chan == NULL) {
-		lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
-		return;
-	}
-	db = chan->ctx->db;
-	if (db == NULL) {
-		lc_error_log(LOG_ERROR, LC_ERROR_DB_REQUIRED);
-		return;
-	}
-
-	/* read requested value from database */
-	key = malloc(msg->len + 1);
-	if (key == NULL) {
-		lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
-		goto errexit;
-	}
-	memcpy(key, msg->data, msg->len);
-	key[msg->len] = '\0';
-	if ((err = lc_db_get(chan->ctx, chan->uri, key, msg->len, (void *)&val, &vlen)) != 0) {
-		lc_error_log(LOG_DEBUG, err);
-		goto errexit;
-	}
-
-	/* send response with data (opcode: RET) */
-	/* [seq][rnd][data] */
-	pkt = malloc(vlen + sizeof(lc_seq_t) + sizeof(lc_rnd_t));
-	if (pkt == NULL) {
-		lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
-		goto errexit;
-	}
-	memcpy(pkt, &msg->seq, sizeof(lc_seq_t));
-	memcpy(pkt + sizeof(lc_seq_t), &msg->rnd, sizeof(lc_rnd_t));
-	memcpy(pkt + sizeof(lc_seq_t) + sizeof(lc_rnd_t), val, vlen);
-	lc_msg_init_data(msg, pkt, vlen + sizeof(lc_seq_t) + sizeof(lc_rnd_t), NULL, NULL);
-	lc_msg_set(msg, LC_ATTR_OPCODE, &opcode);
-	lc_msg_send(chan, msg);
-
-	/* DEBUG logging */
-	char *strkey, *strval;
-	strkey = strndup(key, msg->len);
-	if (strkey == NULL) {
-		lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
-		free(val);
-		goto errexit;
-	}
-	strval = strndup(val, vlen);
-	if (strval == NULL) {
-		lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
-		free(val);
-		free(strkey);
-		goto errexit;
-	}
-	logmsg(LOG_DEBUG, "getting key '%s' on channel '%s' == '%s'", strkey, chan->uri, strval);
-	free(strkey);
-	free(strval);
-
-	free(val);
-errexit:
-	free(key);
-	logmsg(LOG_FULLTRACE, "%s exiting", __func__);
-}
-
-void lc_op_ret(lc_socket_call_t *sc, lc_message_t *msg)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-
-	/* callback to message handler */
-	if (sc->callback_msg)
-		sc->callback_msg(msg);
-}
-
-void lc_op_set(lc_socket_call_t *sc, lc_message_t *msg)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-
-	lc_ctx_db_t *db;
-	lc_len_t klen;
-	lc_len_t vlen;
-	char *key;
-	char *val;
-	lc_channel_t *chan;
-
-	if (msg == NULL) {
-		lc_error_log(LOG_ERROR, LC_ERROR_MESSAGE_REQUIRED);
-		return;
-	}
-	if (msg->data == NULL) {
-		lc_error_log(LOG_ERROR, LC_ERROR_MESSAGE_EMPTY);
-		return;
-	}
-	chan = msg->chan;
-	if (chan == NULL) {
-		lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
-		return;
-	}
-	db = chan->ctx->db;
-	if (db == NULL) {
-		lc_error_log(LOG_ERROR, LC_ERROR_DB_REQUIRED);
-		return;
-	}
-
-	/* extract key and data */
-	memcpy(&klen, msg->data, sizeof(lc_len_t));
-	klen = be64toh(klen);
-	vlen = msg->len - klen - sizeof(lc_len_t);
-	key = malloc(klen);
-	if (key == NULL) {
-		lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
-		return;
-	}
-	val = malloc(vlen);
-	if (val == NULL) {
-		lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
-		free(key);
-		return;
-	}
-	memcpy(key, (char *)msg->data + sizeof(lc_len_t), klen);
-	memcpy(val, (char *)msg->data + sizeof(lc_len_t) + klen, vlen);
-
-	/* DEBUG logging */
-	char *strkey, *strval;
-	strkey = strndup(key, klen);
-	if (strkey == NULL) {
-		lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
-		free(key);
-		free(val);
-		return;
-	}
-	strval = strndup(val, vlen);
-	if (strval == NULL) {
-		lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
-		free(key);
-		free(val);
-		free(strkey);
-		return;
-	}
-	logmsg(LOG_DEBUG, "setting key '%s' on channel '%s' to '%s'", strkey, chan->uri, strval);
-	free(strkey);
-	free(strval);
-
-	/* write to database */
-	lc_db_set(chan->ctx, chan->uri, key, klen, val, vlen);
-
-	free(key);
-	free(val);
-
-	/* callback to message handler */
-	if (sc->callback_msg)
-		sc->callback_msg(msg);
-
-	logmsg(LOG_FULLTRACE, "%s exiting", __func__);
-}
-
-void lc_op_del(lc_socket_call_t *sc, lc_message_t *msg)
-{
-	(void)sc;
-	(void)msg;
-	logmsg(LOG_TRACE, "%s", __func__);
-
-	/* TODO */
 }
 
 lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 {
-	logmsg(LOG_TRACE, "%s", __func__);
-	lc_socket_t *sock, *p;
-	int s, i;
+	lc_socket_t *sock;
+	int s, i, err = 0;
 
 	sock = calloc(1, sizeof(lc_socket_t));
 	if (!sock) return NULL;
 	sock->ctx = ctx;
 	sock->id = ++sock_id;
-	if (!ctx->sock_list) ctx->sock_list = sock;
-	else {
-		for (p = ctx->sock_list; p; p = p->next) {
-			if (p->next == NULL) {
-				p->next = sock;
-				break;
-			}
-		}
-	}
+	sock->next = ctx->sock_list;
+	ctx->sock_list = sock;
 	s = socket(AF_INET6, SOCK_DGRAM, 0);
 	if (s == -1) {
-		logmsg(LOG_DEBUG, "socket ERROR: %s", strerror(errno));
-		goto socket_err;
+		err = errno;
+		goto err_0;
 	}
-	sock->socket = s;
-	logmsg(LOG_DEBUG, "socket %i created with id %u", sock->socket, sock->id);
-
+	sock->sock = s;
 #ifdef IPV6_MULTICAST_ALL
 	/* available in Linux 4.2 onwards */
 	i = 0;
-	if (setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_ALL, &i, sizeof(i)) == -1)
-		goto setsockopt_err;
+	if (setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_ALL, &i, sizeof(i)) == -1) {
+		goto err_1;
+	}
 #endif
 	i = 1;
-	if (setsockopt(s, IPPROTO_IPV6, IPV6_RECVPKTINFO, &i, sizeof(i)) == -1)
-		goto setsockopt_err;
+	if (setsockopt(s, IPPROTO_IPV6, IPV6_RECVPKTINFO, &i, sizeof(i)) == -1) {
+		goto err_1;
+	}
 	i = DEFAULT_MULTICAST_LOOP;
-	if (setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &i, sizeof(i)) == -1)
-		goto setsockopt_err;
+	if (setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &i, sizeof(i)) == -1) {
+		goto err_1;
+	}
 	i = DEFAULT_MULTICAST_HOPS;
-	if (setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &i, sizeof(i)) == -1)
-		goto setsockopt_err;
+	if (setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &i, sizeof(i)) == -1) {
+		goto err_1;
+	}
 	return sock;
-setsockopt_err:
+err_1:
+	err = errno;
 	close(s);
-socket_err:
+err_0:
 	free(sock);
+	errno = err;
 	return NULL;
 }
 
-int lc_socket_getopt(lc_socket_t *sock, int optname, void *optval, socklen_t *optlen)
+lc_ctx_t * lc_ctx_new(void)
 {
-	if (sock == NULL) return lc_error_log(LOG_DEBUG, LC_ERROR_SOCKET_REQUIRED);
-	return getsockopt(sock->socket, IPPROTO_IPV6, optname, optval, optlen);
-}
+	lc_ctx_t *ctx;
 
-int lc_socket_setopt(lc_socket_t *sock, int optname, const void *optval, socklen_t optlen)
-{
-	if (sock == NULL) return lc_error_log(LOG_DEBUG, LC_ERROR_SOCKET_REQUIRED);
-	return setsockopt(sock->socket, IPPROTO_IPV6, optname, optval, optlen);
-}
+	if (!(ctx = calloc(1, sizeof(lc_ctx_t)))) return NULL; /* errno set by calloc */
+	ctx->id = ++ctx_id;
+	ctx->next = ctx_list;
+	ctx_list = ctx;
 
-int lc_socket_listen(lc_socket_t *sock, void (*callback_msg)(lc_message_t*),
-					void (*callback_err)(int))
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-	pthread_attr_t attr = {0};
-	lc_socket_call_t *sc;
-
-	if (sock == NULL)
-		return lc_error_log(LOG_DEBUG, LC_ERROR_SOCKET_REQUIRED);
-	if (sock->thread != 0)
-		return lc_error_log(LOG_DEBUG, LC_ERROR_SOCKET_LISTENING);
-
-	sc = calloc(1, sizeof(lc_socket_call_t));
-	if (sc == NULL)
-		return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
-	sc->sock = sock;
-	sc->callback_msg = callback_msg;
-	sc->callback_err = callback_err;
-
-	pthread_attr_init(&attr);
-	pthread_create(&(sock->thread), &attr, lc_socket_listen_thread, sc);
-	pthread_attr_destroy(&attr);
-
-	return 0;
-}
-
-int lc_socket_listen_cancel(lc_socket_t *sock)
-{
-	int err;
-	logmsg(LOG_TRACE, "%s", __func__);
-	if (sock->thread != 0) {
-		if ((err = pthread_cancel(sock->thread)) != 0)
-			return lc_error_log(LOG_ERROR, LC_ERROR_THREAD_CANCEL);
-		if ((err = pthread_join(sock->thread, NULL)) != 0)
-			return lc_error_log(LOG_ERROR, LC_ERROR_THREAD_JOIN);
-		sock->thread = 0;
-	}
-
-	return 0;
-}
-
-static void process_msg(lc_socket_call_t *sc, lc_message_t *msg)
-{
-	lc_channel_t *chan;
-	inet_ntop(AF_INET6, &msg->dst, msg->dstaddr, INET6_ADDRSTRLEN);
-	inet_ntop(AF_INET6, &msg->src, msg->srcaddr, INET6_ADDRSTRLEN);
-	logmsg(LOG_DEBUG, "message destination %s", msg->dstaddr);
-	logmsg(LOG_DEBUG, "message source      %s", msg->srcaddr);
-	logmsg(LOG_DEBUG, "got data %zi bytes", msg->len);
-	msg->sockid = sc->sock->id;
-
-	/* update channel stats */
-	chan = lc_channel_by_address(sc->sock->ctx, msg->dstaddr);
-	msg->chan = chan;
-	if (chan) {
-		chan->seq = (msg->seq > chan->seq) ? msg->seq + 1 : chan->seq + 1;
-		chan->rnd = msg->rnd;
-		logmsg(LOG_DEBUG, "channel clock set to %lu.%lu", chan->seq, chan->rnd);
-		lc_channel_logmsg(chan, msg); /* store in channel log */
-	}
-
-	/* process opcode */
-	logmsg(LOG_DEBUG, "OPCODE received: %i", msg->op);
-	switch (msg->op) {
-		LC_OPCODES(LC_OPCODE_FUN)
-	default:
-		lc_error_log(LOG_ERROR, LC_ERROR_INVALID_OPCODE);
-	}
-}
-
-void *lc_socket_listen_thread(void *arg)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-	ssize_t len;
-	lc_message_t msg;
-	lc_socket_call_t *sc = arg;
-	lc_msg_init(&msg);
-	pthread_cleanup_push(free, arg);
-	pthread_cleanup_push(lc_msg_free, &msg);
-	while(1) {
-		len = lc_msg_recv(sc->sock, &msg);
-		if (len > 0) {
-			msg.bytes = len;
-			process_msg(sc, &msg);
-		}
-		if (len < 0) {
-			lc_msg_free(&msg);
-			if (sc->callback_err)
-				sc->callback_err(len);
-		}
-		lc_msg_free(&msg);
-	}
-	/* not reached */
-	pthread_cleanup_pop(0);
-	pthread_cleanup_pop(0);
-	free(sc);
-	return NULL;
-}
-
-void lc_socket_close(lc_socket_t *sock)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-	if (!sock) return;
-	lc_socket_listen_cancel(sock);
-	if (sock->socket)
-		close(sock->socket);
-	lc_socket_t *prev = NULL;
-	for (lc_socket_t *p = sock->ctx->sock_list; p != NULL; p = p->next) {
-		if (p->id == sock->id) {
-			if (prev) prev->next = p->next;
-			else sock->ctx->sock_list = p->next;
-		}
-		prev = p;
-	}
-	free(sock);
-	sock = NULL;
-}
-
-static lc_channel_t * lc_channel_ins(lc_ctx_t *ctx, lc_channel_t *chan)
-{
-	lc_channel_t *p;
-	if (!ctx->chan_list) ctx->chan_list = chan;
-	else {
-		for (p = ctx->chan_list; p != NULL; p = p->next) {
-			if (p->next == NULL) {
-				p->next = chan;
-				break;
-			}
-		}
-	}
-	return chan;
-}
-
-static void lc_channel_setid(lc_channel_t *chan)
-{
-	chan->id = ++chan_id;
-}
-
-lc_channel_t * lc_channel_copy(lc_ctx_t *ctx, lc_channel_t *chan)
-{
-	lc_channel_t *copy = calloc(1, sizeof(lc_channel_t));
-	if (!copy) return NULL;
-	copy->ctx = ctx;
-	lc_channel_setid(copy);
-	if (getaddrinfo(chan->address->ai_canonname, "0", chan->address, &copy->address)) {
-		perror("getaddrinfo()");
-		free(copy);
-		return NULL;
-	}
-	memcpy(copy->address->ai_addr, chan->address->ai_addr, sizeof(struct sockaddr_in6));
-	return lc_channel_ins(ctx, copy);
-}
-
-lc_channel_t * lc_channel_init(lc_ctx_t *ctx, char * grpaddr, char * service)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-	lc_channel_t *channel;
-	struct addrinfo *addr = NULL;
-	struct addrinfo hints = {0};
-	if (!ctx) {
-		lc_error_log(LOG_ERROR, LC_ERROR_CTX_REQUIRED);
-		return NULL;
-	}
-	hints.ai_family = AF_INET6;
-	hints.ai_socktype = SOCK_DGRAM;
-	hints.ai_flags = AI_NUMERICHOST;
-	if (getaddrinfo(grpaddr, service, &hints, &addr) != 0) {
-		logmsg(LOG_ERROR, "getaddrinfo() failed: %s", strerror(errno));
-		return NULL;
-	}
-	channel = calloc(1, sizeof(lc_channel_t));
-	if (channel == NULL) {
-		logmsg(LOG_ERROR, "calloc() failed: %s", strerror(errno));
-		freeaddrinfo(addr);
-		return NULL;
-	}
-	channel->ctx = ctx;
-	lc_channel_setid(channel);
-	channel->address = addr;
-	return lc_channel_ins(ctx, channel);
-}
-
-lc_channel_t * lc_channel_nnew(lc_ctx_t *ctx, unsigned char *uri, size_t len)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-	lc_channel_t *channel;
-	char hashaddr[INET6_ADDRSTRLEN];
-
-	if (!ctx) {
-		lc_error_log(LOG_ERROR, LC_ERROR_CTX_REQUIRED);
-		return NULL;
-	}
-
-	if ((lc_hashgroup(DEFAULT_ADDR, uri, len, hashaddr, 0)) != 0)
-		return NULL;
-
-	logmsg(LOG_DEBUG, "channel group address: %s", hashaddr);
-
-	channel = lc_channel_init(ctx, hashaddr, LC_DEFAULT_PORT);
-	channel->uri = (char *)uri;
-
-	return channel;
-}
-
-lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char * uri)
-{
-	return lc_channel_nnew(ctx, (unsigned char *)uri, strlen(uri));
-}
-
-lc_channel_t * lc_channel_sidehash(lc_channel_t *base, unsigned char *key, size_t keylen)
-{
-	struct in6_addr *in;
-	unsigned char *ptr;
-	lc_ctx_t *ctx = base->ctx;
-	lc_channel_t *side = lc_channel_copy(ctx, base);
-	if (!side) return NULL;
-	in = aitoin6(side->address);
-	ptr = (unsigned char *)&in->s6_addr[2];
-	hash_generic_key(ptr, 14, (unsigned char *)in, sizeof(struct in6_addr), key, keylen);
-	return side;
-}
-
-lc_channel_t * lc_channel_sideband(lc_channel_t *base, uint64_t band)
-{
-	lc_ctx_t *ctx = base->ctx;
-	lc_channel_t *side = lc_channel_copy(ctx, base);
-	if (!side) return NULL;
-	struct in6_addr *in = aitoin6(side->address);
-	uint64_t *ptr = (uint64_t *)&in->s6_addr[8];
-	*ptr = band;
-	return side;
-}
-
-int lc_channel_bind(lc_socket_t *sock, lc_channel_t * channel)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-	struct addrinfo *addr;
-	int opt = 1;
-
-	if (!sock)
-		return lc_error_log(LOG_ERROR, LC_ERROR_SOCKET_REQUIRED);
-	if (!channel)
-		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
-
-	addr = channel->address;
-	channel->socket = sock;
-
-	if ((setsockopt(sock->socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) == -1) {
-		logmsg(LOG_ERROR, "failed to set SO_REUSEADDR: %s", strerror(errno));
-	}
-
-	logmsg(LOG_DEBUG, "binding socket id %u to channel id %u", sock->id, channel->id);
-	if (bind(sock->socket, addr->ai_addr, addr->ai_addrlen) != 0) {
-		logmsg(LOG_ERROR, "failed to bind socket: %s", strerror(errno));
-		return LC_ERROR_SOCKET_BIND;
-	}
-	logmsg(LOG_DEBUG, "Bound to socket %i", sock->socket);
-
-	return 0;
-}
-
-struct addrinfo * lc_channel_addrinfo(lc_channel_t * channel)
-{
-	return channel->address;
-}
-
-lc_channel_t * lc_channel_by_address(lc_ctx_t *lctx, char addr[INET6_ADDRSTRLEN])
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-	lc_channel_t *p;
-	char dst[INET6_ADDRSTRLEN];
-
-	for (p = lctx->chan_list; p != NULL; p = p->next) {
-		if ((getnameinfo(p->address->ai_addr, p->address->ai_addrlen, dst,
-				INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST)) != 0)
-		{
-			continue;
-		}
-		if (strcmp(addr, dst) == 0)
-			break;
-	}
-
-	return p;
-}
-
-lc_ctx_t *lc_channel_ctx(lc_channel_t *chan)
-{
-	return chan->ctx;
-}
-
-char *lc_channel_uri(lc_channel_t *chan)
-{
-	return chan->uri;
-}
-
-int lc_channel_unbind(lc_channel_t * channel)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-	channel->socket = NULL;
-	return 0;
-}
-
-static int lc_channel_membership(int sock, int opt, struct ipv6_mreq *req)
-{
-	struct ifaddrs *ifaddr, *ifa = NULL;
-	int rc;
-
-	rc = (opt == IPV6_ADD_MEMBERSHIP) ? LC_ERROR_MCAST_JOIN : LC_ERROR_MCAST_PART;
-
-	if (getifaddrs(&ifaddr) == -1) {
-		req->ipv6mr_interface = 0; /* default interface */
-		if (!setsockopt(sock, IPPROTO_IPV6, opt, req, sizeof(req)))
-			return LC_ERROR_SETSOCKOPT;
-		return 0;
-	}
-	for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
-		if (!(ifa->ifa_flags & IFF_MULTICAST)) continue;
-		if (!ifa->ifa_addr) continue;
-		if (ifa->ifa_addr->sa_family != AF_INET6) continue;
-		req->ipv6mr_interface = if_nametoindex(ifa->ifa_name);
-		if (!req->ipv6mr_interface) continue;
-		if (!setsockopt(sock, IPPROTO_IPV6, opt, req, sizeof(struct ipv6_mreq))) {
-			rc = 0; /* report success if we joined anything */
-		}
-	}
-	freeifaddrs(ifaddr);
-
-	return rc;
-}
-
-static int lc_channel_action(lc_channel_t * channel, int opt)
-{
-	struct ipv6_mreq req = {0};
-	struct addrinfo *addr;
-	int sock;
-
-	if(!channel) return LC_ERROR_CHANNEL_REQUIRED;
-	if(!channel->socket) return LC_ERROR_SOCKET_REQUIRED;
-
-	sock = channel->socket->socket;
-	addr = channel->address;
-
-	memcpy(&req.ipv6mr_multiaddr,
-		&((struct sockaddr_in6*)(addr->ai_addr))->sin6_addr,
-		sizeof(req.ipv6mr_multiaddr));
-
-	return lc_channel_membership(sock, opt, &req);
-}
-
-int lc_channel_part(lc_channel_t * channel)
-{
-	return lc_channel_action(channel, IPV6_DROP_MEMBERSHIP);
-}
-
-int lc_channel_join(lc_channel_t * channel)
-{
-	return lc_channel_action(channel, IPV6_ADD_MEMBERSHIP);
-}
-
-lc_socket_t *lc_channel_socket(lc_channel_t *channel)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-	return channel->socket;
-}
-
-int lc_channel_socket_raw(lc_channel_t *channel)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-	return channel->socket->socket;
-}
-
-int lc_socket_raw(lc_socket_t *sock)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-	return sock->socket;
-}
-
-int lc_channel_free(lc_channel_t * channel)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-	if (channel == NULL)
-		return 0;
-	/* remove from chan_list */
-	lc_channel_t *prev = NULL;
-	for (lc_channel_t *p = channel->ctx->chan_list; p != NULL; p = p->next) {
-		if (p->id == channel->id) {
-			if (prev) prev->next = p->next;
-			else channel->ctx->chan_list = p->next;
-		}
-		prev = p;
-	}
-	if (channel->address != NULL)
-		freeaddrinfo(channel->address);
-	free(channel);
-	channel = NULL;
-	return 0;
-}
-
-ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-	ssize_t i = 0, err = 0;
-	struct iovec iov[2];
-	struct msghdr msgh;
-	char buf[sizeof(lc_message_head_t)];
-	char cmsgbuf[BUFSIZE];
-	struct sockaddr_in6 from;
-	socklen_t fromlen = sizeof(from);
-	struct cmsghdr *cmsg;
-	struct in6_pktinfo *pi;
-	lc_message_head_t head;
-
-	assert(sock != NULL);
-
-	logmsg(LOG_DEBUG, "recvmsg on sock = %i", sock->socket);
-	i = recv(sock->socket, NULL, 0, MSG_PEEK | MSG_TRUNC);
-	if (i == -1) return i;
-	logmsg(LOG_DEBUG, "%zd bytes waiting to be read", i);
-
-	if ((size_t)i > sizeof(lc_message_head_t)) {
-		err = lc_msg_init_size(msg, i - sizeof(lc_message_head_t));
-		if (err) return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
-	}
-
-	memset(&msgh, 0, sizeof(struct msghdr));
-	iov[0].iov_base = buf;
-	iov[0].iov_len = sizeof(lc_message_head_t);
-	iov[1].iov_base = msg->data;
-	iov[1].iov_len = msg->len;
-	msgh.msg_control = cmsgbuf;
-	msgh.msg_controllen = BUFSIZE;
-	msgh.msg_name = &from;
-	msgh.msg_namelen = fromlen;
-	msgh.msg_iov = iov;
-	msgh.msg_iovlen = 2;
-	msgh.msg_flags = 0;
-
-	i = recvmsg(sock->socket, &msgh, 0);
-	if (i == -1) {
-		logmsg(LOG_DEBUG, "recvmsg ERROR: %s", strerror(errno));
-		return i;
-	}
-	if (i > 0) {
-	        /* read header */
-		memcpy(&head, buf, sizeof(lc_message_head_t));
-		msg->seq = be64toh(head.seq);
-		msg->rnd = be64toh(head.rnd);
-		msg->len = be64toh(head.len);
-		msg->timestamp = be64toh(head.timestamp);
-		msg->op = head.op;
-		for (cmsg = CMSG_FIRSTHDR(&msgh);
-		     cmsg != NULL;
-		     cmsg = CMSG_NXTHDR(&msgh, cmsg))
-		{
-			if ((cmsg->cmsg_level == IPPROTO_IPV6)
-			&& (cmsg->cmsg_type == IPV6_PKTINFO))
-			{
-				pi = (struct in6_pktinfo *) CMSG_DATA(cmsg);
-				msg->dst = pi->ipi6_addr;
-				msg->src = (&from)->sin6_addr;
-				break;
-			}
-		}
-	}
-
-	logmsg(LOG_FULLTRACE, "%s exiting", __func__);
-	return i;
-}
-
-static void lc_msg_sendto_error(int err, struct addrinfo *addr)
-{
-	char dst[INET6_ADDRSTRLEN];
-	getnameinfo(addr->ai_addr, addr->ai_addrlen, dst, INET6_ADDRSTRLEN,
-			NULL, 0, NI_NUMERICHOST);
-	logmsg(LOG_DEBUG, "sendto(): '%s'", dst);
-	logmsg(LOG_ERROR, "sendto(): '%s'", strerror(err));
-}
-
-ssize_t lc_msg_sendto(int sock, const void *buf, size_t len, struct addrinfo *addr)
-{
-	ssize_t bytes;
-	bytes = sendto(sock, buf, len, 0, addr->ai_addr, addr->ai_addrlen);
-	if (bytes == -1)
-		lc_msg_sendto_error(errno, addr);
-	else
-		logmsg(LOG_DEBUG, "%i bytes sent", (int)bytes);
-	return bytes;
-}
-
-ssize_t lc_msg_sendto_all(int sock, const void *buf, size_t len, struct addrinfo *addr)
-{
-	struct ifaddrs *ifa, *ifap;
-	ssize_t bytes = 0;
-	unsigned int *iface;
-	if (getifaddrs(&ifa) == -1) {
-		logmsg(LOG_DEBUG, "getifaddrs(): %s", strerror(errno));
-		bytes = -1;
-	}
-	else {
-		int c = 0, duplicate = 0;
-		unsigned int i = 0;
-		/* getifaddrs can give duplicate ifs => keep list and de-dupe */
-		for (ifap = ifa; ifap; ifap = ifap->ifa_next) c++;
-		iface = calloc(c, sizeof (unsigned int));
-		if (!iface) return -1; /* errno = ENOMEM set by calloc */
-		c = 0;
-		for (ifap = ifa; ifap; ifap = ifap->ifa_next) {
-			duplicate = 0;
-			if ((ifap->ifa_flags & IFF_MULTICAST) != IFF_MULTICAST)
-				continue;
-			if (ifap->ifa_addr == NULL
-			||  ifap->ifa_addr->sa_family != AF_INET6)
-				continue;
-			i = if_nametoindex(ifap->ifa_name);
-			for (int j = 0; j < c; j++) {
-				if (iface[j] == i) {
-					duplicate = 1;
-					break;
-				}
-			}
-			if (duplicate) continue;
-			iface[c++] = i;
-			if (!setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &i, sizeof(i)))
-				continue;
-			logmsg(LOG_DEBUG, "Sending on interface %s", ifap->ifa_name);
-			bytes = lc_msg_sendto(sock, buf, len, addr);
-		}
-		freeifaddrs(ifa);
-		free(iface);
-	}
-	return bytes;
-}
-
-ssize_t lc_msg_send(lc_channel_t *channel, lc_message_t *msg)
-{
-	logmsg(LOG_TRACE, "%s", __func__);
-	if (channel == NULL)
-		return lc_error_log(LOG_ERROR, LC_ERROR_CHANNEL_REQUIRED);
-	if (channel->address == NULL)
-		return lc_error_log(LOG_ERROR, LC_ERROR_INVALID_PARAMS);
-	if (channel->socket == NULL)
-		return lc_error_log(LOG_ERROR, LC_ERROR_SOCKET_REQUIRED);
-	if (msg == NULL)
-		return lc_error_log(LOG_ERROR, LC_ERROR_MESSAGE_REQUIRED);
-	if (msg->len > 0 && msg->data == NULL)
-		return lc_error_log(LOG_ERROR, LC_ERROR_MESSAGE_EMPTY);
-
-	struct addrinfo *addr = channel->address;
-	int sock = channel->socket->socket;
-	lc_message_head_t *head = NULL;
-	char *buf = NULL;
-	size_t len = 0;
-	ssize_t bytes = 0;
-	struct timespec t;
-	int state = 0;
-	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &state);
-	head = calloc(1, sizeof(lc_message_head_t));
-	if (head == NULL)
-		return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
-	if (msg->timestamp != 0){
-		head->timestamp = htobe64(msg->timestamp);
-	}
-	else if (clock_gettime(CLOCK_REALTIME, &t) == 0) {
-		head->timestamp = htobe64(t.tv_sec * 1000000000 + t.tv_nsec);
-	}
-	logmsg(LOG_DEBUG, "nanostamp: %"PRIu64"", be64toh(head->timestamp));
-	head->seq = htobe64(++channel->seq);
-	lc_getrandom(&head->rnd, sizeof(lc_rnd_t));
-	head->len = htobe64(msg->len);
-	head->op = msg->op;
-	len = msg->len;
-
-	logmsg(LOG_DEBUG, "sending message with OPCODE %i", msg->op);
-
-	buf = calloc(1, sizeof(lc_message_head_t) + len);
-	if (buf == NULL) {
-		free(head);
-		return lc_error_log(LOG_ERROR, LC_ERROR_MALLOC);
-	}
-	memcpy(buf, head, sizeof(lc_message_head_t));
-	memcpy(buf + sizeof(lc_message_head_t), msg->data, len);
-	len += sizeof(lc_message_head_t);
-
-	unsigned i = (channel->ctx->tapname) ? if_nametoindex(channel->ctx->tapname) : 0;
-	if (setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &i, sizeof(i) == 0)) {
-		if (i)
-			logmsg(LOG_DEBUG, "Sending on interface %s", channel->ctx->tapname);
-		else
-			logmsg(LOG_DEBUG, "Sending on default interface");
-		bytes = lc_msg_sendto(sock, buf, len, addr);
-	}
-	free(head);
-	free(buf);
-	pthread_setcancelstate(state, NULL);
-	return bytes;
-}
-
-int lc_getrandom(void *buf, size_t buflen)
-{
-	int fd;
-	int err = 0;
-	ssize_t len;
-
-	if ((fd = open("/dev/urandom", O_RDONLY)) == -1)
-		return lc_error_log(LOG_ERROR, LC_ERROR_RANDOM_OPEN);
-	if ((len = read(fd, buf, buflen)) == -1) {
-		err = lc_error_log(LOG_ERROR, LC_ERROR_RANDOM_READ);
-	}
-	close(fd);
-
-	return err;
+	return ctx;
 }

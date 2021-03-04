@@ -1,16 +1,15 @@
 #include "test.h"
 #include <librecast/net.h>
-#include "../src/log.h"
 
 int main()
 {
-	test_name("lc_msg_set() / lc_msg_get()");
-	LOG_LEVEL = 127;
 	char data[] = "life, the universe and everything";
 	size_t len = strlen(data);
 	int op = LC_OP_PING;
 	int *getint;
 	void *ptr;
+
+	test_name("lc_msg_set() / lc_msg_get()");
 
 	lc_message_t msg;
 	lc_msg_init(&msg);
@@ -45,7 +44,6 @@ int main()
 
 	test_assert(lc_msg_get(&msg, LC_ATTR_OPCODE, (void **)&getint) == 0,
 			"lc_msg_get(): get opcode value");
-	logmsg(LOG_DEBUG, "getint (opcode) == %i", *getint);
 
 	test_assert(len == strlen(data), "len unmodified by lc_msg_set() barney found a bug");
 
@@ -54,7 +52,6 @@ int main()
 
 	test_assert(lc_msg_get(&msg, LC_ATTR_LEN, (void **)&getint) == 0,
 			"lc_msg_get(): get length");
-	logmsg(LOG_DEBUG, "getint (len) == %i", *getint);
 	test_assert(len == strlen(data), "len unmodified by lc_msg_set() fred found a bug");
 	test_log("%i == %i", len, *getint);
 	test_assert(len == *getint, "lc_msg_get(): check length");

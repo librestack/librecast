@@ -2,20 +2,7 @@
 
 ## Prerequisites
 
-* openssl
 * libsodium
-* libbridge from bridge-utils
-
-```
-I've turned libbridge into a shared library.  Install as follows:
-git clone https://github.com/brettsheffield/bridge-utils
-cd bridge-utils
-autoconf
-./configure --prefix=/ --libdir=/usr/lib6 --includedir=/usr/include --with-linux-headers=/usr/include
-cd libbridge
-make
-make install
-```
 
 ## Installing from source
 

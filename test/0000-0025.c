@@ -1,5 +1,4 @@
 #include "test.h"
-#include "../src/macro.h"
 #include <librecast/net.h>
 #include <sys/types.h>
 #include <sys/param.h>
@@ -30,14 +29,14 @@ int main()
 
 	base = lc_channel_new(lctx, "freedom");
 	test_assert(base != NULL, "lc_channel_new() - create base channel");
-	memcpy(&addrside, aitoin6(lc_channel_addrinfo(base)), 16);
+	memcpy(&addrside, &lc_channel_sockaddr(base)->sin6_addr, 16);
 	dumpaddr(&addrside.in6);
 
 	/* lower side band (zero lower 64 bits) */
 	test_assert((side = lc_channel_sideband(base, 0)) != NULL,
 			"lc_channel_sideband() - lower sideband");
 
-	memcpy(&addrside, aitoin6(lc_channel_addrinfo(side)), 16);
+	memcpy(&addrside, &lc_channel_sockaddr(side)->sin6_addr, 16);
 	dumpaddr(&addrside.in6);
 	pop = 0;
 	for (int i = 8; i < 16; i++) {
@@ -49,7 +48,7 @@ int main()
 	test_assert((side = lc_channel_sideband(base, UINT64_MAX)) != NULL,
 			"lc_channel_sideband() - lower sideband");
 
-	memcpy(&addrside, aitoin6(lc_channel_addrinfo(side)), 16);
+	memcpy(&addrside, &lc_channel_sockaddr(side)->sin6_addr, 16);
 	dumpaddr(&addrside.in6);
 	pop = 0;
 	for (int i = 8; i < 16; i++) {

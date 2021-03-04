@@ -1,6 +1,5 @@
 #include "test.h"
 #include <librecast/net.h>
-#include "../src/log.h"
 #include <signal.h>
 #include <time.h>
 #include <unistd.h>
@@ -16,17 +15,17 @@ void msg_received(lc_message_t *msg)
 {
 	test_log("message received");
 	gotmsg = 1;
-	kill(getpid(), SIGINT); /* FIXME: valgrind interfering with signal */
+	kill(getpid(), SIGINT);
 }
 
 int main()
 {
-	test_name("multicast ping (loopback) - don't receive msgs for other channels");
-	LOG_LEVEL = 127;
 	lc_ctx_t *lctx = NULL;
 	lc_socket_t *sock[2] = { NULL, NULL };
 	lc_channel_t *chan[2] = { NULL, NULL };
 	lc_message_t msg;
+
+	test_name("multicast ping (loopback) - don't receive msgs for other channels");
 
 	lctx = lc_ctx_new();
 	sock[0] = lc_socket_new(lctx);

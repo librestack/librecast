@@ -4,9 +4,10 @@
 SHELL := /bin/bash
 CFLAGS += -Wall -g -I ../include
 NOTOBJS := ../src/$(PROGRAM).o
-OBJS := test.o $(filter-out $(NOTOBJS), $(wildcard ../src/*.o))
+TESTOBJS := test.o misc.o falloc.o
+OBJS := $(TESTOBJS) $(filter-out $(NOTOBJS), $(wildcard ../src/*.o))
 LIBRARY_PATH := ../src
-LDFLAGS := -L$(LIBRARY_PATH) -llibrecast -llcdb -llsdb
+LDFLAGS := -L$(LIBRARY_PATH) -ldl -llibrecast -llsdb -llcdb
 BOLD := "\\e[0m\\e[2m"
 RESET := "\\e[0m"
 PASS = "\\e[0m\\e[32mOK\\e[0m" # end bold, green text
@@ -34,7 +35,7 @@ build:
 0000-0019.test: LDFLAGS += -pthread
 
 %.test: %.c clean build $(OBJS)
-	@$(CC) $(CFLAGS) -o $@ $< test.o $(LDFLAGS)
+	@$(CC) $(CFLAGS) -o $@ $< $(TESTOBJS) $(LDFLAGS)
 	@echo -ne "\e[2m" $* " "
 	@echo -ne "\n== $@" >> $(LOGFILE)
 	@LD_LIBRARY_PATH=$(LIBRARY_PATH) $(MEMCHECK) ./$@ 2>> $(LOGFILE) && echo -e " $(PASS)" || echo -e " $(FAIL)"
@@ -51,6 +52,8 @@ build:
 %.debug: MEMCHECK = gdb
 %.debug: %.test
 	@echo "exiting debugger"
+
+falloc.o: falloc.h
 
 test.o: test.h
 

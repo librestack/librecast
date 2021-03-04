@@ -1,14 +1,13 @@
 #include "test.h"
 #include <librecast/net.h>
-#include "../src/log.h"
 
 int main()
 {
-	test_name("lc_socket_listen() / lc_socket_listen_cancel()");
-	LOG_LEVEL = 127;
 	lc_ctx_t *lctx = NULL;
 	lc_socket_t *sock = NULL; 
 	lc_channel_t *chan = NULL;
+
+	test_name("lc_socket_listen() / lc_socket_listen_cancel()");
 
 	lctx = lc_ctx_new();
 	sock = lc_socket_new(lctx);
@@ -23,17 +22,14 @@ int main()
 	test_assert(lc_socket_listen(sock, NULL, NULL) == 0,
 			"lc_socket_listen() returns 0 on success");
 
+	test_assert(lc_socket_listen(sock, NULL, NULL) == LC_ERROR_SOCKET_LISTENING,
+			"lc_socket_listen() returns LC_ERROR_SOCKET_LISTENING when socket busy");
+
 	test_assert(lc_socket_listen_cancel(sock) == 0,
 			"lc_socket_listen_cancel() returns 0 on success");
 
 	test_assert(lc_socket_listen_cancel(sock) == 0,
 			"lc_socket_listen_cancel() can be called twice");
-
-	test_assert(lc_socket_listen(sock, NULL, NULL) == 0,
-			"lc_socket_listen() returns 0 on success");
-
-	test_assert(lc_socket_listen(sock, NULL, NULL) == LC_ERROR_SOCKET_LISTENING,
-			"lc_socket_listen() returns LC_ERROR_SOCKET_LISTENING when socket busy");
 
 	lc_channel_free(chan);
 	lc_socket_close(sock);

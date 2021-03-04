@@ -1,15 +1,7 @@
-#include <errno.h>
-#include <limits.h>
-#include <stdio.h>
-#include <string.h>
-#include "log.h"
-#include <librecast/errors.h>
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+/* Copyright (c) 2017-2021 Brett Sheffield <bacs@librecast.net> */
 
-int lc_error_log(int level, int e)
-{
-	logmsg(level, "%s", lc_error_msg(e));
-	return e;
-}
+#include <librecast/errors.h>
 
 char *lc_error_msg(int e)
 {
@@ -17,16 +9,4 @@ char *lc_error_msg(int e)
 		LC_ERROR_CODES(LC_ERROR_MSG)
 	}
 	return "Unknown error";
-}
-
-void lc_print_error(int e, int errsv, char *errstr)
-{
-	char buf[LINE_MAX];
-	if (errsv != 0) {
-		strerror_r(errsv, buf, sizeof(buf));
-		logmsg(LOG_SEVERE, "%s: %s", errstr, buf);
-	}
-	else if (e != 0) {
-		logmsg(LOG_SEVERE, "%s: %s", errstr, lc_error_msg(e));
-	}
 }

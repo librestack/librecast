@@ -14,6 +14,9 @@
 Librecast is a project to provide fast, efficient and scalable
 communication by leveraging IPv6 multicast.
 
+NB: the database functions have been removed from this branch pending a complete
+rewrite as part of the next milestone.
+
 Features:
  * IPv6 and multicast supported from the outset
  * light, fast and simple design

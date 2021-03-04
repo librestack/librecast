@@ -3,10 +3,11 @@
 
 int main()
 {
-	test_name("lc_socket_get_id()");
 	lc_ctx_t *lctx;
 	lc_socket_t *sock = NULL;
 	uint32_t sockid;
+
+	test_name("lc_socket_get_id()");
 
 	sockid = lc_socket_get_id(sock);
 	test_assert(sockid == 0, "expected 0 when calling lc_socket_get_id(NULL)");
