@@ -1,0 +1,64 @@
+.TH LC_SOCKET_NEW 3 2021-02-21 "LIBRECAST" "Librecast Programmer's Manual"
+.SH NAME
+lc_socket_new, lc_socket_close \- create and free Librecast sockets
+.SH SYNOPSIS
+.nf
+.B #include <librecast/net.h>
+.PP
+.BI "lc_socket_t *lc_socket_new(lc_ctx_t " "*ctx" );
+.BI "void lc_socket_close(lc_socket_t " "*sock" );
+.fi
+.PP
+Compile and link with \fI\-llibrecast\fP.
+.SH DESCRIPTION
+.BR lc_socket_new ()
+creates a new Librecast socket.
+Call
+.BR lc_socket_close (3)
+when done.
+
+Sockets can also be freed by a call to
+.BR lc_ctx_free (3)
+on the Librecast context which will free the context and all associated sockets and
+channels.
+.PP
+.BR lc_socket_free ()
+closes and frees a Librecast socket created with
+.BR lc_socket_new (3)
+.
+.SH RETURN VALUE
+.BR lc_socket_new ()
+returns a pointer to a
+.I lc_socket_t
+handle.
+On error returns NULL and sets
+.I errno\fP.
+.BR
+.PP
+The
+.BR lc_socket_close ()
+function returns no value.
+.SH ERRORS
+.BR lc_socket_new ()
+can fail with the following errors:
+.TP
+.B ENOMEM
+Out of memory.
+Possibly, the application hit the
+.BR RLIMIT_AS
+or
+.BR RLIMIT_DATA
+limit described in
+.BR getrlimit (2).
+.PP
+.BR lc_socket_new ()
+could also fail with any of the errors listed in
+.BR socket (2)
+or
+.BR setsockopt (2).
+.SH SEE ALSO
+.BR lc_channel_new (3),
+.BR lc_ctx_new (3),
+.BR lc_socket_setopt (3),
+.BR setsockopt (2),
+.BR socket (2)
