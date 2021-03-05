@@ -5,5 +5,5 @@ PREFIX ?= /usr/local
 doc: install
 
 install:
-	install -d $(PREFIX)/share/man/man3
-	install *.3 $(PREFIX)/share/man/man3/
+	install -d $(DESTDIR)$(PREFIX)/share/man/man3
+	install *.3 $(DESTDIR)$(PREFIX)/share/man/man3/
