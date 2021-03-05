@@ -1,0 +1,23 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+/* Copyright (c) 2017-2021 Brett Sheffield <bacs@librecast.net> */
+
+#ifndef _LIBRECAST_CRYPTO_H
+#define _LIBRECAST_CRYPTO_H 1
+
+#include <stdio.h>
+
+/* hash arbitrary data */
+int hash_generic(unsigned char *hash, size_t hashlen, unsigned char *in, size_t inlen);
+
+/* hash arbitrary data with using a key. Key must be 32 bytes for BLAKE3 */
+int hash_generic_key(unsigned char *hash, size_t hashlen, unsigned char *in, size_t inlen, unsigned char *key, size_t keylen);
+
+/* multi-part hash functions */
+void hash_init(hash_state *state, unsigned char *key, size_t keylen, size_t hashlen);
+void hash_update(hash_state *state, unsigned char *msg, size_t msglen);
+void hash_final(hash_state *state, unsigned char *hash, size_t hashlen);
+
+/* hexdump hash with length len to file descriptor fd */
+void hash_hex_debug(FILE *fd, unsigned char *hash, size_t len);
+
+#endif /* _LIBRECAST_CRYPTO_H */

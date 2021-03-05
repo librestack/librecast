@@ -2,12 +2,7 @@
 
 ## Prerequisites
 
-* libsodium
-
-### Install libsodium on Ubuntu
-
-`sudo apt install libsodium-dev
-
+None.
 
 ## Installing from source
 
@@ -17,7 +12,7 @@ to.
 
 Download the source:
 
-`git clone https://github.com/librestack/librecast.git`
+`git clone --recursive https://github.com/librestack/librecast.git`
 
 then, do the usual:
 ```
@@ -30,3 +25,16 @@ To install to a different location:
 
 `DESTDIR=/tmp make install`
 
+## Using libsodium
+
+It is possible to use libsodium (BLAKE2B) for hashing instead of the included
+default BLAKE3 if desired.  BLAKE3 is faster and has similar characteristics to
+BLAKE2B.
+
+To use libsodium, build with:
+
+`USE_LIBSODIUM=1 make`
+
+### Install libsodium on Ubuntu (optional)
+
+`sudo apt install libsodium-dev`

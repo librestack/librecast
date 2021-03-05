@@ -2,7 +2,13 @@
 # Copyright (c) 2017-2021 Brett Sheffield <bacs@librecast.net>
 
 SHELL := /bin/bash
-CFLAGS += -Wall -g -I ../include
+CFLAGS += -Wall -g -I. -I../include
+:q
+ifdef USE_LIBSODIUM
+CFLAGS += -DUSE_LIBSODIUM=$(USE_LIBSODIUM)
+else
+CFLAGS += -I../libs/blake3/c
+endif
 NOTOBJS := ../src/$(PROGRAM).o
 OBJS := test.o misc.o falloc.o
 LIBRARY_PATH := ../src

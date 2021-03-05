@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Changed default hashing function to BLAKE3. This is faster and and has similar
+    security properties to BLAKE2B from libsodium.  Build with `make USE_LIBSODIUM=1` to
+    use BLAKE2B instead.
+
 ## [0.4.1] - 2021-03-04
 
 ### Added

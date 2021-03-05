@@ -145,14 +145,10 @@ int lc_msg_id(lc_message_t *msg, unsigned char *id, size_t len)
 {
 	hash_state state;
 
-	if (hash_init(&state, NULL, 0, len))
-		return LC_ERROR_HASH_INIT;
-	if (hash_update(&state, (unsigned char *)msg->data, msg->len))
-		return LC_ERROR_HASH_UPDATE;
-	if (hash_update(&state, (unsigned char *)msg->srcaddr, sizeof(struct in6_addr)))
-		return LC_ERROR_HASH_UPDATE;
-	if (hash_final(&state, id, len))
-		return LC_ERROR_HASH_FINAL;
+	hash_init(&state, NULL, 0, len);
+	hash_update(&state, (unsigned char *)msg->data, msg->len);
+	hash_update(&state, (unsigned char *)msg->srcaddr, sizeof(struct in6_addr));
+	hash_final(&state, id, len);
 
 	return 0;
 }
@@ -515,14 +511,10 @@ static int lc_hashgroup(char *baseaddr, unsigned char *group, size_t len,
 	unsigned char hashgrp[HASHSIZE];
 	hash_state state;
 
-	if (hash_init(&state, NULL, 0, HASHSIZE))
-		return LC_ERROR_HASH_INIT;
-	if (hash_update(&state, (unsigned char *)group, len))
-		return LC_ERROR_HASH_UPDATE;
-	if (hash_update(&state, (unsigned char *)&flags, sizeof(flags)))
-		return LC_ERROR_HASH_UPDATE;
-	if (hash_final(&state, hashgrp, HASHSIZE))
-		return LC_ERROR_HASH_FINAL;
+	hash_init(&state, NULL, 0, HASHSIZE);
+	hash_update(&state, (unsigned char *)group, len);
+	hash_update(&state, (unsigned char *)&flags, sizeof(flags));
+	hash_final(&state, hashgrp, HASHSIZE);
 
 	/* we have 112 bits (14 bytes) available for the group address
 	 * XOR the hashed group with the base multicast address */

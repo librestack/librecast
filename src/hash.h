@@ -4,22 +4,22 @@
 #ifndef _HASH_H
 #define _HASH_H 1
 
+#include "config.h"
+
+#if (HASH_TYPE == HASH_BLAKE2)
 #include <sodium.h>
 #define HASHSIZE crypto_generichash_BYTES
-#define HASHMAXBYTES crypto_generichash_BYTES_MAX
-#define HEXLEN HASHSIZE * 2 + 1
-
-#if 0
-void hash_hex_debug(unsigned char *hash, size_t len);
+typedef crypto_generichash_state hash_state;
+#elif (HASH_TYPE == HASH_BLAKE3)
+#include <blake3.h>
+#define HASHSIZE BLAKE3_OUT_LEN
+typedef blake3_hasher hash_state;
+char * sodium_bin2hex(char *const hex, const size_t hex_maxlen,
+        const unsigned char *const bin, const size_t bin_len);
 #endif
 
-typedef crypto_generichash_state hash_state;
+#include <librecast/crypto.h>
 
-/* wrapper for our hash function, in case we want to change it */
-int hash_generic(unsigned char *hash, size_t hashlen, unsigned char *in, size_t inlen);
-int hash_generic_key(unsigned char *hash, size_t hashlen, unsigned char *in, size_t inlen, unsigned char *key, size_t keylen);
-int hash_final(hash_state *state, unsigned char *hash, size_t hashlen);
-int hash_update(hash_state *state, unsigned char *msg, size_t msglen);
-int hash_init(hash_state *state, unsigned char *key, size_t keylen, size_t hashlen);
+#define HEXLEN HASHSIZE * 2 + 1
 
 #endif /* _HASH_H */

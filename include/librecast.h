@@ -4,3 +4,4 @@
 
 #include <librecast/types.h>	/* type declarations */
 #include <librecast/net.h>      /* just the network functions */
+#include <librecast/crypto.h>   /* cryptographic functions */

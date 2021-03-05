@@ -18,9 +18,12 @@ install: all doc
 uninstall:
 	cd src && $(MAKE) $@
 
-.PHONY: clean realclean src test sparse doc
+.PHONY: clean realclean src test sparse doc libs
 
-src:
+libs:
+	$(MAKE) -C $@
+
+src: libs
 	$(MAKE) -C $@
 
 doc:
@@ -35,6 +38,7 @@ todo:
 clean realclean:
 	cd src && $(MAKE) $@
 	cd test && $(MAKE) $@
+	cd libs && $(MAKE) $@
 	rm -rf ./$(COVERITY_DIR)
 	rm -f $(COVERITY_TGZ)
 
