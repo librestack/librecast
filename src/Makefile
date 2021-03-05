@@ -47,7 +47,7 @@ install: $(SOFILES)
 	$(INSTALL) -d $(INCLUDEDIR)
 	$(INSTALL_DATA) liblibrecast.so $(LIBDIR)/liblibrecast.so.$(VERSION)
 	cp -r ../include/* $(INCLUDEDIR)
-	$(LDCONFIG)
+	$(LDCONFIG) -n $(LIBDIR)
 	ln -sf liblibrecast.so.$(ABIVERS) $(LIBDIR)/liblibrecast.so
 
 .PHONY: clean realclean uninstall
