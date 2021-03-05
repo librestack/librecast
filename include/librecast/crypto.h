@@ -6,6 +6,13 @@
 
 #include <stdio.h>
 
+#define HASH_BLAKE2 2
+#define HASH_BLAKE3 3
+#ifdef USE_LIBSODIUM
+#define HASH_TYPE HASH_BLAKE2
+#else
+#define HASH_TYPE HASH_BLAKE3
+#endif
 #if (HASH_TYPE == HASH_BLAKE2)
 #include <sodium.h>
 #define HASHSIZE crypto_generichash_BYTES
