@@ -3,7 +3,6 @@
 
 SHELL := /bin/bash
 CFLAGS += -Wall -g -I. -I../include
-:q
 ifdef USE_LIBSODIUM
 CFLAGS += -DUSE_LIBSODIUM=$(USE_LIBSODIUM)
 else
