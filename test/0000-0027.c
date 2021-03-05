@@ -1,5 +1,5 @@
 #include "test.h"
-#include "../src/hash.h"
+#include <librecast/crypto.h>
 
 int main()
 {

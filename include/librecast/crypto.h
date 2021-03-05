@@ -6,6 +6,21 @@
 
 #include <stdio.h>
 
+#if (HASH_TYPE == HASH_BLAKE2)
+#include <sodium.h>
+#define HASHSIZE crypto_generichash_BYTES
+typedef crypto_generichash_state hash_state;
+#elif (HASH_TYPE == HASH_BLAKE3)
+#include <blake3.h>
+#define HASHSIZE BLAKE3_OUT_LEN
+typedef blake3_hasher hash_state;
+char * sodium_bin2hex(char *const hex, const size_t hex_maxlen,
+        const unsigned char *const bin, const size_t bin_len);
+#endif
+#define hash_bin2hex sodium_bin2hex
+
+#define HEXLEN HASHSIZE * 2 + 1
+
 /* hash arbitrary data */
 int hash_generic(unsigned char *hash, size_t hashlen, unsigned char *in, size_t inlen);
 

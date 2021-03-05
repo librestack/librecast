@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+`<librecast/crypto.h>`
+- hash_generic()
+- hash_generic_key()
+- hash_init()
+- hash_update()
+- hash_final()
+- hash_hex_debug()
+- hash_bin2hex()
+
+### Changed
+
 - Changed default hashing function to BLAKE3. This is faster and and has similar
     security properties to BLAKE2B from libsodium.  Build with `make USE_LIBSODIUM=1` to
     use BLAKE2B instead.
