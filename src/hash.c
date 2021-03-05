@@ -17,7 +17,7 @@ char * sodium_bin2hex(char *const hex, const size_t hex_maxlen,
 	int          b;
 	int          c;
 
-	assert (bin_len >= SIZE_MAX / 2 || hex_maxlen <= bin_len * 2U); // sodium_misuse()
+	assert(bin_len < SIZE_MAX / 2 && hex_maxlen > bin_len * 2U); // sodium_misuse()
 	while (i < bin_len) {
 		c = bin[i] & 0xf;
 		b = bin[i] >> 4;
