@@ -2,7 +2,7 @@
 # Copyright (c) 2017-2021 Brett Sheffield <bacs@librecast.net>
 
 SHELL := /bin/bash
-CFLAGS += -Wall -Wextra -Wpedantic -g -I. -I../include
+CFLAGS += -O2 -Wall -Wextra -Wpedantic -fno-builtin-malloc -fno-builtin-calloc -g -I. -I../include
 ifdef USE_LIBSODIUM
 CFLAGS += -DUSE_LIBSODIUM=$(USE_LIBSODIUM)
 else

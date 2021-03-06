@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static int allock;
+static volatile int allock;
 static size_t stackptr;
 static char stackbuf[1024];
 static void *(*_malloc)(size_t);
