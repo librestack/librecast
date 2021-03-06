@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2021-03-06
+
 ### Added
 
 `<librecast/crypto.h>`
@@ -29,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pass LIBDIR to ldconfig in the install target.
 - Building without libsodium.
 - Ensure a clean build before running single tests.
+- Work around bugs in gcc and glibc to fix test malloc
 
 ## [0.4.1] - 2021-03-04
 
