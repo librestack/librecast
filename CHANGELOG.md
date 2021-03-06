@@ -23,9 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     security properties to BLAKE2B from libsodium.  Build with `make USE_LIBSODIUM=1` to
     use BLAKE2B instead.
 
-###
-- support DESTDIR when installing docs
-- Building without libsodium
+### Fixed
+
+- Support DESTDIR when installing docs.
+- Pass LIBDIR to ldconfig in the install target.
+- Building without libsodium.
+- Ensure a clean build before running single tests.
 
 ## [0.4.1] - 2021-03-04
 
