@@ -35,8 +35,8 @@ void *malloc(size_t size)
 	}
 	else if (!_malloc) {
 		allock = 1;
-		_malloc = dlsym(RTLD_NEXT, "malloc");
-		_free = dlsym(RTLD_NEXT, "free");
+		*(void **)&_malloc = dlsym(RTLD_NEXT, "malloc");
+		*(void **)&_free = dlsym(RTLD_NEXT, "free");
 		allock = 0;
 	}
 	if (falloc_fail > 0) falloc_fail--;
@@ -62,5 +62,5 @@ void free(void *ptr)
 
 void falloc_setfail(int failafter)
 {
-	falloc_fail = failafter; 
+	falloc_fail = failafter;
 }
