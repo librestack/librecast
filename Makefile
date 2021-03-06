@@ -56,8 +56,8 @@ gcc: clean all
 check test sanitize: clean src
 	cd test && $(MAKE) $@
 
-%.test %.check %.debug:
-	cd test && $(MAKE) -B $@
+%.test %.check %.debug: clean src
+	cd test && $(MAKE) $@
 
 coverity: clean
 	PATH=$(PATH):../cov-analysis-linux64-2019.03/bin/ cov-build --dir cov-int $(MAKE) src
