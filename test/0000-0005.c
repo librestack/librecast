@@ -8,8 +8,10 @@ static void *dataptr, *hintptr;
 void *freeme(void *data, void *hint)
 {
 	test_log("%p == %p\n", data, dataptr);
-	test_assert(data == dataptr, "msg free called with msg ptr (%zd)", data-dataptr );
-	test_assert(hint == hintptr, "msg free called with hint (%zd)", hint-hintptr );
+	test_assert(data == dataptr, "msg free called with msg ptr (%zd)",
+			(char *)data-(char *)dataptr );
+	test_assert(hint == hintptr, "msg free called with hint (%zd)",
+			(char *)hint-(char *)hintptr );
 	freed++;
 	return NULL;
 }

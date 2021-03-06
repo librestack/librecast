@@ -8,6 +8,7 @@
 
 void sighandler(int sig)
 {
+	(void)sig;
 	/* do nothing => SIG_IGN ? */
 }
 
@@ -23,7 +24,7 @@ int main()
 {
 	struct sigaction sa = { .sa_handler = sighandler };
 	pthread_t thread;
-	pthread_attr_t attr = {};
+	pthread_attr_t attr = {0};
 	char channame[] = "example.com";
 	char data[] = "black lives matter";
 	const int on = 1;
@@ -36,7 +37,7 @@ int main()
 	lc_socket_t *sock;
 	lc_channel_t *chan;
 	lc_message_t msg;
-	int op;
+	unsigned op;
 
 	lctx = lc_ctx_new();
 	sock = lc_socket_new(lctx);

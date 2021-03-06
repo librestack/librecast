@@ -6,7 +6,7 @@
 
 void dumpaddr(struct in6_addr *addr)
 {
-	char straddr[INET6_ADDRSTRLEN];
+	char straddr[INET6_ADDRSTRLEN] = "";
 	inet_ntop(AF_INET6, addr, straddr, INET6_ADDRSTRLEN);
 	test_log("%s\n", straddr);
 }
@@ -15,17 +15,21 @@ int main()
 {
 	lc_ctx_t *lctx;
 	lc_channel_t *base, *side, *rev;
-	struct in6_addr *bin6, *sin6 = NULL;
+	struct in6_addr *bin6 = NULL, *sin6 = NULL;
 	unsigned char key = 42;
 
 	test_name("lc_channel_sidehash()");
 
 	lctx = lc_ctx_new();
 	test_assert(lctx != NULL, "lc_ctx_new()");
+	if (!lctx) return fails;
 
 	base = lc_channel_new(lctx, "freedom");
 	test_assert(base != NULL, "lc_channel_new() - create base channel");
+	if (!base) return fails;
 	bin6 = &lc_channel_sockaddr(base)->sin6_addr;
+	test_assert(bin6 != NULL, "lc_channel_sockaddr(base)");
+	if (!bin6) return fails;
 
 	test_log("base: ");
 	dumpaddr(bin6);
@@ -33,7 +37,10 @@ int main()
 
 	test_assert((side = lc_channel_sidehash(base, &key, sizeof key)) != NULL,
 			"lc_channel_sidehash(1)");
+	if (!side) return fails;
 	sin6 = &lc_channel_sockaddr(side)->sin6_addr;
+	test_assert(sin6 != NULL, "lc_channel_sockaddr(base)");
+	if (!sin6) return fails;
 	test_log("side: ");
 	dumpaddr(sin6);
 

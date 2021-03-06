@@ -9,11 +9,12 @@ static int gotmsg;
 
 void sighandler(int sig)
 {
-	test_log("caught signal");
+	test_log("caught signal %i", sig);
 }
 
 void msg_received(lc_message_t *msg)
 {
+	(void)msg;
 	test_log("message received");
 	gotmsg = 1;
 	kill(getpid(), SIGINT);
@@ -52,7 +53,7 @@ int main()
 	signal(SIGINT, sighandler);
 	ssize_t byt;
 	byt = lc_msg_send(chan, &msg);
-	test_assert(byt == msg.len + sizeof(lc_message_head_t), "%zi bytes sent", byt);
+	test_assert((size_t)byt == msg.len + sizeof(lc_message_head_t), "%zi bytes sent", byt);
 	if (byt == -1) {
 		perror("lc_msg_send");
 	}

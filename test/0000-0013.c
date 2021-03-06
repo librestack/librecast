@@ -8,11 +8,12 @@ int gotmsg = 0;
 
 void sighandler(int sig)
 {
-	test_log("caught signal");
+	test_log("caught signal %i", sig);
 }
 
 void msg_received(lc_message_t *msg)
 {
+	(void)msg;
 	test_log("message received");
 	gotmsg = 1;
 	kill(getpid(), SIGINT);

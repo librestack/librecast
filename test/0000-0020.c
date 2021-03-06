@@ -54,7 +54,7 @@ int main()
 			"lc_msg_get(): get length");
 	test_assert(len == strlen(data), "len unmodified by lc_msg_set() fred found a bug");
 	test_log("%i == %i", len, *getint);
-	test_assert(len == *getint, "lc_msg_get(): check length");
+	test_assert(len == (size_t)*getint, "lc_msg_get(): check length");
 
 
 	return fails;

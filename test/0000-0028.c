@@ -6,6 +6,7 @@ static int logged;
 
 int logme(lc_channel_t *chan, lc_message_t *msg, void *logdb)
 {
+	(void)chan; (void)msg; (void)logdb;
 	logged++;
 	return 0;
 }
