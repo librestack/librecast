@@ -27,20 +27,22 @@ int main()
 	base = lc_channel_new(lctx, "freedom");
 	test_assert(base != NULL, "lc_channel_new() - create base channel");
 	if (!base) return fails;
-	bin6 = &lc_channel_sockaddr(base)->sin6_addr;
+
+	bin6 = lc_channel_in6addr(base);
 	test_assert(bin6 != NULL, "lc_channel_sockaddr(base)");
 	if (!bin6) return fails;
 
 	test_log("base: ");
 	dumpaddr(bin6);
 	test_log("base=%p, side=%p", (void *)bin6, (void *)sin6);
-
 	test_assert((side = lc_channel_sidehash(base, &key, sizeof key)) != NULL,
 			"lc_channel_sidehash(1)");
 	if (!side) return fails;
-	sin6 = &lc_channel_sockaddr(side)->sin6_addr;
+
+	sin6 = lc_channel_in6addr(side);
 	test_assert(sin6 != NULL, "lc_channel_sockaddr(base)");
 	if (!sin6) return fails;
+
 	test_log("side: ");
 	dumpaddr(sin6);
 
@@ -51,8 +53,8 @@ int main()
 			"side channel and base channel must be different");
 
 	/* make sure side channel of side channel isn't the original channel */
-	test_assert((rev = lc_channel_sidehash(side, &key, sizeof key)) != NULL,
-			"lc_channel_sidehash(2)");
+	rev = lc_channel_sidehash(side, &key, sizeof key);
+	test_assert(rev != NULL, "lc_channel_sidehash(2)");
 	sin6 = &lc_channel_sockaddr(rev)->sin6_addr;
 	test_assert(memcmp(sin6->s6_addr, bin6->s6_addr, 16),
 			"side side channel and base channel must be different");
