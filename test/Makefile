@@ -18,7 +18,7 @@ PASS = "\\e[0m\\e[32mOK\\e[0m" # end bold, green text
 FAIL = "\\e[0m\\e[31mFAIL\\e[0m" # end bold, red text
 LEAK = "\\e[0m\\e[31mFAIL \| LEAK\\e[0m\\n\\tSee $@.valgrind"
 LASTLOG := lastlog.log
-LOGFILE := $(shell mktemp "lsdb-test-XXXXXXXX.log")
+LOGFILE := $(shell mktemp "lsdb-test-XXXXXXXX")
 TIMESTAMP = $(shell date +"%Y-%m-%d %H:%M:%S")
 VALGRIND = valgrind --leak-check=full --error-exitcode=2 --errors-for-leak-kinds=all --track-origins=yes --log-file=$@.valgrind
 
@@ -73,6 +73,6 @@ clean:
 	@rm -f $(LOGFILE) $(LASTLOG)
 
 realclean: clean
-	rm -f lsdb-test-????????.log* ????-????.test.valgrind
+	rm -f lsdb-test-???????? ????-????.test.valgrind
 	rm -rf ????-????.tmp.*
 

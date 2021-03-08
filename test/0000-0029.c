@@ -1,0 +1,56 @@
+#include "test.h"
+#include "../include/librecast/net.h"
+#include <unistd.h>
+
+int main()
+{
+	lc_ctx_t *lctx;
+	lc_socket_t *sock;
+	lc_channel_t *chan;
+	lc_message_t msg = {0};
+
+	test_name("TODO: send / recv on multiple interfaces");
+
+	lctx = lc_ctx_new();
+	sock = lc_socket_new(lctx);
+	chan = lc_channel_new(lctx, "DzS8TK8cGFPtmYH3");
+
+	// TODO set up sockets on separate interfaces
+	// TODO send numbered msgs on each, check we receive exactly the msgs we
+	// expect and no others
+
+	// TODO create interfaces
+	// TODO create socket on each interface
+	// TODO create same channel on each socket
+	// TODO set up listeners
+	// TODO send
+	// TODO check results
+
+
+#if 0
+	lc_socket_loop(sock, 1);
+	lc_channel_bind(sock, chan);
+	lc_channel_join(chan);
+	lc_socket_listen(sock, NULL, NULL);
+
+	sendmsgs(chan, &msg, 3);
+
+	usleep(1000);
+
+	/* test with no logger */
+	test_assert(logged == 0, "(no logger) msgs logged = %i", logged);
+
+	/* set logger */
+	lc_msg_logger = &logme;
+
+	logged = 0;
+	sendmsgs(chan, &msg, 7);
+
+	usleep(1000);
+
+	test_assert(logged == 7, "(msg logger set) msgs logged = %i", logged);
+#endif
+	lc_ctx_free(lctx);
+
+	return fails;
+}
