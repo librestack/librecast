@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- use IPV6_JOIN_GROUP / IPV6_LEAVE_GROUP in preference to obsolete IPV6_ADD_MEMBERSHIP / IPV6_DROP_MEMBERSHIP
+
 ## [0.4.2] - 2021-03-06
 
 ### Added

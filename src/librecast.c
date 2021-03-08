@@ -453,7 +453,7 @@ static int lc_channel_membership(int sock, int opt, struct ipv6_mreq *req)
 	if (!setsockopt(sock, IPPROTO_IPV6, opt, req, sizeof(struct ipv6_mreq))) {
 		return 0; /* report success if we joined anything */
 	}
-	return (opt == IPV6_ADD_MEMBERSHIP) ? LC_ERROR_MCAST_JOIN : LC_ERROR_MCAST_PART;
+	return (opt == IPV6_JOIN_GROUP) ? LC_ERROR_MCAST_JOIN : LC_ERROR_MCAST_PART;
 }
 
 static int lc_channel_action(lc_channel_t *chan, int opt)
@@ -471,12 +471,12 @@ static int lc_channel_action(lc_channel_t *chan, int opt)
 
 int lc_channel_part(lc_channel_t *chan)
 {
-	return lc_channel_action(chan, IPV6_DROP_MEMBERSHIP);
+	return lc_channel_action(chan, IPV6_LEAVE_GROUP);
 }
 
 int lc_channel_join(lc_channel_t *chan)
 {
-	return lc_channel_action(chan, IPV6_ADD_MEMBERSHIP);
+	return lc_channel_action(chan, IPV6_JOIN_GROUP);
 }
 
 int lc_channel_unbind(lc_channel_t *chan)
