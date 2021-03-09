@@ -8,8 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- use IPV6_JOIN_GROUP / IPV6_LEAVE_GROUP in preference to obsolete IPV6_ADD_MEMBERSHIP / IPV6_DROP_MEMBERSHIP
-- fix tempfile creation for tests on NetBSD
+- Use IPV6_JOIN_GROUP / IPV6_LEAVE_GROUP in preference to obsolete IPV6_ADD_MEMBERSHIP / IPV6_DROP_MEMBERSHIP
+- Fix tempfile creation for tests on NetBSD.
+- Sort uses of "wildcard" in Makefile to make ordering of files predictible and avoid potential reproducibility issues.
 
 ## [0.4.2] - 2021-03-06
 
