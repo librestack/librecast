@@ -1,9 +1,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (c) 2017-2021 Brett Sheffield <bacs@librecast.net>
 
-VERSION := 0.4.2
-ABIVERS := 0.4
 SHELL = /bin/sh
+ifndef VERSION
+$(error VERSION not set)
+endif
+ifndef ABIVERS
+$(error ABIVERS not set)
+endif
 .SUFFIXES:
 .SUFFIXES: .c .o
 CFLAGS += -O3 -Wall -Wextra -Wpedantic -g -fPIC -I. -I../include

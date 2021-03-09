@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (c) 2017-2021 Brett Sheffield <bacs@librecast.net>
 
+export VERSION := 0.4.2
+export ABIVERS := 0.4
 PREFIX ?= /usr/local
 export PREFIX
 LIBNAME := librecast

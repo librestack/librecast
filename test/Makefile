@@ -16,7 +16,10 @@ OBJS := test.o misc.o falloc.o
 LIBRARY_PATH := ../src
 ifdef NETBSD
 LDFLAGS := -L$(LIBRARY_PATH) -llibrecast
-LDCONFIG := ln -sf liblibrecast.so $(LIBRARY_PATH)/liblibrecast.so.0.4
+ifndef ABIVERS
+$(error ABIVERS not set)
+endif
+LDCONFIG := ln -sf liblibrecast.so $(LIBRARY_PATH)/liblibrecast.so.$(ABIVERS)
 else
 LDFLAGS := -L$(LIBRARY_PATH) -ldl -llibrecast
 LDCONFIG := ldconfig -n $(LIBRARY_PATH)
