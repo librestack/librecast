@@ -11,14 +11,14 @@ ifndef USE_LIBSODIUM
 CFLAGS += -I../libs/blake3/c
 endif
 LIBNAME := librecast
-HEADERS = ../include/$(LIBNAME).h $(wildcard ../include/$(LIBNAME)/*.h)
+HEADERS = ../include/$(LIBNAME).h $(sort $(wildcard ../include/$(LIBNAME)/*.h))
 INSTALL ?= install
 LDCONFIG ?= ldconfig
 INSTALL_DATA := $(INSTALL) -m 644
 PREFIX ?= /usr/local
 LIBDIR := $(DESTDIR)$(PREFIX)/lib
 INCLUDEDIR := $(DESTDIR)$(PREFIX)/include
-OBJS_BLAKE3 := ../libs/blake3/c/blake3.c ../libs/blake3/c/blake3_dispatch.c ../libs/blake3/c/blake3_portable.c $(wildcard ../libs/blake3/c/*.o)
+OBJS_BLAKE3 := ../libs/blake3/c/blake3.c ../libs/blake3/c/blake3_dispatch.c ../libs/blake3/c/blake3_portable.c $(sort $(wildcard ../libs/blake3/c/*.o))
 OBJECTS := errors.o hash.o
 LIBS := -pthread -lpthread
 ifdef USE_LIBSODIUM
