@@ -3,6 +3,9 @@
 
 SHELL := /bin/bash
 CFLAGS += -O2 -Wall -Wextra -Wpedantic -fno-builtin-malloc -fno-builtin-calloc -g -I. -I../include
+ifdef NETBSD
+CFLAGS += -std=gnu99
+endif
 ifdef USE_LIBSODIUM
 CFLAGS += -DUSE_LIBSODIUM=$(USE_LIBSODIUM)
 else
@@ -11,7 +14,13 @@ endif
 NOTOBJS := ../src/$(PROGRAM).o
 OBJS := test.o misc.o falloc.o
 LIBRARY_PATH := ../src
+ifdef NETBSD
+LDFLAGS := -L$(LIBRARY_PATH) -llibrecast
+LDCONFIG := ln -sf liblibrecast.so $(LIBRARY_PATH)/liblibrecast.so.0.4
+else
 LDFLAGS := -L$(LIBRARY_PATH) -ldl -llibrecast
+LDCONFIG := ldconfig -n $(LIBRARY_PATH)
+endif
 BOLD := "\\e[0m\\e[2m"
 RESET := "\\e[0m"
 PASS = "\\e[0m\\e[32mOK\\e[0m" # end bold, green text
@@ -32,7 +41,7 @@ test: clean build $(shell echo ????-????.c | sed 's/\.c/\.test/g') result
 
 build:
 	cd ../src && $(MAKE)
-	ldconfig -n $(LIBRARY_PATH)
+	$(LDCONFIG)
 	@echo -e "$(TIMESTAMP) - starting tests" >> $(LOGFILE)
 	@echo -e "\nRunning tests"
 

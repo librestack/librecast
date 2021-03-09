@@ -7,6 +7,9 @@ SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .c .o
 CFLAGS += -O3 -Wall -Wextra -Wpedantic -g -fPIC -I. -I../include
+ifdef NETBSD
+CFLAGS += -std=gnu99
+endif
 ifndef USE_LIBSODIUM
 CFLAGS += -I../libs/blake3/c
 endif
