@@ -311,6 +311,7 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 	msgh.msg_iovlen = 2;
 	msgh.msg_flags = 0;
 
+	pthread_testcancel();
 	zi = recvmsg(sock->sock, &msgh, 0);
 	if (zi == -1) return -1;
 
