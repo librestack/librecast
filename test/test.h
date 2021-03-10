@@ -8,6 +8,9 @@
 #include "misc.h"
 #include "falloc.h"
 #include "valgrind.h"
+#ifdef __linux__
+#include <linux/capability.h>
+#endif
 
 extern int fails;
 
@@ -19,3 +22,4 @@ void test_expect(char *expected, char *got);
 void test_expectn(char *expected, char *got, size_t len);
 void test_log(char *msg, ...);
 void test_name(char *str, ...);
+void test_cap_require(int cap);

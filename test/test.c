@@ -2,8 +2,13 @@
 /* Copyright (c) 2020 Brett Sheffield <bacs@librecast.net> */
 
 #include "test.h"
+#include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 int fails = 0;
+int capreqd = 0;
+int capfail = 0;
 
 void vfail_msg(char *msg, va_list argp)
 {
@@ -79,12 +84,27 @@ void test_name(char *str, ...)
 {
 	char *b;
 	va_list argp;
+	if (capfail) {
+		printf("----- requires capabilities (skipping) -----                          ");
+		exit(fails);
+	}
+	else if (!capreqd && geteuid() == 0) {
+		printf("----- does not require root (skipping) -----                          ");
+		exit(fails);
+	}
 	va_start(argp, str);
 	b = malloc(_vscprintf(str, argp) + 1);
 	vsprintf(b, str, argp);
-	printf("%-70s", b);
 	test_log("  (%s)", b);
+	printf("%-70s", b);
 	va_end(argp);
 	free(b);
 }
 
+void test_cap_require(int cap)
+{
+	(void) cap;
+	// TODO check for capabilities on Linux
+	if (geteuid()) capfail++;
+	capreqd++;
+}

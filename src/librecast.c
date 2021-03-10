@@ -647,6 +647,7 @@ void lc_ctx_free(lc_ctx_t *ctx)
 			p = ((lc_channel_t *)p)->next;
 			lc_channel_free(h);
 		}
+		if (ctx->sock >= 0) close(ctx->sock);
 		free(ctx);
 	}
 }
@@ -705,6 +706,7 @@ lc_ctx_t * lc_ctx_new(void)
 	ctx->id = ++ctx_id;
 	ctx->next = ctx_list;
 	ctx_list = ctx;
+	ctx->sock = -1;
 
 	return ctx;
 }

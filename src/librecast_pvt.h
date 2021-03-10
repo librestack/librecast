@@ -12,6 +12,7 @@ typedef struct lc_ctx_t {
 	uint32_t id;
 	lc_socket_t *sock_list;
 	lc_channel_t *chan_list;
+	int sock; /* AF_LOCAL socket for ioctls */
 } lc_ctx_t;
 
 typedef struct lc_socket_t {

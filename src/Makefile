@@ -26,7 +26,7 @@ PREFIX ?= /usr/local
 LIBDIR := $(DESTDIR)$(PREFIX)/lib
 INCLUDEDIR := $(DESTDIR)$(PREFIX)/include
 OBJS_BLAKE3 := ../libs/blake3/c/blake3.c ../libs/blake3/c/blake3_dispatch.c ../libs/blake3/c/blake3_portable.c $(sort $(wildcard ../libs/blake3/c/*.o))
-OBJECTS := errors.o hash.o
+OBJECTS := errors.o hash.o if.o
 LIBS := -pthread -lpthread
 ifdef USE_LIBSODIUM
 CFLAGS += -DUSE_LIBSODIUM=$(USE_LIBSODIUM)
