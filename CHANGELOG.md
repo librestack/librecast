@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- lc_msg_recv(): add cancellation point before recvmsg() - hangs on NetBSD without this.
+- lc_channel_bind(): set SO_REUSEPORT if defined - required on NetBSD to prevent "address
+    already in use" errors.
+
 ## [0.4.3] - 2021-03-09
 
 ### Fixed
