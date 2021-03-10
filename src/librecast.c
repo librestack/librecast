@@ -498,6 +498,11 @@ int lc_channel_bind(lc_socket_t *sock, lc_channel_t *chan)
 	if ((setsockopt(sock->sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) == -1)
 		return LC_ERROR_SETSOCKOPT;
 
+#ifdef SO_REUSEPORT
+	if ((setsockopt(sock->sock, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt))) == -1)
+		return LC_ERROR_SETSOCKOPT;
+#endif
+
 	if (bind(sock->sock, (struct sockaddr *)&any, sizeof(struct sockaddr_in6)) == -1)
 		return LC_ERROR_SOCKET_BIND;
 
