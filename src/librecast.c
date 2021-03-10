@@ -223,7 +223,7 @@ void lc_channel_free(lc_channel_t * chan)
 
 ssize_t lc_msg_sendto(int sock, const void *buf, size_t len, struct sockaddr_in6 *sa, int flags)
 {
-	return sendto(sock, buf, len, flags, sa, sizeof(struct sockaddr_in6));
+	return sendto(sock, buf, len, flags, (struct sockaddr *)sa, sizeof(struct sockaddr_in6));
 }
 
 ssize_t lc_msg_send(lc_channel_t *chan, lc_message_t *msg)
