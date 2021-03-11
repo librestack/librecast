@@ -1,9 +1,7 @@
 #include "test.h"
-#include "../include/librecast/net.h"
 #include "../include/librecast/if.h"
 #include <sys/types.h>
 #include <unistd.h>
-#include <net/if.h>
 
 int main()
 {

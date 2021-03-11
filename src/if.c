@@ -64,6 +64,25 @@ int lc_bridge_add(lc_ctx_t *ctx, const char *brname)
 	return ret < 0 ? errno : 0;
 }
 
+int lc_link_set(lc_ctx_t *ctx, char *ifname, int up)
+{
+	struct ifreq ifr;
+	int err = 0;
+
+	if (ctx->sock == -1) ctx->sock = socket(AF_LOCAL, SOCK_STREAM, 0);
+	if (ctx->sock == -1) return -1;
+	memset(&ifr, 0, sizeof(ifr));
+	strncpy(ifr.ifr_name, ifname, IFNAMSIZ - 1);
+	if (ioctl(ctx->sock, SIOCGIFFLAGS, &ifr) == -1) {
+		return -1;
+	}
+	ifr.ifr_flags = (up) ? ifr.ifr_flags | IFF_UP
+			     : ifr.ifr_flags & ~IFF_UP;
+	err = ioctl(ctx->sock, SIOCSIFFLAGS, &ifr);
+
+	return err;
+}
+
 int lc_tap_create(char *ifname)
 {
 	struct ifreq ifr;
