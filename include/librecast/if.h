@@ -18,6 +18,10 @@
 int lc_bridge_add(lc_ctx_t *ctx, const char *brname);
 int lc_bridge_del(lc_ctx_t *ctx, const char *brname);
 
+/* add / remove interface ifname from bridge brname */
+int lc_bridge_addif(lc_ctx_t *ctx, const char *brname, const char *ifname);
+int lc_bridge_delif(lc_ctx_t *ctx, const char *brname, const char *ifname);
+
 /* create new tap device and copy interface name to ifname,
  * which must be a buffer of size IFNAMSIZ. */
 int lc_tap_create(char *ifname);

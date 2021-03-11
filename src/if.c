@@ -26,11 +26,16 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
+static inline int lc_ctrl_socket(void)
+{
+	return socket(AF_LOCAL, SOCK_STREAM, 0);
+}
+
 int lc_bridge_del(lc_ctx_t *ctx, const char *brname)
 {
 	int ret;
 
-	if (ctx->sock == -1) ctx->sock = socket(AF_LOCAL, SOCK_STREAM, 0);
+	if (ctx->sock == -1) ctx->sock = lc_ctrl_socket();
 	if (ctx->sock == -1) return -1;
 #ifdef SIOCBRDELBR
 	ret = ioctl(ctx->sock, SIOCBRDELBR, brname);
@@ -49,7 +54,7 @@ int lc_bridge_add(lc_ctx_t *ctx, const char *brname)
 {
 	int ret;
 
-	if (ctx->sock == -1) ctx->sock = socket(AF_LOCAL, SOCK_STREAM, 0);
+	if (ctx->sock == -1) ctx->sock = lc_ctrl_socket();
 	if (ctx->sock == -1) return -1;
 #ifdef SIOCBRADDBR
 	ret = ioctl(ctx->sock, SIOCBRADDBR, brname);
@@ -64,12 +69,60 @@ int lc_bridge_add(lc_ctx_t *ctx, const char *brname)
 	return ret < 0 ? errno : 0;
 }
 
+int lc_bridge_delif(lc_ctx_t *ctx, const char *brname, const char *ifname)
+{
+	struct ifreq ifr;
+	int err;
+	int ifx = if_nametoindex(ifname);
+
+	if (ifx == 0) return ENODEV;
+	if (ctx->sock == -1) ctx->sock = lc_ctrl_socket();
+	if (ctx->sock == -1) return -1;
+	memset(&ifr, 0, sizeof(ifr));
+	strncpy(ifr.ifr_name, brname, IFNAMSIZ - 1);
+#ifdef SIOCBRDELIF
+	ifr.ifr_ifx = ifx;
+	err = ioctl(ctx->sock, SIOCBRDELIF, &ifr);
+	if (err < 0)
+#endif
+	{
+		unsigned long args[4] = { BRCTL_DEL_IF, ifx, 0, 0 };
+		ifr.ifr_data = (char *) args;
+		err = ioctl(ctx->sock, SIOCDEVPRIVATE, &ifr);
+	}
+	return err < 0 ? errno : 0;
+}
+
+int lc_bridge_addif(lc_ctx_t *ctx, const char *brname, const char *ifname)
+{
+	struct ifreq ifr;
+	int err;
+	int ifx = if_nametoindex(ifname);
+
+	if (ifx == 0) return ENODEV;
+	if (ctx->sock == -1) ctx->sock = lc_ctrl_socket();
+	if (ctx->sock == -1) return -1;
+	memset(&ifr, 0, sizeof(ifr));
+	strncpy(ifr.ifr_name, brname, IFNAMSIZ - 1);
+#ifdef SIOCBRADDIF
+	ifr.ifr_ifindex = ifx;
+	err = ioctl(ctx->sock, SIOCBRADDIF, &ifr);
+	if (err < 0)
+#endif
+	{
+		unsigned long args[4] = { BRCTL_ADD_IF, ifx, 0, 0 };
+		ifr.ifr_data = (char *) args;
+		err = ioctl(ctx->sock, SIOCDEVPRIVATE, &ifr);
+	}
+	return err < 0 ? errno : 0;
+}
+
 int lc_link_set(lc_ctx_t *ctx, char *ifname, int up)
 {
 	struct ifreq ifr;
 	int err = 0;
 
-	if (ctx->sock == -1) ctx->sock = socket(AF_LOCAL, SOCK_STREAM, 0);
+	if (ctx->sock == -1) ctx->sock = lc_ctrl_socket();
 	if (ctx->sock == -1) return -1;
 	memset(&ifr, 0, sizeof(ifr));
 	strncpy(ifr.ifr_name, ifname, IFNAMSIZ - 1);
