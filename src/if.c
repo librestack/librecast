@@ -63,3 +63,22 @@ int lc_bridge_add(lc_ctx_t *ctx, const char *brname)
 	}
 	return ret < 0 ? errno : 0;
 }
+
+int lc_tap_create(char *ifname)
+{
+	struct ifreq ifr;
+	int fd;
+
+	if ((fd = open("/dev/net/tun", O_RDWR)) == -1) {
+		return -1;
+	}
+	memset(&ifr, 0, sizeof(ifr));
+	ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
+	if (ioctl(fd, TUNSETIFF, (void *) &ifr) == -1) {
+		close(fd);
+		return -1;
+	}
+	strncpy(ifname, ifr.ifr_name, IFNAMSIZ);
+
+	return fd;
+}
