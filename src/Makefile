@@ -26,9 +26,10 @@ OBJS_BLAKE3 := ../libs/blake3/c/blake3.c ../libs/blake3/c/blake3_dispatch.c ../l
 OBJECTS := errors.o hash.o
 ifeq ($(OSNAME),Linux)
 OBJECTS += if_linux.o
-endif
-ifeq ($(OSNAME),NetBSD)
+else ifeq ($(OSNAME),NetBSD)
 OBJECTS += if_netbsd.o
+else
+OBJECTS += if.o
 endif
 LIBS := -pthread -lpthread
 ifdef USE_LIBSODIUM
