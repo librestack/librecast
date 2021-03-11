@@ -7,6 +7,7 @@ int main()
 {
 	char tapname[IFNAMSIZ];
 
+	test_require_linux();
 	test_cap_require(CAP_NET_ADMIN);
 	test_name("lc_tap_create()");
 

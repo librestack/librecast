@@ -21,6 +21,7 @@ int main()
 	char tapname[IFNAMSIZ];
 	lc_ctx_t *lctx = NULL;
 
+	test_require_linux();
 	test_cap_require(CAP_NET_ADMIN);
 	test_name("lc_link_set()");
 

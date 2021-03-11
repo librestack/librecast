@@ -3,9 +3,6 @@
 
 SHELL := /bin/bash
 CFLAGS += -O2 -Wall -Wextra -Wpedantic -fno-builtin-malloc -fno-builtin-calloc -g -I. -I../include
-ifdef NETBSD
-CFLAGS += -std=gnu99
-endif
 ifdef USE_LIBSODIUM
 CFLAGS += -DUSE_LIBSODIUM=$(USE_LIBSODIUM)
 else
@@ -14,7 +11,7 @@ endif
 NOTOBJS := ../src/$(PROGRAM).o
 OBJS := test.o misc.o falloc.o
 LIBRARY_PATH := ../src
-ifdef NETBSD
+ifeq ($(OSNAME),NetBSD)
 LDFLAGS := -L$(LIBRARY_PATH) -llibrecast
 ifndef ABIVERS
 $(error ABIVERS not set)

@@ -10,6 +10,8 @@
 #include "valgrind.h"
 #ifdef __linux__
 #include <linux/capability.h>
+#else
+#define CAP_NET_ADMIN 12
 #endif
 
 extern int fails;
@@ -23,3 +25,4 @@ void test_expectn(char *expected, char *got, size_t len);
 void test_log(char *msg, ...);
 void test_name(char *str, ...);
 void test_cap_require(int cap);
+void test_require_linux(void);

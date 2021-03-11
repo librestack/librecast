@@ -11,10 +11,8 @@ LIBFILE := lib${LIBNAME}.so
 INCLUDEDIR := $(PREFIX)/include
 COVERITY_DIR := cov-int
 COVERITY_TGZ := $(LIBNAME).tgz
-ifeq ($(shell uname -s),NetBSD)
-NETBSD := yes
-export NETBSD
-endif
+OSNAME := $(shell uname -s)
+export OSNAME
 
 all: src
 

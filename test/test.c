@@ -108,3 +108,11 @@ void test_cap_require(int cap)
 	if (geteuid()) capfail++;
 	capreqd++;
 }
+
+void test_require_linux(void)
+{
+#ifndef __linux__
+	printf("----- linux only (skipping) -----                                     ");
+	exit(fails);
+#endif
+}

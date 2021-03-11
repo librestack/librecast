@@ -11,9 +11,6 @@ endif
 .SUFFIXES:
 .SUFFIXES: .c .o
 CFLAGS += -O3 -Wall -Wextra -Wpedantic -g -fPIC -I. -I../include
-ifdef NETBSD
-CFLAGS += -std=gnu99
-endif
 ifndef USE_LIBSODIUM
 CFLAGS += -I../libs/blake3/c
 endif
@@ -26,7 +23,13 @@ PREFIX ?= /usr/local
 LIBDIR := $(DESTDIR)$(PREFIX)/lib
 INCLUDEDIR := $(DESTDIR)$(PREFIX)/include
 OBJS_BLAKE3 := ../libs/blake3/c/blake3.c ../libs/blake3/c/blake3_dispatch.c ../libs/blake3/c/blake3_portable.c $(sort $(wildcard ../libs/blake3/c/*.o))
-OBJECTS := errors.o hash.o if.o
+OBJECTS := errors.o hash.o
+ifeq ($(OSNAME),Linux)
+OBJECTS += if_linux.o
+endif
+ifeq ($(OSNAME),NetBSD)
+OBJECTS += if_netbsd.o
+endif
 LIBS := -pthread -lpthread
 ifdef USE_LIBSODIUM
 CFLAGS += -DUSE_LIBSODIUM=$(USE_LIBSODIUM)

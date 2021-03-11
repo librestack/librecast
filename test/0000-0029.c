@@ -9,6 +9,7 @@ int main()
 	const char brname[] = "0000-0029";
 	lc_ctx_t *lctx;
 
+	test_require_linux();
 	test_cap_require(CAP_NET_ADMIN);
 	test_name("lc_bridge_add() / lc_bridge_del()");
 
