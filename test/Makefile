@@ -45,6 +45,7 @@ build:
 	@echo -e "$(TIMESTAMP) - starting tests" >> $(LOGFILE)
 	@echo -e "\nRunning tests"
 
+0000-0015.test: LDFLAGS += -pthread
 0000-0019.test: LDFLAGS += -pthread
 
 # FIXME dial down optimisation for this test or it breaks under valgrind

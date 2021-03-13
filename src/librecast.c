@@ -221,6 +221,12 @@ void lc_channel_free(lc_channel_t * chan)
 	free(chan);
 }
 
+ssize_t lc_channel_send(lc_channel_t *chan, const void *buf, size_t len, int flags)
+{
+	return sendto(chan->sock->sock, buf, len, flags,
+		(struct sockaddr *)&chan->sa, sizeof(struct sockaddr_in6));
+}
+
 ssize_t lc_msg_sendto(int sock, const void *buf, size_t len, struct sockaddr_in6 *sa, int flags)
 {
 	return sendto(sock, buf, len, flags, (struct sockaddr *)sa, sizeof(struct sockaddr_in6));
@@ -374,6 +380,11 @@ lc_channel_t *lc_channel_by_address(lc_ctx_t *lctx, struct in6_addr *addr)
 			return p;
 	}
 	return NULL;
+}
+
+ssize_t lc_socket_recv(lc_socket_t *sock, void *buf, size_t len, int flags)
+{
+	return recv(sock->sock, buf, len, flags);
 }
 
 static void process_msg(lc_socket_call_t *sc, lc_message_t *msg)

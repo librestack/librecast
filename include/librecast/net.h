@@ -49,12 +49,19 @@ int lc_channel_join(lc_channel_t *chan);
 /* leave a librecast channel */
 int lc_channel_part(lc_channel_t *chan);
 
+/* blocking socket recv() */
+ssize_t lc_socket_recv(lc_socket_t *sock, void *buf, size_t len, int flags);
+
 /* non-blocking socket listener, with callbacks */
 int lc_socket_listen(lc_socket_t *sock, void (*callback_msg)(lc_message_t*),
 			                void (*callback_err)(int));
 
 /* stop listening on socket */
 int lc_socket_listen_cancel(lc_socket_t *sock);
+
+/* send to channel. Channel must be bound to Librecast socket with
+ * lc_channel_bind() first. */
+ssize_t lc_channel_send(lc_channel_t *chan, const void *buf, size_t len, int flags);
 
 /* blocking message receive */
 ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg);
