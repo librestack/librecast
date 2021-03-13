@@ -20,6 +20,7 @@ typedef struct lc_socket_t {
 	lc_ctx_t *ctx;
 	pthread_t thread;
 	uint32_t id;
+	unsigned int ifx; /* interface index, 0 = all (default) */
 	int sock;
 } lc_socket_t;
 

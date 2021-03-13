@@ -472,25 +472,43 @@ int lc_socket_listen(lc_socket_t *sock, void (*callback_msg)(lc_message_t*),
 	return 0;
 }
 
-static int lc_channel_membership(int sock, int opt, struct ipv6_mreq *req)
+static int lc_channel_membership(lc_channel_t *chan, int opt, struct ipv6_mreq *req)
 {
-	if (!setsockopt(sock, IPPROTO_IPV6, opt, req, sizeof(struct ipv6_mreq))) {
-		return 0; /* report success if we joined anything */
+	int sock = chan->sock->sock;
+	if (chan->sock->ifx) {
+		req->ipv6mr_interface = chan->sock->ifx;
+		return setsockopt(sock, IPPROTO_IPV6, opt, req, sizeof(struct ipv6_mreq));
 	}
-	return (opt == IPV6_JOIN_GROUP) ? LC_ERROR_MCAST_JOIN : LC_ERROR_MCAST_PART;
+
+	struct ifaddrs *ifaddr, *ifa;
+	int rc = (opt == IPV6_JOIN_GROUP) ? LC_ERROR_MCAST_JOIN : LC_ERROR_MCAST_PART;
+
+	if (getifaddrs(&ifaddr) == -1) return -1;
+
+	for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
+		if ((ifa->ifa_flags & IFF_MULTICAST) != IFF_MULTICAST
+		  || ifa->ifa_addr == NULL
+		  || ifa->ifa_addr->sa_family != AF_INET6) continue;
+
+		req->ipv6mr_interface = if_nametoindex(ifa->ifa_name);
+
+		if (!setsockopt(sock, IPPROTO_IPV6, opt, req, sizeof(struct ipv6_mreq))) {
+			rc = 0; /* report success if we joined anything */
+		}
+	}
+	freeifaddrs(ifaddr);
+	return rc;
 }
 
 static int lc_channel_action(lc_channel_t *chan, int opt)
 {
 	struct ipv6_mreq req = {0};
-	int sock;
 
 	if(!chan->sock) return LC_ERROR_SOCKET_REQUIRED;
 
-	sock = chan->sock->sock;
 	memcpy(&req.ipv6mr_multiaddr, &chan->sa.sin6_addr, sizeof(struct in6_addr));
 
-	return lc_channel_membership(sock, opt, &req);
+	return lc_channel_membership(chan, opt, &req);
 }
 
 int lc_channel_part(lc_channel_t *chan)
@@ -673,6 +691,15 @@ void lc_ctx_free(lc_ctx_t *ctx)
 		if (ctx->sock >= 0) close(ctx->sock);
 		free(ctx);
 	}
+}
+
+int lc_socket_bind(lc_socket_t *sock, unsigned int ifx)
+{
+	if (setsockopt(sock->sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &ifx, sizeof(ifx)) == -1) {
+		return -1;
+	}
+	sock->ifx = ifx;
+	return 0;
 }
 
 lc_socket_t * lc_socket_new(lc_ctx_t *ctx)

@@ -3,6 +3,8 @@
 #include <signal.h>
 #include <time.h>
 #include <unistd.h>
+#include <net/if.h>
+#include <ifaddrs.h>
 
 int gotmsg = 0;
 
@@ -25,12 +27,25 @@ int main()
 	lc_socket_t *sock = NULL;
 	lc_channel_t *chan = NULL;
 	lc_message_t msg;
+	struct ifaddrs *ifaddr, *ifa;
 
 	test_name("multicast ping (loopback disabled)");
 
 	lctx = lc_ctx_new();
 	sock = lc_socket_new(lctx);
 	chan = lc_channel_new(lctx, "example.com");
+
+	/* find first interface that supports IPv6 multicast */
+	test_assert(getifaddrs(&ifaddr) != -1, "getifaddrs()");
+	for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
+		if ((ifa->ifa_flags & IFF_MULTICAST) == IFF_MULTICAST
+		  && ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_INET6)
+		{
+			lc_socket_bind(sock, if_nametoindex(ifa->ifa_name));
+			break;
+		}
+	}
+	freeifaddrs(ifaddr);
 
 	test_assert(!lc_channel_bind(sock, chan), "lc_channel_bind()");
 	test_assert(!lc_channel_join(chan), "lc_channel_join()");

@@ -3,6 +3,8 @@
 #include <pthread.h>
 #include <semaphore.h>
 
+#define WAITS 1
+
 static char channel_name[] = "0000-0015";
 static sem_t sem;
 static ssize_t bytes = -1;
@@ -22,6 +24,7 @@ static void *listen_thread(void *arg)
 
 	sem_post(&sem); /* tell send thread we're ready */
 	bytes = lc_socket_recv(sock, (char *)arg, BUFSIZ, 0);
+	sem_post(&sem); /* tell send thread we're done */
 
 	lc_ctx_free(lctx);
 	return arg;
@@ -34,6 +37,7 @@ int main(void)
 	lc_channel_t * chan;
 	pthread_attr_t attr = {0};
 	pthread_t thread;
+	struct timespec ts;
 	char buf[] = "liberté";
 	char recvbuf[BUFSIZ] = "";
 	size_t len = strlen(buf) + 1;
@@ -46,7 +50,7 @@ int main(void)
 	pthread_create(&thread, &attr, &listen_thread, &recvbuf);
 	pthread_attr_destroy(&attr);
 
-	sem_wait(&sem); sem_destroy(&sem); /* recv thread is ready */
+	sem_wait(&sem); /* recv thread is ready */
 
 	lctx = lc_ctx_new();
 	sock = lc_socket_new(lctx);
@@ -57,6 +61,13 @@ int main(void)
 	lc_channel_send(chan, buf, len, 0);
 	lc_ctx_free(lctx);
 
+	test_assert(!clock_gettime(CLOCK_REALTIME, &ts), "clock_gettime()");
+	ts.tv_sec += WAITS;
+	test_assert(!sem_timedwait(&sem, &ts), "timeout");
+	sem_timedwait(&sem, &ts);
+	sem_destroy(&sem);
+
+	pthread_cancel(thread);
 	pthread_join(thread, NULL);
 
 	test_assert(bytes == (ssize_t)len, "received %zi bytes, expected %zu", bytes, len);

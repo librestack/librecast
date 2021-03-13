@@ -19,6 +19,9 @@ void lc_ctx_free(lc_ctx_t *ctx);
 /* create librecast socket */
 lc_socket_t *lc_socket_new(lc_ctx_t *ctx);
 
+/* bind socket to interface with index idx. 0 = ALL (default) */
+int lc_socket_bind(lc_socket_t *sock, unsigned int ifx);
+
 /* close socket */
 void lc_socket_close(lc_socket_t *sock);
 

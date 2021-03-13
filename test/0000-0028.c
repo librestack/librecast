@@ -1,6 +1,8 @@
 #include "test.h"
 #include "../include/librecast/net.h"
 #include <unistd.h>
+#include <net/if.h>
+#include <ifaddrs.h>
 
 static int logged;
 
@@ -24,12 +26,25 @@ int main()
 	lc_socket_t *sock;
 	lc_channel_t *chan;
 	lc_message_t msg = {0};
+	struct ifaddrs *ifaddr, *ifa;
 
 	test_name("lc_msg_logger()");
 
 	lctx = lc_ctx_new();
 	sock = lc_socket_new(lctx);
 	chan = lc_channel_new(lctx, "channel logger");
+
+	/* find first interface that supports IPv6 multicast */
+	test_assert(getifaddrs(&ifaddr) != -1, "getifaddrs()");
+	for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
+		if ((ifa->ifa_flags & IFF_MULTICAST) == IFF_MULTICAST
+		  && ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_INET6)
+		{
+			lc_socket_bind(sock, if_nametoindex(ifa->ifa_name));
+			break;
+		}
+	}
+	freeifaddrs(ifaddr);
 
 	lc_socket_loop(sock, 1);
 	lc_channel_bind(sock, chan);
