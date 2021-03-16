@@ -234,6 +234,20 @@ ssize_t lc_channel_send(lc_channel_t *chan, const void *buf, size_t len, int fla
 		(struct sockaddr *)&chan->sa, sizeof(struct sockaddr_in6));
 }
 
+ssize_t lc_socket_sendmsg(lc_socket_t *sock, struct msghdr *msg, int flags)
+{
+	ssize_t bytes = 0, rc;
+	for (lc_channel_t *chan = sock->ctx->chan_list; chan; chan = chan->next) {
+		if (chan->sock == sock) {
+			if ((rc = lc_channel_sendmsg(chan, msg, flags)) > 0) {
+				bytes += rc;
+			}
+			else return -1;
+		}
+	}
+	return bytes;
+}
+
 ssize_t lc_socket_send(lc_socket_t *sock, const void *buf, size_t len, int flags)
 {
 	ssize_t bytes = 0, rc;

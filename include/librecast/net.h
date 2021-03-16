@@ -64,6 +64,7 @@ int lc_socket_listen_cancel(lc_socket_t *sock);
 
 /* send to all channels bound to a socket */
 ssize_t lc_socket_send(lc_socket_t *sock, const void *buf, size_t len, int flags);
+ssize_t lc_socket_sendmsg(lc_socket_t *sock, struct msghdr *msg, int flags);
 
 /* send to channel. Channel must be bound to Librecast socket with
  * lc_channel_bind() first. */
