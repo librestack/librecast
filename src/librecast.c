@@ -247,7 +247,6 @@ ssize_t lc_msg_send(lc_channel_t *chan, lc_message_t *msg)
 	size_t len = 0;
 	ssize_t bytes = 0;
 	struct timespec t = {0};
-	unsigned ifx = 0;
 	int state = 0;
 	int err = 0;
 
@@ -278,10 +277,8 @@ ssize_t lc_msg_send(lc_channel_t *chan, lc_message_t *msg)
 	memcpy(buf + sizeof(lc_message_head_t), msg->data, len);
 	len += sizeof(lc_message_head_t);
 
-	if (setsockopt(chan->sock->sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &ifx, sizeof(ifx) == 0)) {
-		bytes = lc_msg_sendto(chan->sock->sock, buf, len, sa, 0);
-		if (bytes == -1) err = errno;
-	}
+	bytes = lc_msg_sendto(chan->sock->sock, buf, len, sa, 0);
+	if (bytes == -1) err = errno;
 
 	free(head);
 	free(buf);
@@ -389,13 +386,56 @@ lc_channel_t *lc_channel_by_address(lc_ctx_t *lctx, struct in6_addr *addr)
 	return NULL;
 }
 
+static ssize_t lc_socket_recvmsg_if(lc_socket_t *sock, struct msghdr *msg, int flags)
+{
+	struct in6_pktinfo pi = {0};
+	char ctl[CMSG_SPACE(sizeof pi)];
+	struct cmsghdr *cmsg;
+	ssize_t bytes;
+	int opt = 1;
+
+	/* We're only interested in packets arriving on the socket->ifx
+	 * interface. If we bind to an interface-specific address, we will get no
+	 * multicast packets. If bound to either INADDR_ANY or the multicast
+	 * group address, we receive packets on all interfaces. So, we need to
+	 * filter by extracting the receiving interface from ancillary data */
+
+	setsockopt(sock->sock, IPPROTO_IPV6, IPV6_RECVPKTINFO, &opt, sizeof opt);
+
+	/* provide control buffer if caller hasn't */
+	if (!msg->msg_control) {
+		msg->msg_control = ctl;
+		msg->msg_controllen = sizeof ctl;
+	}
+
+	for (;;) {
+		bytes = recvmsg(sock->sock, msg, flags);
+		for (cmsg = CMSG_FIRSTHDR(msg); cmsg; cmsg = CMSG_NXTHDR(msg, cmsg)) {
+			if (cmsg->cmsg_type == IPV6_PKTINFO) {
+				memcpy(&pi, CMSG_DATA(cmsg), sizeof pi);
+				if (sock->ifx == pi.ipi6_ifindex) return bytes;
+			}
+		}
+	}
+	/* not reached */
+}
+
+static ssize_t lc_socket_recv_if(lc_socket_t *sock, void *buf, size_t len, int flags)
+{
+	struct iovec iov = { .iov_base = buf, .iov_len = len };
+	struct msghdr msg = { .msg_iov = &iov, .msg_iovlen = 1 };
+	return lc_socket_recvmsg_if(sock, &msg, flags);
+}
+
 ssize_t lc_socket_recvmsg(lc_socket_t *sock, struct msghdr *msg, int flags)
 {
+	if (sock->ifx) return lc_socket_recvmsg_if(sock, msg, flags);
 	return recvmsg(sock->sock, msg, flags);
 }
 
 ssize_t lc_socket_recv(lc_socket_t *sock, void *buf, size_t len, int flags)
 {
+	if (sock->ifx) return lc_socket_recv_if(sock, buf, len, flags);
 	return recv(sock->sock, buf, len, flags);
 }
 
@@ -472,19 +512,12 @@ int lc_socket_listen(lc_socket_t *sock, void (*callback_msg)(lc_message_t*),
 	return 0;
 }
 
-static int lc_channel_membership(lc_channel_t *chan, int opt, struct ipv6_mreq *req)
+static int lc_channel_membership_all(int sock, int opt, struct ipv6_mreq *req)
 {
-	int sock = chan->sock->sock;
-	if (chan->sock->ifx) {
-		req->ipv6mr_interface = chan->sock->ifx;
-		return setsockopt(sock, IPPROTO_IPV6, opt, req, sizeof(struct ipv6_mreq));
-	}
-
 	struct ifaddrs *ifaddr, *ifa;
 	int rc = (opt == IPV6_JOIN_GROUP) ? LC_ERROR_MCAST_JOIN : LC_ERROR_MCAST_PART;
 
 	if (getifaddrs(&ifaddr) == -1) return -1;
-
 	for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
 		if ((ifa->ifa_flags & IFF_MULTICAST) != IFF_MULTICAST
 		  || ifa->ifa_addr == NULL
@@ -497,7 +530,18 @@ static int lc_channel_membership(lc_channel_t *chan, int opt, struct ipv6_mreq *
 		}
 	}
 	freeifaddrs(ifaddr);
+
 	return rc;
+}
+
+static int lc_channel_membership(lc_channel_t *chan, int opt, struct ipv6_mreq *req)
+{
+	int s = chan->sock->sock;
+	if (chan->sock->ifx) {
+		req->ipv6mr_interface = chan->sock->ifx;
+		return setsockopt(s, IPPROTO_IPV6, opt, req, sizeof(struct ipv6_mreq));
+	}
+	return lc_channel_membership_all(s, opt, req);
 }
 
 static int lc_channel_action(lc_channel_t *chan, int opt)
@@ -695,7 +739,7 @@ void lc_ctx_free(lc_ctx_t *ctx)
 
 int lc_socket_bind(lc_socket_t *sock, unsigned int ifx)
 {
-	if (setsockopt(sock->sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &ifx, sizeof(ifx)) == -1) {
+	if (setsockopt(sock->sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &ifx, sizeof ifx) == -1) {
 		return -1;
 	}
 	sock->ifx = ifx;

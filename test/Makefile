@@ -18,7 +18,7 @@ $(error ABIVERS not set)
 endif
 LDCONFIG := ln -sf liblibrecast.so $(LIBRARY_PATH)/liblibrecast.so.$(ABIVERS)
 else
-LDFLAGS := -L$(LIBRARY_PATH) -ldl -llibrecast
+LDFLAGS := -L$(LIBRARY_PATH) -ldl -pthread -llibrecast
 LDCONFIG := ldconfig -n $(LIBRARY_PATH)
 endif
 BOLD := "\\e[0m\\e[2m"
@@ -44,11 +44,6 @@ build:
 	$(LDCONFIG)
 	@echo -e "$(TIMESTAMP) - starting tests" >> $(LOGFILE)
 	@echo -e "\nRunning tests"
-
-0000-0015.test: LDFLAGS += -pthread
-0000-0016.test: LDFLAGS += -pthread
-0000-0017.test: LDFLAGS += -pthread
-0000-0019.test: LDFLAGS += -pthread
 
 # FIXME dial down optimisation for this test or it breaks under valgrind
 #0000-0026.test: CFLAGS += -O

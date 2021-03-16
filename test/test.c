@@ -2,6 +2,7 @@
 /* Copyright (c) 2020 Brett Sheffield <bacs@librecast.net> */
 
 #include "test.h"
+#include <semaphore.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -9,6 +10,7 @@
 int fails = 0;
 int capreqd = 0;
 int capfail = 0;
+sem_t log_lock;
 
 void vfail_msg(char *msg, va_list argp)
 {
@@ -75,7 +77,9 @@ void test_log(char *msg, ...)
 	va_start(argp, msg);
 	b = malloc(_vscprintf(msg, argp) + 1);
 	vsprintf(b, msg, argp);
+	sem_wait(&log_lock);
 	fprintf(stderr, "%s\n", b);
+	sem_post(&log_lock);
 	va_end(argp);
 	free(b);
 }
@@ -84,6 +88,7 @@ void test_name(char *str, ...)
 {
 	char *b;
 	va_list argp;
+	sem_init(&log_lock, 0, 1);
 	if (capfail) {
 		printf("----- requires capabilities (skipping) -----                          ");
 		exit(fails);
