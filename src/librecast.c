@@ -234,6 +234,20 @@ ssize_t lc_channel_send(lc_channel_t *chan, const void *buf, size_t len, int fla
 		(struct sockaddr *)&chan->sa, sizeof(struct sockaddr_in6));
 }
 
+ssize_t lc_socket_send(lc_socket_t *sock, const void *buf, size_t len, int flags)
+{
+	ssize_t bytes = 0, rc;
+	for (lc_channel_t *chan = sock->ctx->chan_list; chan; chan = chan->next) {
+		if (chan->sock == sock) {
+			if ((rc = lc_channel_send(chan, buf, len, flags)) > 0) {
+				bytes += rc;
+			}
+			else return -1;
+		}
+	}
+	return bytes;
+}
+
 ssize_t lc_msg_sendto(int sock, const void *buf, size_t len, struct sockaddr_in6 *sa, int flags)
 {
 	return sendto(sock, buf, len, flags, (struct sockaddr *)sa, sizeof(struct sockaddr_in6));
@@ -567,11 +581,12 @@ int lc_channel_join(lc_channel_t *chan)
 
 int lc_channel_unbind(lc_channel_t *chan)
 {
+	chan->sock->bound--;
 	chan->sock = NULL;
 	return 0;
 }
 
-int lc_channel_bind(lc_socket_t *sock, lc_channel_t *chan)
+static int lc_socket_bind_addr(lc_socket_t *sock)
 {
 	int opt = 1;
 	struct sockaddr_in6 any = {
@@ -588,12 +603,27 @@ int lc_channel_bind(lc_socket_t *sock, lc_channel_t *chan)
 		return LC_ERROR_SETSOCKOPT;
 #endif
 
-	if (bind(sock->sock, (struct sockaddr *)&any, sizeof(struct sockaddr_in6)) == -1)
-		return LC_ERROR_SOCKET_BIND;
-
-	chan->sock = sock;
+	if (bind(sock->sock, (struct sockaddr *)&any, sizeof(struct sockaddr_in6)) == -1) {
+		/* ignore EINVAL "socket already bound" error */
+		if (errno != EINVAL) return LC_ERROR_SOCKET_BIND;
+	}
 
 	return 0;
+}
+
+int lc_channel_bind(lc_socket_t *sock, lc_channel_t *chan)
+{
+	/* Librecast sockets can have multiple channels bound to them, but we
+	 * only need to call lc_socket_bind_addr() the first time */
+
+	int rc = (sock->bound) ? 0 : lc_socket_bind_addr(sock);
+
+	if (!rc) {
+		chan->sock = sock;
+		sock->bound++;
+	}
+
+	return rc;
 }
 
 static int lc_hashgroup(char *baseaddr, unsigned char *group, size_t len,

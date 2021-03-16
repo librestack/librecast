@@ -21,6 +21,7 @@ typedef struct lc_socket_t {
 	pthread_t thread;
 	uint32_t id;
 	unsigned int ifx; /* interface index, 0 = all (default) */
+	int bound; /* how many channels are bound to this socket */
 	int sock;
 } lc_socket_t;
 
