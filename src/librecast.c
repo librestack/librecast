@@ -350,23 +350,19 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 	msgh.msg_flags = 0;
 
 	pthread_testcancel();
-	zi = recvmsg(sock->sock, &msgh, 0);
-	if (zi == -1) return -1;
-
-	if (zi > 0) {
-		memcpy(&head, buf, sizeof(lc_message_head_t));
-		msg->seq = be64toh(head.seq);
-		msg->rnd = be64toh(head.rnd);
-		msg->len = be64toh(head.len);
-		msg->timestamp = be64toh(head.timestamp);
-		msg->op = head.op;
-		for (cmsg = CMSG_FIRSTHDR(&msgh); cmsg; cmsg = CMSG_NXTHDR(&msgh, cmsg)) {
-			if (cmsg->cmsg_type == IPV6_PKTINFO) {
-				pi = (struct in6_pktinfo *)CMSG_DATA(cmsg);
-				msg->dst = pi->ipi6_addr;
-				msg->src = (&from)->sin6_addr;
-				break;
-			}
+	if ((zi = recvmsg(sock->sock, &msgh, 0)) <= 0) return zi;
+	memcpy(&head, buf, sizeof(lc_message_head_t));
+	msg->seq = be64toh(head.seq);
+	msg->rnd = be64toh(head.rnd);
+	msg->len = be64toh(head.len);
+	msg->timestamp = be64toh(head.timestamp);
+	msg->op = head.op;
+	for (cmsg = CMSG_FIRSTHDR(&msgh); cmsg; cmsg = CMSG_NXTHDR(&msgh, cmsg)) {
+		if (cmsg->cmsg_type == IPV6_PKTINFO) {
+			pi = (struct in6_pktinfo *)CMSG_DATA(cmsg);
+			msg->dst = pi->ipi6_addr;
+			msg->src = (&from)->sin6_addr;
+			break;
 		}
 	}
 	return zi;
