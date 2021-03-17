@@ -86,6 +86,9 @@ int lc_socket_setopt(lc_socket_t *sock, int optname, const void *optval, socklen
 /* turn socket loopback on (val = 1) or off (val = 0)*/
 int lc_socket_loop(lc_socket_t *sock, int val);
 
+/* set multicast TTL (hop limit) for this socket to val */
+int lc_socket_ttl(lc_socket_t *sock, int val);
+
 /* manage message structures */
 
 /* initialize message structure */

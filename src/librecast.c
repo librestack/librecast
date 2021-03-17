@@ -168,6 +168,11 @@ int lc_socket_loop(lc_socket_t *sock, int val)
 	return setsockopt(sock->sock, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &val, sizeof val);
 }
 
+int lc_socket_ttl(lc_socket_t *sock, int val)
+{
+	return setsockopt(sock->sock, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &val, sizeof val);
+}
+
 static void *_free(void *msg, void *hint)
 {
 	free(msg);
@@ -806,20 +811,20 @@ lc_socket_t * lc_socket_new(lc_ctx_t *ctx)
 #ifdef IPV6_MULTICAST_ALL
 	/* available in Linux 4.2 onwards */
 	i = 0;
-	if (setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_ALL, &i, sizeof(i)) == -1) {
+	if (setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_ALL, &i, sizeof i) == -1) {
 		goto err_1;
 	}
 #endif
 	i = 1;
-	if (setsockopt(s, IPPROTO_IPV6, IPV6_RECVPKTINFO, &i, sizeof(i)) == -1) {
+	if (setsockopt(s, IPPROTO_IPV6, IPV6_RECVPKTINFO, &i, sizeof i) == -1) {
 		goto err_1;
 	}
 	i = DEFAULT_MULTICAST_LOOP;
-	if (setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &i, sizeof(i)) == -1) {
+	if (setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &i, sizeof i) == -1) {
 		goto err_1;
 	}
 	i = DEFAULT_MULTICAST_HOPS;
-	if (setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &i, sizeof(i)) == -1) {
+	if (setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &i, sizeof i) == -1) {
 		goto err_1;
 	}
 	return sock;
