@@ -11,7 +11,11 @@ libs: $(TARGETS)
 .PHONY: blake3 clean realclean
 
 blake3:
+ifndef USE_LIBSODIUM
 	$(MAKE) -C blake3/c
+endif
 
 clean realclean:
+ifndef USE_LIBSODIUM
 	$(MAKE) -C blake3/c $@
+endif
