@@ -35,6 +35,11 @@ Comments, questions, suggestions, bug reports, and patches welcome.  See CONTRIB
 
 Brett Sheffield `<brett@librecast.net>`
 
+### License
+
+This work is dual-licensed under GPL 2.0 and GPL 3.0.
+
+`SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only`
 
 ### Website
 
