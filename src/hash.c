@@ -38,7 +38,7 @@ void hash_hex_debug(FILE *fd, unsigned char *hash, size_t len)
 {
 	char hex[HEXLEN];
 	sodium_bin2hex(hex, HEXLEN, hash, len);
-	fprintf(fd, "%s", hex);
+	fprintf(fd, "%s\n", hex);
 }
 
 int hash_generic_key(unsigned char *hash, size_t hashlen, unsigned char *in, size_t inlen, unsigned char *key, size_t keylen)
