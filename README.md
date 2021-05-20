@@ -48,7 +48,7 @@ https://librecast.net/
 
 ### IRC channel
 
-`#librecast` on freenode.net
+`#librecast` on irc.libera.chat
 
 If you have a question, please be patient. An answer might take a few hours
 depending on time zones and whether anyone on the team is available at that
