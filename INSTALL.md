@@ -25,16 +25,14 @@ To install to a different location:
 
 `DESTDIR=/tmp make install`
 
-## Using libsodium
+## Hashing with BLAKE3 instead of libsodium (BLAKE2B)
 
-It is possible to use libsodium (BLAKE2B) for hashing instead of the included
-default BLAKE3 if desired.  BLAKE3 is faster and has similar characteristics to
-BLAKE2B.
+By default librecast uses BLAKE2B from libsodium for hashing.  If you want to
+use BLAKE3 instead, ensure you did a recursive clone to obtain the blake3
+sources and build with:
 
-To use libsodium, build with:
+`make USE_BLAKE3=1`
 
-`USE_LIBSODIUM=1 make`
-
-### Install libsodium on Ubuntu (optional)
+### Install libsodium on Ubuntu (unless using BLAKE3)
 
 `sudo apt install libsodium-dev`

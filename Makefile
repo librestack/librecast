@@ -13,6 +13,10 @@ COVERITY_DIR := cov-int
 COVERITY_TGZ := $(LIBNAME).tgz
 OSNAME := $(shell uname -s)
 export OSNAME
+ifndef USE_BLAKE3
+USE_LIBSODIUM=1
+export USE_LIBSODIUM
+endif
 
 all: src
 
