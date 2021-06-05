@@ -4,7 +4,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.4] - 2021-06-05
+
+### Added
+- lc_bridge_add() / lc_bridge_del()
+- lc_tap_create()
+- lc_link_set() - bring up / tear down network interfaces
+- lc_bridge_addif() / lc_bridge_delif()
+- fallback interface code for unsupported platforms
+- lc_channel_send() / lc_socket_recv() - raw channel/socket send/recv functions
+- lc_channel_sendmsg() / lc_socket_recvmsg()
+- lc_socket_bind() - join on all multicast-capable interfaces, or bound socket ifx
+- lc_socket_send() - send to all channels bound to socket
+- lc_socket_sendmsg()
+- lc_socket_ttl() - set socket TTL
+
+### Changed
+
+- License changed to GPL-2.0 or GPL-3.0 (dual licenced)
+- Update README - irc channel moved to Libera.chat
+- Default hashing function changed to BLAKE2B from libsodium
+- libs/Makefile: Fix targets when building without blake3
+- split bridge/interface code by O/S
+- remove -std=gnu99 from NetBSD build - required for NetBSD 7, no longer reqd for 9.
 
 ### Fixed
 - lc_msg_recv(): add cancellation point before recvmsg() - hangs on NetBSD without this.
