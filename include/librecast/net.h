@@ -40,6 +40,9 @@ lc_channel_t * lc_channel_sideband(lc_channel_t *base, uint64_t band);
 /* create side channel from base by hashing additional key material */
 lc_channel_t * lc_channel_sidehash(lc_channel_t *base, unsigned char *key, size_t keylen);
 
+/* create random channel */
+lc_channel_t *lc_channel_random(lc_ctx_t *ctx);
+
 /* bind channel to socket */
 int lc_channel_bind(lc_socket_t *sock, lc_channel_t *chan);
 

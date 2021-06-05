@@ -743,6 +743,13 @@ lc_channel_t * lc_channel_new(lc_ctx_t *ctx, char *s)
 	return chan;
 }
 
+lc_channel_t *lc_channel_random(lc_ctx_t *ctx)
+{
+	unsigned char buf[14];
+	if (lc_getrandom(buf, sizeof buf) != sizeof buf) return NULL;
+	return lc_channel_nnew(ctx, buf, sizeof buf);
+}
+
 void lc_socket_close(lc_socket_t *sock)
 {
 	if (!sock) return;
