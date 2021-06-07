@@ -486,7 +486,8 @@ static void process_msg(lc_socket_call_t *sc, lc_message_t *msg)
 	}
 
 	/* opcode handler */
-	if (lc_op_handler[msg->op]) lc_op_handler[msg->op](sc, msg);
+	if (msg->op < LC_OP_MAX && lc_op_handler[msg->op])
+		lc_op_handler[msg->op](sc, msg);
 
 	/* callback to message handler */
 	if (sc->callback_msg) sc->callback_msg(msg);
