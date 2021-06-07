@@ -331,7 +331,6 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 	struct sockaddr_in6 from;
 	socklen_t fromlen = sizeof(from);
 	struct cmsghdr *cmsg;
-	struct in6_pktinfo *pi;
 	lc_message_head_t head;
 
 	zi = recv(sock->sock, NULL, 0, MSG_PEEK | MSG_TRUNC);
@@ -364,8 +363,8 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 	msg->op = head.op;
 	for (cmsg = CMSG_FIRSTHDR(&msgh); cmsg; cmsg = CMSG_NXTHDR(&msgh, cmsg)) {
 		if (cmsg->cmsg_type == IPV6_PKTINFO) {
-			pi = (struct in6_pktinfo *)CMSG_DATA(cmsg);
-			msg->dst = pi->ipi6_addr;
+			/* may not be aligned, copy */
+			memcpy(&msg->dst, CMSG_DATA(cmsg), sizeof(struct in6_addr));
 			msg->src = (&from)->sin6_addr;
 			break;
 		}
