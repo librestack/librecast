@@ -9,6 +9,10 @@
        src="https://scan.coverity.com/projects/21543/badge.svg"/>
 </a>
 
+<a href="https://repology.org/project/librecast/versions">
+    <img src="https://repology.org/badge/vertical-allrepos/librecast.svg" alt="Packaging status" align="right">
+</a>
+
 ## README
 
 Librecast is a project to provide fast, efficient and scalable
