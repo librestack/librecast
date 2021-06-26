@@ -7,6 +7,7 @@ int main()
 	size_t len = strlen(data);
 	int op = LC_OP_PING;
 	int *getint;
+	size_t *getsize;
 	void *ptr;
 
 	test_name("lc_msg_set() / lc_msg_get()");
@@ -50,11 +51,11 @@ int main()
 	test_assert(op == *getint, "lc_msg_get(): check opcode");
 
 
-	test_assert(lc_msg_get(&msg, LC_ATTR_LEN, (void **)&getint) == 0,
+	test_assert(lc_msg_get(&msg, LC_ATTR_LEN, (void **)&getsize) == 0,
 			"lc_msg_get(): get length");
 	test_assert(len == strlen(data), "len unmodified by lc_msg_set() fred found a bug");
-	test_log("%i == %i", len, *getint);
-	test_assert(len == (size_t)*getint, "lc_msg_get(): check length");
+	test_log("%i == %i", len, *getsize);
+	test_assert(len == *getsize, "lc_msg_get(): check length");
 
 
 	return fails;
