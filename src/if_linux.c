@@ -16,6 +16,7 @@
 #include <linux/if.h>
 #include <linux/if_bridge.h>
 #include <linux/if_tun.h>
+#include <linux/sockios.h>
 #endif
 
 #include <stdio.h>
@@ -81,7 +82,7 @@ int lc_bridge_delif(lc_ctx_t *ctx, const char *brname, const char *ifname)
 	memset(&ifr, 0, sizeof(ifr));
 	strncpy(ifr.ifr_name, brname, IFNAMSIZ - 1);
 #ifdef SIOCBRDELIF
-	ifr.ifr_ifx = ifx;
+	ifr.ifr_ifindex = ifx;
 	err = ioctl(ctx->sock, SIOCBRDELIF, &ifr);
 	if (err < 0)
 #endif
