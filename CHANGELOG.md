@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - lc_channel_random() - create random channel
+- tracking group joins per socket when IPV6_MULTICAST_ALL not defined
+
+This means ALL packets for ALL multicast groups joined by ANY PROCESS owned by ANY USER will be received by a socket by default. That's ... surprising. And not the behaviour we want.
+
+Librecast needs to track group joins per socket and drop any packets that aren't expected on that socket.
 
 ## [0.4.4] - 2021-06-05
 

@@ -321,6 +321,16 @@ ssize_t lc_msg_send(lc_channel_t *chan, lc_message_t *msg)
 	return bytes;
 }
 
+#ifndef IPV6_MULTICAST_ALL
+static int lc_socket_group_joined(lc_socket_t *sock, struct in6_addr *grp)
+{
+	for (lc_grplist_t *g = sock->grps; g; g = g->next) {
+		if (!memcmp(&g->grp, grp, sizeof(struct in6_addr))) return 1;
+	}
+	return 0;
+}
+#endif
+
 ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 {
 	ssize_t zi = 0, err = 0;
@@ -333,6 +343,9 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 	struct cmsghdr *cmsg;
 	lc_message_head_t head;
 
+#ifndef IPV6_MULTICAST_ALL
+recv_again:
+#endif
 	zi = recv(sock->sock, NULL, 0, MSG_PEEK | MSG_TRUNC);
 	if (zi == -1) return -1;
 
@@ -366,6 +379,10 @@ ssize_t lc_msg_recv(lc_socket_t *sock, lc_message_t *msg)
 			/* may not be aligned, copy */
 			memcpy(&msg->dst, CMSG_DATA(cmsg), sizeof(struct in6_addr));
 			msg->src = (&from)->sin6_addr;
+#ifndef IPV6_MULTICAST_ALL
+			/* destination is group we haven't joined - drop it */
+			if (!lc_socket_group_joined(sock, &msg->dst)) goto recv_again;
+#endif
 			break;
 		}
 	}
@@ -563,9 +580,47 @@ static int lc_channel_membership_all(int sock, int opt, struct ipv6_mreq *req)
 	return rc;
 }
 
+#ifndef IPV6_MULTICAST_ALL
+static void lc_socket_group_add(lc_socket_t *sock, struct in6_addr *grp)
+{
+	lc_grplist_t *g, *newgrp;
+	for (g = sock->grps; g; g = g->next) {
+		if (!memcmp(&g->grp, grp, sizeof(struct in6_addr))) return;
+		if (!g->next) break;
+	}
+	newgrp = calloc(1, sizeof(struct lc_grplist_s));
+	memcpy(&newgrp->grp, grp, sizeof(struct in6_addr));
+	if (!sock->grps) sock->grps = newgrp;
+	else g->next = newgrp;
+}
+
+static void lc_socket_group_del(lc_socket_t *sock, struct in6_addr *grp)
+{
+	lc_grplist_t *prev = NULL;
+	for (lc_grplist_t *g = sock->grps; g; g = g->next) {
+		if (memcmp(g, grp, sizeof(struct in6_addr)) == 0) {
+			if (prev) {
+				prev->next = (g->next) ? g->next : NULL;
+			}
+			if (g == sock->grps) sock->grps = NULL;
+			free(g);
+		}
+		prev = g;
+	}
+}
+#endif
+
 static int lc_channel_membership(lc_channel_t *chan, int opt, struct ipv6_mreq *req)
 {
 	int s = chan->sock->sock;
+#ifndef IPV6_MULTICAST_ALL
+	if (opt == IPV6_JOIN_GROUP) {
+		lc_socket_group_add(chan->sock, &chan->sa.sin6_addr);
+	}
+	else {
+		lc_socket_group_del(chan->sock, &chan->sa.sin6_addr);
+	}
+#endif
 	if (chan->sock->ifx) {
 		req->ipv6mr_interface = chan->sock->ifx;
 		return setsockopt(s, IPPROTO_IPV6, opt, req, sizeof(struct ipv6_mreq));
@@ -750,11 +805,27 @@ lc_channel_t *lc_channel_random(lc_ctx_t *ctx)
 	return lc_channel_nnew(ctx, buf, sizeof buf);
 }
 
+#ifndef IPV6_MULTICAST_ALL
+static int lc_socket_groups_free(lc_socket_t *sock)
+{
+	lc_grplist_t *tmp;
+	for (lc_grplist_t *g = sock->grps; g; ) {
+		tmp = g;
+		g = g->next;
+		free(tmp);
+	}
+	return 0;
+}
+#endif
+
 void lc_socket_close(lc_socket_t *sock)
 {
 	if (!sock) return;
 
 	lc_socket_listen_cancel(sock);
+#ifndef IPV6_MULTICAST_ALL
+	lc_socket_groups_free(sock);
+#endif
 
 	if (sock->sock) close(sock->sock);
 	lc_socket_t *prev = NULL;

@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only */
-/* Copyright (c) 2017-2020 Brett Sheffield <bacs@librecast.net> */
+/* Copyright (c) 2017-2021 Brett Sheffield <bacs@librecast.net> */
 
 #ifndef _LIBRECAST_PVT_H
 #define _LIBRECAST_PVT_H 1
@@ -15,12 +15,23 @@ typedef struct lc_ctx_t {
 	int sock; /* AF_LOCAL socket for ioctls */
 } lc_ctx_t;
 
+#ifndef IPV6_MULTICAST_ALL
+typedef struct lc_grplist_s lc_grplist_t;
+struct lc_grplist_s {
+	lc_grplist_t *next;
+	struct in6_addr grp;
+};
+#endif
+
 typedef struct lc_socket_t {
 	lc_socket_t *next;
 	lc_ctx_t *ctx;
 	pthread_t thread;
 	uint32_t id;
 	unsigned int ifx; /* interface index, 0 = all (default) */
+#ifndef IPV6_MULTICAST_ALL
+	lc_grplist_t *grps;
+#endif
 	int bound; /* how many channels are bound to this socket */
 	int sock;
 } lc_socket_t;
