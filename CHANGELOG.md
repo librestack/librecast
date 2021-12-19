@@ -14,6 +14,10 @@ This means ALL packets for ALL multicast groups joined by ANY PROCESS owned by A
 
 Librecast needs to track group joins per socket and drop any packets that aren't expected on that socket.
 
+### Fixed
+
+- use non-default channel port if specified on recv
+
 ## [0.4.4] - 2021-06-05
 
 ### Added

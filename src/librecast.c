@@ -656,13 +656,13 @@ int lc_channel_unbind(lc_channel_t *chan)
 	return 0;
 }
 
-static int lc_socket_bind_addr(lc_socket_t *sock)
+static int lc_socket_bind_addr(lc_socket_t *sock, short port)
 {
 	int opt = 1;
 	struct sockaddr_in6 any = {
 		.sin6_family = AF_INET6,
 		.sin6_addr = IN6ADDR_ANY_INIT,
-		.sin6_port = htons(LC_DEFAULT_PORT),
+		.sin6_port = port
 	};
 
 	if ((setsockopt(sock->sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) == -1)
@@ -686,7 +686,7 @@ int lc_channel_bind(lc_socket_t *sock, lc_channel_t *chan)
 	/* Librecast sockets can have multiple channels bound to them, but we
 	 * only need to call lc_socket_bind_addr() the first time */
 
-	int rc = (sock->bound) ? 0 : lc_socket_bind_addr(sock);
+	int rc = (sock->bound) ? 0 : lc_socket_bind_addr(sock, chan->sa.sin6_port);
 
 	if (!rc) {
 		chan->sock = sock;
