@@ -8,7 +8,7 @@ int main()
 {
 	const char brname[] = "0000-0032";
 	enum { tapcount = 42 };
-	char tap[tapcount][IFNAMSIZ];
+	char tap[tapcount][IFNAMSIZ] = {0};
 	lc_ctx_t *lctx = NULL;
 
 	test_require_linux();
