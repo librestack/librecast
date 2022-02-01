@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only */
-/* Copyright (c) 2017-2021 Brett Sheffield <bacs@librecast.net> */
+/* Copyright (c) 2017-2022 Brett Sheffield <bacs@librecast.net> */
 
 /* Contains code derived from libbridge (part of bridge-utils)
  * Copyright (C) 2000-2017 Lennert Buytenhek, Stephen Hemminger et al */
@@ -137,7 +137,7 @@ int lc_link_set(lc_ctx_t *ctx, char *ifname, int up)
 	return err;
 }
 
-int lc_tap_create(char *ifname)
+int lc_tuntap_create(char *ifname, int flags)
 {
 	struct ifreq ifr;
 	int fd;
@@ -146,12 +146,19 @@ int lc_tap_create(char *ifname)
 		return -1;
 	}
 	memset(&ifr, 0, sizeof(ifr));
-	ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
+	ifr.ifr_flags = flags;
+	if (ifname[0])
+		strncpy(ifr.ifr_name, ifname, IFNAMSIZ - 1);
 	if (ioctl(fd, TUNSETIFF, (void *) &ifr) == -1) {
 		close(fd);
 		return -1;
 	}
-	strncpy(ifname, ifr.ifr_name, IFNAMSIZ);
+	strcpy(ifname, ifr.ifr_name);
 
 	return fd;
+}
+
+int lc_tap_create(char *ifname)
+{
+	return lc_tuntap_create(ifname, IFF_TAP | IFF_NO_PI);
 }

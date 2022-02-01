@@ -25,25 +25,29 @@ static inline int lc_ctrl_socket(void)
 int lc_bridge_del(lc_ctx_t *ctx, const char *brname)
 {
 	(void)ctx; (void)brname;
-	return ENOTSUP;
+	errno = ENOTSUP;
+	return -1;
 }
 
 int lc_bridge_add(lc_ctx_t *ctx, const char *brname)
 {
 	(void)ctx; (void)brname;
-	return ENOTSUP;
+	errno = ENOTSUP;
+	return -1;
 }
 
 int lc_bridge_delif(lc_ctx_t *ctx, const char *brname, const char *ifname)
 {
 	(void)ctx; (void)brname; (void)ifname;
-	return ENOTSUP;
+	errno = ENOTSUP;
+	return -1;
 }
 
 int lc_bridge_addif(lc_ctx_t *ctx, const char *brname, const char *ifname)
 {
 	(void)ctx; (void)brname; (void)ifname;
-	return ENOTSUP;
+	errno = ENOTSUP;
+	return -1;
 }
 
 int lc_link_set(lc_ctx_t *ctx, char *ifname, int up)
@@ -65,8 +69,16 @@ int lc_link_set(lc_ctx_t *ctx, char *ifname, int up)
 	return err;
 }
 
+int lc_tuntap_create(char *ifname, int flags)
+{
+	(void)ifname, (void)flags;
+	errno = ENOTSUP;
+	return -1;
+}
+
 int lc_tap_create(char *ifname)
 {
 	(void)ifname;
-	return ENOTSUP;
+	errno = ENOTSUP;
+	return -1;
 }

@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- lc_tuntap_create() - create TUN/TAP sockets
 - lc_channel_random() - create random channel
 - tracking group joins per socket when IPV6_MULTICAST_ALL not defined
 

@@ -1,0 +1,33 @@
+.TH LC_TUNTAP_CREATE 3 2022-02-01 "LIBRECAST" "Librecast Programmer's Manual"
+.SH NAME
+lc_tuntap_create \- create TUN/TAP devices
+.SH SYNOPSIS
+.nf
+.B #include <librecast/if.h>
+.PP
+.BI "int lc_tuntap_create(char *" ifname ", int " flags );
+.fi
+.PP
+Compile and link with \fI\-llibrecast\fP.
+.PP
+The \fIflags\fP argument may contain the following flags.  One of IFF_TUN or
+IFF_TAP is required.
+.TP
+.B IFF_TUN
+create TUN device (no Ethernet headers)
+.TP
+.B IFF_TAP
+create TAP device
+.TP
+.B IFF_NO_PI
+Do not provide packet information.
+.TP
+.B IFF_MULTI_QUEUE
+Create a queue of multiqueue device.
+.SH DESCRIPTION
+.BR lc_tuntap_create ()
+creates a new TUN/TAP device
+.
+.SH RETURN VALUE
+.BR lc_socket_new ()
+On  success, a file descriptor for the new socket is returned.  On error, -1 is returned, and errno is set appropriately.
