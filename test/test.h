@@ -17,11 +17,11 @@
 extern int fails;
 
 void fail_msg(char *msg, ...);
-void test_assert(int condition, char *msg, ...);
-void test_strcmp(char *str1, char *str2, char *msg, ...);
-void test_strncmp(char *str1, char *str2, size_t len, char *msg, ...);
-void test_expect(char *expected, char *got);
-void test_expectn(char *expected, char *got, size_t len);
+int test_assert(int condition, char *msg, ...);
+int test_strcmp(char *str1, char *str2, char *msg, ...);
+int test_strncmp(char *str1, char *str2, size_t len, char *msg, ...);
+int test_expect(char *expected, char *got);
+int test_expectn(char *expected, char *got, size_t len);
 void test_log(char *msg, ...);
 void test_name(char *str, ...);
 void test_cap_require(int cap);

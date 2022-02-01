@@ -30,7 +30,7 @@ void fail_msg(char *msg, ...)
 	va_end(argp);
 }
 
-void test_assert(int condition, char *msg, ...)
+int test_assert(int condition, char *msg, ...)
 {
 	if (!condition) {
 		va_list argp;
@@ -38,36 +38,41 @@ void test_assert(int condition, char *msg, ...)
 		vfail_msg(msg, argp);
 		va_end(argp);
 	}
+	return condition;
 }
 
-void test_strcmp(char *str1, char *str2, char *msg, ...)
+int test_strcmp(char *str1, char *str2, char *msg, ...)
 {
 	if (str1 == NULL || str2 == NULL || strcmp(str1, str2)) {
 		va_list argp;
 		va_start(argp, msg);
 		vfail_msg(msg, argp);
 		va_end(argp);
+		return 0;
 	}
+	return 1;
 }
 
-void test_strncmp(char *str1, char *str2, size_t len, char *msg, ...)
+int test_strncmp(char *str1, char *str2, size_t len, char *msg, ...)
 {
 	if (str1 == NULL || str2 == NULL || strncmp(str1, str2, len)) {
 		va_list argp;
 		va_start(argp, msg);
 		vfail_msg(msg, argp);
 		va_end(argp);
+		return 0;
 	}
+	return 1;
 }
 
-void test_expect(char *expected, char *got)
+int test_expect(char *expected, char *got)
 {
-	test_strcmp(expected, got, "expected: '%s', got: '%s'", expected, got);
+	return test_strcmp(expected, got, "expected: '%s', got: '%s'", expected, got);
 }
 
-void test_expectn(char *expected, char *got, size_t len)
+int test_expectn(char *expected, char *got, size_t len)
 {
-	test_strncmp(expected, got, len, "expected: '%s', got: '%s'", expected, got);
+	return test_strncmp(expected, got, len, "expected: '%s', got: '%s'", expected, got);
 }
 
 void test_log(char *msg, ...)
