@@ -64,7 +64,7 @@ gcc: clean all
 check test sanitize: clean src
 	cd test && $(MAKE) $@
 
-%.test %.check %.debug: clean src
+%.test %.check %.debug: src
 	cd test && $(MAKE) $@
 
 coverity: clean

@@ -48,7 +48,7 @@ build:
 # FIXME dial down optimisation for this test or it breaks under valgrind
 #0000-0026.test: CFLAGS += -O
 
-%.test: %.c clean build $(OBJS)
+%.test: %.c build $(OBJS)
 	@$(CC) $(CFLAGS) -o $@ $< $(OBJS) $(LDFLAGS)
 	@echo -ne "\e[2m" $* " "
 	@echo -ne "\n== $@" >> $(LOGFILE)
