@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <ifaddrs.h>
+#include <net/if.h>
 #include <netinet/in.h>
 #include <pthread.h>
 #include <signal.h>
