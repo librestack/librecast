@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.5] - 2022-04-04
 
 ### Added
 - lc_tuntap_create() - create TUN/TAP sockets
@@ -15,9 +15,21 @@ This means ALL packets for ALL multicast groups joined by ANY PROCESS owned by A
 
 Librecast needs to track group joins per socket and drop any packets that aren't expected on that socket.
 
+- added Repology badge to README
+
+### Changed
+- don't force clean before tests
+- use newer SIOCBRDELIF in bridge code
+- explicitly include <linux/sockios.h> to ensure SIOCBRDELIF defined
+
 ### Fixed
 
 - use non-default channel port if specified on recv
+- check for invalid opcodes before calling message handler
+- copy ancillary pkt info to ensure memory is aligned
+- fix test 20 on big endian
+- zero memory for device name array in test 32
+- add missing <net/if.h> header
 
 ## [0.4.4] - 2021-06-05
 
